@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f5f7fb">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<title>¿Dónde está mi RNM?</title>
+<style>
+  :root { --azul:#2158d6; --azul-osc:#123c8a; --azul-claro:#e8eeff; --fondo:#f5f7fb; --card:#fff; --txt:#16233f; --suave:#66758c; --borde:#e3e8f1;
+          --ok:#1f7a4d; --ok-bg:#e8f5ee; --aviso:#8a5a00; --aviso-bg:#fff1dc; --mal:#b3261e; --mal-bg:#fdecea; --gris-bg:#eceff5; }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html { background:var(--fondo); }
+  body { margin:0; font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; background:var(--fondo); color:var(--txt); line-height:1.45; -webkit-font-smoothing:antialiased; }
+  svg.i { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; flex:none; }
+  button { font:inherit; cursor:pointer; border:0; }
+  .oculto { display:none !important; }
+
+  /* barra superior */
+  .appbar { position:sticky; top:0; z-index:20; display:flex; align-items:center; gap:12px; padding:max(14px,env(safe-area-inset-top)) 20px 14px; background:var(--card); border-bottom:1px solid var(--borde); }
+  .appbar .logo { width:36px; height:36px; border-radius:10px; background:var(--azul); color:#fff; display:grid; place-items:center; flex:none; }
+  .appbar .atras { background:none; color:var(--azul); padding:0; width:36px; height:36px; display:grid; place-items:center; margin-left:-8px; }
+  .appbar h1 { flex:1; margin:0; font-size:1.02rem; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .appbar .ayuda { background:none; color:var(--suave); padding:0; width:36px; height:36px; display:grid; place-items:center; margin-right:-6px; }
+
+  main { max-width:560px; margin:0 auto; padding:20px 20px 120px; }
+  body[data-vista="login"] main, body[data-vista="perfil"] main { padding-bottom:40px; }
+  .eyebrow { margin:0 0 6px; font-size:.72rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--azul); }
+  h1.t { margin:0 0 8px; font-size:1.85rem; line-height:1.15; font-weight:800; letter-spacing:-.02em; color:var(--txt); }
+  h2 { margin:0 0 6px; font-size:1.1rem; font-weight:700; }
+  .sub { margin:0 0 14px; color:var(--suave); font-size:.95rem; }
+  .nota { margin:12px 0 0; color:var(--suave); font-size:.8rem; }
+  .tarjeta { background:var(--card); border:1px solid var(--borde); border-radius:20px; padding:18px; margin-top:16px; }
+  .tarjeta h3 { margin:0 0 4px; font-size:1rem; font-weight:700; }
+  .tarjeta p { margin:4px 0; color:var(--suave); font-size:.9rem; }
+
+  /* botones y campos */
+  .btn { width:100%; display:flex; align-items:center; justify-content:center; gap:10px; padding:15px 18px; border-radius:14px; background:var(--azul); color:#fff; font-weight:700; font-size:1rem; text-decoration:none; margin-top:16px; }
+  .btn:active { background:var(--azul-osc); }
+  .btn:disabled { opacity:.55; }
+  .btn.sec { background:var(--card); color:var(--azul); border:1px solid var(--borde); }
+  .btn.sec:active { background:var(--azul-claro); }
+  .btn.blanco { background:#fff; color:var(--azul-osc); }
+  .btn-texto { background:none; color:var(--azul); font-weight:600; padding:6px 0; font-size:.9rem; }
+  .btn-texto.peligro { color:var(--mal); }
+  .fila { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  label { display:block; margin:16px 0 6px; font-size:.9rem; font-weight:600; }
+  input[type=text], select { width:100%; font:inherit; font-size:1rem; padding:15px 14px; border:1px solid var(--borde); border-radius:14px; background:var(--card); color:var(--txt); }
+  input[type=text]:focus, select:focus { outline:2px solid var(--azul); outline-offset:-1px; border-color:var(--azul); }
+  .ayuda-campo { margin:6px 2px 0; font-size:.8rem; color:var(--suave); }
+  .check { display:flex; gap:12px; align-items:flex-start; margin-top:18px; font-weight:400; font-size:.9rem; }
+  .check input { width:22px; height:22px; margin:0; flex:none; accent-color:var(--azul); }
+  .msg { margin-top:12px; font-size:.9rem; color:var(--mal); min-height:1.2em; }
+  .msg.bien { color:var(--ok); }
+  .campo-mp { height:52px; padding:0 12px; border:1px solid var(--borde); border-radius:14px; background:#fff; display:flex; align-items:center; }
+  .campo-mp iframe { height:50px !important; }
+  .acciones { display:flex; flex-wrap:wrap; gap:10px; }
+  .acciones .btn { flex:1; }
+
+  /* avisos e insignias */
+  .aviso { display:flex; gap:12px; align-items:flex-start; padding:14px 16px; border-radius:16px; background:var(--azul-claro); color:var(--txt); font-size:.9rem; margin-top:16px; }
+  .aviso svg { color:var(--azul); margin-top:1px; }
+  .aviso b { display:block; color:var(--azul); font-size:.9rem; }
+  .aviso.warn { background:var(--aviso-bg); } .aviso.warn svg { color:var(--aviso); }
+  .chip { display:inline-flex; align-items:center; gap:6px; padding:5px 12px; border-radius:99px; font-size:.78rem; font-weight:600; background:var(--azul-claro); color:var(--azul); }
+  .chip::before { content:""; width:6px; height:6px; border-radius:50%; background:currentColor; }
+  .chip.ok { background:var(--ok-bg); color:var(--ok); }
+  .chip.aviso { background:var(--aviso-bg); color:var(--aviso); }
+  .chip.mal { background:var(--mal-bg); color:var(--mal); }
+  .chip.gris { background:var(--gris-bg); color:var(--suave); }
+
+  /* bienvenida */
+  .ilustra { margin:0 0 22px; border-radius:24px; background:var(--azul-claro); height:230px; display:grid; place-items:center; position:relative; overflow:hidden; }
+  .ilustra .doc { width:56%; background:#fff; border-radius:18px; padding:16px; box-shadow:0 8px 24px rgba(33,88,214,.12); }
+  .ilustra .doc b { display:flex; align-items:center; gap:8px; color:var(--azul-osc); font-size:1.1rem; }
+  .ilustra .l { height:7px; border-radius:99px; background:#dfe5f1; margin-top:10px; }
+  .ilustra .num { margin-top:12px; padding:8px 10px; border-radius:8px; background:var(--azul-claro); color:var(--azul); font-size:.75rem; letter-spacing:.12em; }
+  .ilustra .escudo { position:absolute; right:16%; bottom:22%; width:50px; height:50px; border-radius:14px; background:var(--azul); color:#fff; display:grid; place-items:center; box-shadow:0 8px 20px rgba(33,88,214,.35); }
+  .bene { list-style:none; margin:20px 0 4px; padding:0; display:grid; gap:16px; }
+  .bene li { display:flex; gap:14px; align-items:flex-start; }
+  .bene svg { color:var(--azul); margin-top:2px; }
+  .bene b { display:block; font-size:1rem; font-weight:600; }
+  .bene span { font-size:.85rem; color:var(--suave); }
+
+  /* onboarding */
+  .progreso { display:flex; gap:6px; margin-bottom:8px; }
+  .progreso i { flex:1; height:4px; border-radius:99px; background:#dfe5f1; }
+  .progreso i.on { background:var(--azul); }
+  .lista-ico { list-style:none; margin:0; padding:0; display:grid; gap:18px; }
+  .lista-ico li { display:flex; gap:14px; align-items:center; font-size:.95rem; }
+  .lista-ico svg { color:var(--azul); }
+
+  /* inicio */
+  .hero { margin-top:20px; background:var(--azul-osc); color:#fff; border-radius:24px; padding:22px; }
+  .hero .rn { display:flex; align-items:center; justify-content:space-between; font-weight:600; font-size:.95rem; margin-bottom:22px; }
+  .hero h2 { font-size:2rem; font-weight:800; letter-spacing:-.02em; margin:0 0 10px; }
+  .hero p { margin:0 0 14px; color:#d3def6; font-size:.95rem; }
+  .hero small { display:block; margin-bottom:16px; color:#fff; font-size:.8rem; }
+  .hero .btn { margin-top:0; }
+  .vacio { background:var(--azul-claro); border:0; text-align:center; padding:26px 22px; border-radius:24px; }
+  .vacio .ico { width:72px; height:72px; border-radius:20px; background:#fff; color:var(--azul); display:grid; place-items:center; margin:0 auto 16px; }
+  .vacio .ico svg { width:34px; height:34px; }
+  .vacio h2 { font-size:1.35rem; font-weight:800; }
+  .vacio p { color:var(--txt); }
+  .titulo-sec { display:flex; align-items:baseline; justify-content:space-between; margin:28px 0 0; }
+  .titulo-sec h2 { font-size:1.15rem; margin:0; }
+  .titulo-sec button { background:none; color:var(--azul); font-weight:600; font-size:.9rem; padding:0; }
+  .item { width:100%; text-align:left; display:block; background:var(--card); border:1px solid var(--borde); border-radius:20px; padding:18px; margin-top:12px; color:inherit; position:relative; }
+  .item .nombre { font-weight:700; font-size:1.05rem; display:flex; align-items:center; justify-content:space-between; }
+  .item .nombre svg { color:var(--azul); width:20px; height:20px; }
+  .item .meta { margin-top:6px; font-size:.82rem; color:var(--suave); }
+  .item .chip { margin-top:12px; }
+  .item .chip + .meta { margin-top:10px; }
+
+  /* detalle */
+  .estado { margin-top:18px; border-radius:24px; padding:22px; background:var(--azul-claro); }
+  .estado.ok { background:var(--ok-bg); } .estado.aviso { background:var(--aviso-bg); } .estado.mal { background:var(--mal-bg); } .estado.gris { background:var(--gris-bg); }
+  .estado .ico { width:52px; height:52px; border-radius:14px; background:#fff; color:var(--azul); display:grid; place-items:center; margin-bottom:16px; }
+  .estado.ok .ico { color:var(--ok); } .estado.aviso .ico { color:var(--aviso); } .estado.mal .ico { color:var(--mal); }
+  .estado h2 { font-size:1.7rem; font-weight:800; letter-spacing:-.01em; margin:0 0 10px; color:var(--azul-osc); }
+  .estado.ok h2 { color:var(--ok); } .estado.aviso h2 { color:var(--aviso); } .estado.mal h2 { color:var(--mal); }
+  .estado p { margin:6px 0 0; color:var(--txt); font-size:.95rem; }
+  .ult { margin:18px 4px 0; font-size:.82rem; color:var(--suave); } .ult b { display:block; color:var(--txt); font-size:1rem; margin-top:2px; }
+  .res-unidad { margin-top:16px; }
+
+  /* historial */
+  .chips { display:flex; gap:8px; overflow-x:auto; padding:2px 0 4px; margin:14px 0 0; scrollbar-width:none; }
+  .chips::-webkit-scrollbar { display:none; }
+  .chips button { flex:none; padding:9px 16px; border-radius:99px; background:var(--card); border:1px solid var(--borde); color:var(--txt); font-weight:600; font-size:.85rem; }
+  .chips button.on { background:var(--azul); border-color:var(--azul); color:#fff; }
+  .grupo { margin:22px 0 0; font-size:1.1rem; font-weight:700; }
+  .tabla { background:var(--card); border:1px solid var(--borde); border-radius:20px; margin-top:12px; overflow:hidden; }
+  .tabla button { width:100%; text-align:left; background:none; padding:14px 18px; color:inherit; display:block; border-bottom:1px solid var(--borde); }
+  .tabla button:last-child { border-bottom:0; }
+  .tabla .f1 { display:flex; justify-content:space-between; font-weight:700; font-size:.95rem; }
+  .tabla .f1 svg { color:var(--azul); width:18px; height:18px; }
+  .tabla .f2 { display:flex; justify-content:space-between; align-items:center; margin-top:8px; font-size:.85rem; color:var(--suave); }
+
+  /* planes */
+  .plan-card { margin-top:18px; background:var(--azul-osc); color:#fff; border-radius:24px; padding:22px; }
+  .plan-card .eb { font-size:.78rem; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:#d3def6; }
+  .plan-card .desde { margin-top:18px; color:#d3def6; font-size:.85rem; }
+  .plan-card .precio-g { font-size:2.6rem; font-weight:800; letter-spacing:-.02em; line-height:1.1; }
+  .plan-card p { margin:10px 0 18px; color:#d3def6; font-size:.95rem; }
+  .plan-card .btn { margin-top:0; }
+  .antes { padding:6px 18px; }
+  .antes div { display:flex; gap:14px; padding:14px 0; align-items:flex-start; border-bottom:1px solid var(--borde); }
+  .antes div:last-child { border-bottom:0; }
+  .antes svg { color:var(--azul); margin-top:2px; }
+  .antes b { display:block; font-size:.95rem; } .antes span { font-size:.85rem; color:var(--suave); }
+
+  /* perfil */
+  .avatar-fila { display:flex; align-items:center; gap:16px; }
+  .avatar { width:68px; height:68px; border-radius:20px; background:var(--azul-claro); color:var(--azul); display:grid; place-items:center; font-weight:800; font-size:1.4rem; flex:none; }
+  .avatar-fila b { display:block; font-size:1.25rem; font-weight:800; }
+  .dato small { display:block; color:var(--suave); font-size:.78rem; margin-top:12px; } .dato small:first-child { margin-top:0; }
+  .dato b { display:block; font-size:1rem; font-weight:700; }
+  .dato hr { border:0; border-top:1px solid var(--borde); margin:14px 0 0; }
+  .fila-op { display:flex; justify-content:space-between; align-items:center; width:100%; background:none; padding:6px 0 0; color:var(--txt); font-weight:600; font-size:1rem; }
+  .fila-op svg { color:var(--azul); }
+  .fila-op.peligro { color:var(--mal); } .fila-op.peligro svg { color:var(--mal); }
+
+  /* barra inferior */
+  .nav { position:fixed; left:0; right:0; bottom:0; z-index:30; background:var(--card); border-top:1px solid var(--borde); display:flex; justify-content:space-around; padding:8px 8px max(10px,env(safe-area-inset-bottom)); }
+  .nav button { flex:1; max-width:120px; background:none; color:var(--suave); display:flex; flex-direction:column; align-items:center; gap:3px; font-size:.72rem; font-weight:600; padding:0; }
+  .nav button span.p { width:64px; height:32px; border-radius:99px; display:grid; place-items:center; }
+  .nav button.on { color:var(--azul); font-weight:700; }
+  .nav button.on span.p { background:var(--azul-claro); }
+  body:not([data-vista="app"]) .nav { display:none; }
+  body[data-vista="login"] .appbar .ayuda, body[data-vista="perfil"] .appbar .ayuda { display:none; }
+  .toast { position:fixed; left:50%; bottom:96px; transform:translateX(-50%); z-index:60; background:var(--azul-osc); color:#fff; padding:12px 18px; border-radius:14px; font-size:.9rem; font-weight:600; box-shadow:0 8px 24px rgba(0,0,0,.2); max-width:90vw; }
+
+  /* hoja de planes / pago */
+  .modal { position:fixed; inset:0; z-index:50; background:rgba(22,35,63,.55); display:flex; align-items:flex-end; justify-content:center; }
+  .modal-caja { position:relative; width:100%; max-width:560px; max-height:92vh; overflow:auto; background:var(--fondo); border-radius:26px 26px 0 0; padding:18px 16px max(18px,env(safe-area-inset-bottom)); outline:none; }
+  .modal-caja::before { content:""; display:block; width:40px; height:4px; border-radius:99px; background:var(--borde); margin:0 auto 12px; }
+  .modal-caja .tarjeta { margin-top:0; border:0; background:transparent; padding:6px 4px; }
+  .modal .cerrar { position:absolute; top:16px; right:14px; z-index:2; width:36px; height:36px; padding:0; border-radius:50%; font-size:1.5rem; line-height:1; background:var(--card); color:var(--txt); border:1px solid var(--borde); }
+  .planes { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:14px 0 4px; }
+  .plan { display:flex; flex-direction:column; align-items:flex-start; gap:2px; text-align:left; padding:14px; border-radius:16px; border:2px solid var(--borde); background:var(--card); color:var(--txt); font-weight:400; }
+  .plan b { font-size:1rem; } .plan .precio { font-size:1.1rem; font-weight:800; color:var(--azul); }
+  .plan small { font-size:.78rem; color:var(--suave); } .plan small.ahorro { color:var(--ok); font-weight:700; } .plan small.mejor { color:var(--azul); font-weight:700; }
+  .plan.sel { border-color:var(--azul); background:var(--azul-claro); }
+
+
+  /* resultado de unidad y avisos generados por script */
+  .res { margin-top:16px; padding:16px; border-radius:16px; background:var(--azul-claro); }
+  .res.ok { background:var(--ok-bg); }
+  .res h3 { margin:0 0 6px; font-size:1rem; font-weight:700; }
+  .res p { margin:4px 0; font-size:.9rem; color:var(--txt); }
+  .res p.sub { color:var(--suave); margin:4px 0; }
+  .res .btn { margin-top:12px; }
+  /* botones dentro de la hoja de planes y pago */
+  .modal-caja button:not(.cerrar):not(.plan) { width:100%; padding:15px 18px; border-radius:14px; background:var(--azul); color:#fff; font-weight:700; font-size:1rem; margin-top:12px; }
+  .modal-caja button.sec:not(.cerrar):not(.plan) { background:var(--card); color:var(--azul); border:1px solid var(--borde); }
+  .modal-caja .tarjeta h2 { font-size:1.4rem; font-weight:800; padding-right:40px; }
+  @media (min-width:700px) { .nav { max-width:560px; left:50%; transform:translateX(-50%); border-radius:20px 20px 0 0; border:1px solid var(--borde); } .modal { align-items:center; padding:16px; } .modal-caja { border-radius:24px; } }
+  @media (prefers-color-scheme: dark) {
+    :root { --fondo:#0e1424; --card:#161e33; --txt:#eaf0fc; --suave:#9aa8c2; --borde:#27324d; --azul:#5b8cff; --azul-claro:#1b2a52; --ok:#6fdca0; --ok-bg:#12301f; --aviso:#ffcf70; --aviso-bg:#3a3115; --mal:#ff8f88; --mal-bg:#3a1a20; --gris-bg:#212b45; }
+    .btn, .modal-caja button:not(.cerrar):not(.plan):not(.sec) { color:#0e1424; } .btn.sec { color:var(--azul); } .btn.blanco { color:#123c8a; }
+    .chips button.on { color:#0e1424; }
+    .appbar .logo, .ilustra .escudo { color:#0e1424; }
+    .estado h2 { color:#cfe0ff; }
+    .ilustra .doc, .vacio .ico, .estado .ico { background:#fff; }
+  }
+</style>
+</head>
+<body data-vista="login">
+
+<div class="appbar" id="appbar"></div>
+
+<main>
+
+<!-- 01 Bienvenida / acceso -->
+<section id="vista-login" class="oculto">
+  <div class="ilustra" aria-hidden="true">
+    <div class="doc"><b><svg class="i" viewBox="0 0 24 24"><path d="M12 11v3M8 14c0-3 1.6-5 4-5s4 2 4 5M5 12c0-4 3-7 7-7s7 3 7 7M9 20c1-2 1-3 1-5M15 20c-1-2-1-3-1-5"/></svg>RNM</b><div class="l"></div><div class="l" style="width:70%"></div><div class="num">A • • • • • • B</div></div>
+    <div class="escudo"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg></div>
+  </div>
+  <p class="eyebrow">Seguimiento migratorio</p>
+  <h1 class="t">¿Dónde está mi RNM?</h1>
+  <p class="sub">Tu documento, con información más clara. Te acompañamos a entender el próximo paso.</p>
+  <ul class="bene">
+    <li><svg class="i" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M12 8v13M3 12h18M12 8c-2 0-4-1-4-3 0-1.5 2-2 4 3 2-5 4-4.5 4-3 0 2-2 3-4 3z"/></svg><div><b>Primera consulta gratis</b><span>Para el primer RNM de tu cuenta.</span></div></li>
+    <li><svg class="i" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg><div><b>Seguimiento cada 7 días</b><span>Mientras tu plan esté activo, hasta que esté listo.</span></div></li>
+    <li><svg class="i" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg><div><b>Tus datos, con cuidado</b><span>Solo para informarte sobre tu documento.</span></div></li>
+  </ul>
+  <button class="btn" id="btn-google" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>Comenzar con Google</button>
+  <p class="msg" id="msg-login"></p>
+  <p class="nota">Servicio independiente desarrollado por FLUJO. No es un canal oficial de la PF.<br><a href="privacidad.html" style="color:var(--azul)">Privacidad</a> · <a href="terminos.html" style="color:var(--azul)">Términos</a></p>
+</section>
+
+<!-- 03-05 Completa tu perfil -->
+<section id="vista-perfil" class="oculto">
+  <div class="progreso" aria-hidden="true"><i></i><i></i><i></i></div>
+  <div class="fila"><p class="eyebrow" id="perfil-paso" style="margin:0">Paso 1 de 3</p><span class="nota" style="margin:0">Tu perfil</span></div>
+  <form id="form-perfil" autocomplete="on" novalidate>
+
+    <div class="paso-ob" data-paso="1">
+      <h1 class="t" id="perfil-titulo" style="margin-top:18px">Primero, ¿cómo te llamas?</h1>
+      <p class="sub">Queremos acompañarte por tu nombre. Escríbelo tal como aparece en tu documento.</p>
+      <label for="p-nombre">Nombre completo</label>
+      <input type="text" id="p-nombre" autocomplete="name" maxlength="120" placeholder="Nombre y apellidos">
+      <p class="ayuda-campo">Incluye todos tus nombres y apellidos.</p>
+      <div class="aviso"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg><div><b>Solo lo necesario</b>Usaremos tu perfil para informarte sobre tu trámite. El consentimiento se solicita al finalizar.</div></div>
+      <div class="tarjeta"><ul class="lista-ico">
+        <li><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg>Tu nombre</li>
+        <li><svg class="i" viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A16 16 0 013 6a2 2 0 012-2z"/></svg>Tu teléfono / WhatsApp</li>
+        <li><svg class="i" viewBox="0 0 24 24"><path d="M12 21s7-6 7-12a7 7 0 10-14 0c0 6 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>Tu dirección en Brasil</li>
+      </ul></div>
+    </div>
+
+    <div class="paso-ob oculto" data-paso="2">
+      <h1 class="t" style="margin-top:18px">¿Cuál es tu teléfono?</h1>
+      <p class="sub">Mejor si tiene WhatsApp.</p>
+      <label for="p-tel">Teléfono / WhatsApp</label>
+      <input type="text" id="p-tel" inputmode="tel" autocomplete="tel" maxlength="20" placeholder="Ej: +55 11 91234-5678">
+    </div>
+
+    <div class="paso-ob oculto" data-paso="3">
+      <h1 class="t" style="margin-top:18px">¿Dónde vives ahora?</h1>
+      <p class="sub">Con tu CEP completamos el resto.</p>
+      <label for="p-cep">CEP</label>
+      <input type="text" id="p-cep" inputmode="numeric" autocomplete="postal-code" maxlength="9" placeholder="00000-000">
+      <p class="ayuda-campo" id="cep-estado" aria-live="polite">Calle, ciudad y estado se llenan solos.</p>
+      <label for="p-dir">Dirección actual</label>
+      <input type="text" id="p-dir" autocomplete="street-address" maxlength="200" placeholder="Calle, número y barrio">
+      <div class="fila" style="gap:12px; align-items:flex-start">
+        <div style="flex:2"><label for="p-ciudad">Ciudad</label><input type="text" id="p-ciudad" autocomplete="address-level2" maxlength="80"></div>
+        <div style="flex:1"><label for="p-uf">Estado</label><input type="text" id="p-uf" maxlength="2" autocapitalize="characters" placeholder="SP"></div>
+      </div>
+      <label class="check"><input type="checkbox" id="p-consiento"><span>Autorizo a FLUJO a guardar estos datos para contactarme.</span></label>
+    </div>
+
+    <div class="acciones">
+      <button type="button" class="btn sec oculto" id="btn-perfil-atras">Atrás</button>
+      <button type="submit" class="btn" id="btn-perfil">Siguiente</button>
+    </div>
+    <button type="button" class="btn sec oculto" id="btn-perfil-cancelar">Cancelar</button>
+    <p class="msg" id="msg-perfil"></p>
+  </form>
+</section>
+
+<!-- App: pestañas -->
+<div id="vista-app" class="oculto">
+  <section id="t-inicio"></section>
+  <section id="t-rnms" class="oculto"></section>
+  <section id="t-detalle" class="oculto"></section>
+  <section id="t-agregar" class="oculto">
+    <div id="agregar-paso1">
+      <h1 class="t">Empecemos con tu documento</h1>
+      <p class="sub" id="agregar-sub">Paso 1 de 2 · Introduce los datos. Antes de registrar, podrás revisarlos.</p>
+      <span class="chip" id="reg-gratis">Primera consulta gratis</span>
+      <form id="form-rnm" autocomplete="off" novalidate>
+        <label for="rnm">Número de RNM</label>
+        <input type="text" id="rnm" autocapitalize="characters" placeholder="Ej: A123456B" maxlength="12">
+        <p class="ayuda-campo">Escríbelo tal como aparece en tu documento.</p>
+        <label for="nac">Fecha de nacimiento</label>
+        <input type="text" id="nac" inputmode="numeric" placeholder="dd/mm/aaaa" maxlength="10">
+        <p class="ayuda-campo">Formato: dd/mm/aaaa. Usa una fecha válida.</p>
+        <label class="check"><input type="checkbox" id="consiento"><span>Autorizo a FLUJO a resguardar mi RNM y fecha de nacimiento y consultarlos ante la Policía Federal únicamente para informarme sobre mi documento.</span></label>
+        <p class="msg" id="msg-form"></p>
+        <button type="submit" class="btn" id="btn-continuar"><svg class="i" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>Continuar a revisión</button>
+      </form>
+      <div class="tarjeta" id="reg-info"><p id="reg-adicional" style="margin:0">El primer RNM recibe su primera consulta gratis. Los adicionales requieren un plan mensual desde R$ 4,99.</p><p class="nota" style="margin-top:10px">Hasta 4 RNM por cuenta.</p></div>
+    </div>
+    <div id="agregar-paso2" class="oculto">
+      <h1 class="t">Revisa tus datos</h1>
+      <p class="sub">Paso 2 de 2 · Confirma que son correctos antes de registrar.</p>
+      <div class="tarjeta dato" id="revision"></div>
+      <p class="msg" id="msg-revision"></p>
+      <button type="button" class="btn" id="btn-registrar">Confirmar y registrar</button>
+      <button type="button" class="btn sec" id="btn-corregir">Corregir datos</button>
+    </div>
+    <div id="tope-4" class="oculto">
+      <h1 class="t">Límite alcanzado</h1>
+      <p class="sub">Tu cuenta ya tiene 4 RNM, el máximo permitido.</p>
+      <div class="aviso"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg><div>Para registrar otro RNM tendrías que quitar uno de tu lista.</div></div>
+    </div>
+  </section>
+  <section id="t-historial" class="oculto"></section>
+  <section id="t-planes" class="oculto"></section>
+  <section id="t-perfil" class="oculto"></section>
+</div>
+
+</main>
+
+<nav class="nav" aria-label="Menú">
+  <button type="button" data-tab="inicio" class="on"><span class="p"><svg class="i" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9a1 1 0 01-1 1h-4v-6H9v6H5a1 1 0 01-1-1v-9z"/></svg></span>Inicio</button>
+  <button type="button" data-tab="historial"><span class="p"><svg class="i" viewBox="0 0 24 24"><path d="M3 12a9 9 0 109-9 9 9 0 00-7 3.5M3 4v4h4M12 7v5l3 2"/></svg></span>Historial</button>
+  <button type="button" data-tab="planes"><span class="p"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/></svg></span>Planes</button>
+  <button type="button" data-tab="perfil"><span class="p"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg></span>Perfil</button>
+</nav>
+
+<!-- hoja de planes y pago (se mantiene la lógica existente) -->
+<button id="btn-planes" class="oculto" type="button" aria-hidden="true" tabindex="-1"></button>
+<div id="modal-planes" class="modal oculto" role="dialog" aria-modal="true" aria-label="Planes de suscripción">
+  <div class="modal-caja" tabindex="-1">
+    <button id="modal-cerrar" class="cerrar" type="button" aria-label="Cerrar">&times;</button>
+    <div id="cartel"></div>
+  </div>
+</div>
+
+<script src="https://sdk.mercadopago.com/js/v2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+{
+  "name": "¿Dónde está mi RNM?",
+  "short_name": "Mi RNM",
+  "description": "Consulta el estado de tu RNM en la Policía Federal de Brasil.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f5f7fb",
+  "theme_color": "#2158d6",
+  "lang": "es",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
