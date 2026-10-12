@@ -996,6 +996,17 @@ function actualizarDashboard(regs, plan) {
       // Todos los RNM con su estado: primero los listos, luego los que siguen en trámite
       var rango = function (x) { return x.estado_pf === "listo" ? 0 : (!x.cerrado ? 1 : 2); };
       var orden = regs.slice().sort(function (p, q) { return rango(p) - rango(q); });
+      var nListos = regs.filter(function (x) { return x.estado_pf === "listo"; }).length;
+      var nSin = regs.filter(function (x) { return !x.cerrado && !x.cubierto && (x.requiere_pago || x.ultimo_resultado); }).length;
+      var nTramite = regs.filter(function (x) { return !x.cerrado && x.estado_pf !== "listo"; }).length - nSin;
+      var kp = el("div", "kpis");
+      [[regs.length, "RNM", ""], [nListos, "Listos", "ok"], [Math.max(nTramite, 0), "En trámite", "aviso"], [nSin, "Sin plan", "plan"]].forEach(function (k) {
+        var c = el("div", "kpi " + k[2]);
+        c.appendChild(el("b", "", String(k[0])));
+        c.appendChild(el("span", "", k[1]));
+        kp.appendChild(c);
+      });
+      heroCont.appendChild(kp);
       var titLista = el("h3", "", "Tus RNM");
       titLista.style.cssText = "margin: 0 0 10px; font-size: 1.05rem; color: #102A56;";
       heroCont.appendChild(titLista);
@@ -1377,6 +1388,13 @@ function tarjeta(x) {
   var fila = el("div", "fila-rnm tono-" + e.tono);
   fila.tabIndex = 0;
   fila.setAttribute("role", "button");
+  var icono = el("span", "fila-icono tono-" + e.tono);
+  icono.innerHTML = e.tono === "ok"
+    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>'
+    : (e.tono === "mal"
+      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v5M12 16.5v.01"/><circle cx="12" cy="12" r="9"/></svg>'
+      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 2"/></svg>');
+  fila.appendChild(icono);
   var izq = el("div", "fila-rnm-info");
   izq.appendChild(el("b", "", x.rnm));
   var resumen = e.t;
