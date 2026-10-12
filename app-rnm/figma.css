@@ -12,7 +12,7 @@
   --brand-line: #C9D7F7;
   --navy: #123C8A;
   --text-main: #16233F;
-  --text-muted: #66758C;
+  --text-muted: #5B6B83;
   --line: #E3E8F1;
   --line-strong: #D5DCE8;
   --success: #1F7A4D; --success-soft: #E8F5EE;
@@ -418,3 +418,7 @@ button, .btn, .btn-enlace, .filter-pill, .nav-item, .bottom-nav-item, summary { 
 .modal-caja:focus { outline: none; }
 .contacto-card .acciones { flex-direction: column; } .contacto-card .btn-enlace, .contacto-card .btn { width: 100%; flex: none; }
 .review-row b { font-family: inherit; font-variant-numeric: tabular-nums; }
+
+/* Fase 7 · QA: áreas táctiles de 44 px en enlaces-botón */
+.titulo-sec button { min-height: 44px; padding: 0 4px; }
+.pay-top button { min-height: 44px; }
