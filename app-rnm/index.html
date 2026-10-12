@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b5fff">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<title>¿Dónde está mi RNM?</title>
+<style>
+  :root { --azul:#0b5fff; --fondo:#f4f6fb; --txt:#14213d; --ok:#0f9d58; --aviso:#e8a200; --mal:#d93025; --borde:#dbe1ee; --suave:#52607a; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif; background:var(--fondo); color:var(--txt); line-height:1.45; }
+  header { background:var(--azul); color:#fff; padding:20px 16px 24px; }
+  header h1 { margin:0 0 4px; font-size:1.4rem; }
+  header p { margin:0; opacity:.9; font-size:.95rem; }
+  main { max-width:620px; margin:0 auto; padding:0 16px 40px; }
+  section, .tarjeta { background:#fff; border:1px solid var(--borde); border-radius:14px; padding:16px; margin-top:16px; }
+  h2 { margin:0 0 6px; font-size:1.05rem; }
+  .sub { margin:0 0 12px; color:var(--suave); font-size:.9rem; }
+  label { display:block; font-size:.85rem; font-weight:600; margin:10px 0 4px; }
+  input[type=text] { width:100%; font-size:1rem; padding:12px; border:1px solid var(--borde); border-radius:10px; background:#fff; color:var(--txt); }
+  button { font-size:1rem; padding:12px 16px; border:0; border-radius:10px; background:var(--azul); color:#fff; font-weight:600; cursor:pointer; }
+  button.sec { background:#eaf0ff; color:var(--azul); }
+  button.google { width:100%; background:#fff; color:#1f1f1f; border:1px solid #747775; display:flex; gap:10px; align-items:center; justify-content:center; }
+  button:disabled { opacity:.55; cursor:default; }
+  .check { display:flex; gap:10px; align-items:flex-start; font-size:.85rem; color:var(--suave); margin-top:12px; font-weight:400; }
+  .check input { margin-top:3px; width:18px; height:18px; flex:none; }
+  .fila { display:flex; justify-content:space-between; align-items:center; gap:8px; }
+  .insignia { display:inline-block; font-size:.78rem; font-weight:700; padding:3px 10px; border-radius:99px; background:#fff3cd; color:#7a5a00; }
+  .insignia.ok { background:#d8f3e3; color:#0b6b3a; }
+  .insignia.vigila { background:#dbe7ff; color:#0a3fa8; }
+  .rnm { font-size:1.15rem; font-weight:700; letter-spacing:.04em; }
+  .res { margin-top:10px; padding:12px; border-radius:10px; border-left:6px solid var(--aviso); background:#fff8e1; }
+  .res.ok { border-color:var(--ok); background:#e8f6ee; }
+  .res.mal { border-color:var(--mal); background:#fdecea; }
+  .res h3 { margin:0 0 4px; font-size:.98rem; }
+  .res p { margin:3px 0; font-size:.92rem; }
+  .msg { margin-top:10px; font-size:.9rem; color:var(--mal); min-height:1.2em; }
+  .msg.bien { color:var(--ok); }
+  .oculto { display:none !important; }
+  .progreso { display:flex; gap:6px; margin-bottom:10px; }
+  .progreso i { flex:1; height:6px; border-radius:99px; background:var(--borde); }
+  .progreso i.on { background:var(--azul); }
+  .btn-enlace { display:inline-block; margin-top:8px; padding:11px 16px; border-radius:10px; background:#25d366; color:#06361a; font-weight:700; text-decoration:none; }
+  .planes { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:12px 0 4px; }
+  .plan { display:flex; flex-direction:column; align-items:flex-start; gap:2px; text-align:left; padding:12px; border-radius:12px; border:2px solid var(--borde); background:#fff; color:var(--txt); font-weight:400; }
+  .plan b { font-size:1rem; } .plan .precio { font-size:1.05rem; font-weight:700; color:var(--azul); }
+  .plan small { font-size:.78rem; color:var(--suave); } .plan small.ahorro { color:var(--ok); font-weight:700; } .plan small.mejor { color:var(--azul); font-weight:700; }
+  .plan.sel { border-color:var(--azul); background:#eaf0ff; }
+  .modal { position:fixed; inset:0; z-index:50; background:rgba(10,20,40,.55); display:flex; align-items:center; justify-content:center; padding:16px; }
+  .modal-caja { position:relative; width:100%; max-width:560px; max-height:90vh; overflow:auto; background:var(--fondo); border-radius:18px; padding:12px; box-shadow:0 20px 60px rgba(0,0,0,.35); outline:none; }
+  .modal-caja .tarjeta { margin-top:0; border:0; background:transparent; padding:8px 8px 4px; }
+  .modal .cerrar { position:absolute; top:6px; right:8px; z-index:2; width:36px; height:36px; padding:0; border-radius:50%; font-size:1.5rem; line-height:1; background:#eaf0ff; color:var(--azul); }
+  .acciones { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+  .pie { font-size:.8rem; color:var(--suave); text-align:center; margin-top:24px; }
+  @media (prefers-color-scheme: dark) {
+    :root { --fondo:#0f1626; --txt:#e8ecf5; --borde:#2a3550; --suave:#9fb0cf; }
+    section, .tarjeta, input[type=text] { background:#18223a; }
+    button.sec { background:#243152; color:#9ec1ff; }
+    .plan { background:#18223a; } .plan.sel { background:#1a2d57; }
+    .modal-caja { background:#18223a; } .modal .cerrar { background:#243152; color:#9ec1ff; }
+    .res { background:#3a3115; } .res.ok { background:#12301f; } .res.mal { background:#3a1a17; }
+    .insignia { background:#4a3d12; color:#ffe08a; } .insignia.ok { background:#12301f; color:#7be0a6; } .insignia.vigila { background:#1a2d57; color:#9ec1ff; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>¿Dónde está mi RNM?</h1>
+  <p>Nosotros vigilamos tu RNM en la Policía Federal y te mostramos el estado aquí.</p>
+</header>
+<main>
+
+<section id="vista-login" class="oculto">
+  <h2>Entra para empezar</h2>
+  <p class="sub">Usa tu cuenta de Google. Es rápido y no tienes que crear contraseña.</p>
+  <button class="google" id="btn-google" type="button">
+    <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.5 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.2 5.5-4.7 7.2l7.6 5.9c4.4-4.1 6.9-10.1 6.9-17.6z"/><path fill="#FBBC05" d="M10.5 28.7A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.2.9-4.7l-7.9-6.1A24 24 0 0 0 0 24c0 3.9.9 7.5 2.6 10.8l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/></svg>
+    Entrar con Google
+  </button>
+  <p class="msg" id="msg-login"></p>
+</section>
+
+<section id="vista-perfil" class="oculto">
+  <div class="progreso" aria-hidden="true"><i></i><i></i><i></i></div>
+  <p class="sub" id="perfil-paso" style="margin-bottom:2px">Paso 1 de 3</p>
+  <form id="form-perfil" autocomplete="on" novalidate>
+
+    <div class="paso-ob" data-paso="1">
+      <h2 id="perfil-titulo">¿Cómo te llamas?</h2>
+      <p class="sub">Escribe tu nombre completo, como aparece en tu documento.</p>
+      <label for="p-nombre">Nombre completo</label>
+      <input type="text" id="p-nombre" autocomplete="name" maxlength="120" placeholder="Nombre y apellidos">
+    </div>
+
+    <div class="paso-ob oculto" data-paso="2">
+      <h2>¿Cuál es tu teléfono?</h2>
+      <p class="sub">Mejor si tiene WhatsApp. Lo usamos solo para contactarte por tu trámite.</p>
+      <label for="p-tel">Teléfono / WhatsApp</label>
+      <input type="text" id="p-tel" inputmode="tel" autocomplete="tel" maxlength="20" placeholder="Ej: +55 11 91234-5678">
+    </div>
+
+    <div class="paso-ob oculto" data-paso="3">
+      <h2>¿Dónde vives ahora?</h2>
+      <p class="sub">Escribe tu CEP y completamos el resto.</p>
+      <label for="p-cep">CEP</label>
+      <input type="text" id="p-cep" inputmode="numeric" autocomplete="postal-code" maxlength="9" placeholder="00000-000">
+      <p class="sub" id="cep-estado" style="margin:4px 0 0" aria-live="polite">Escribe tu CEP y completamos calle, ciudad y estado.</p>
+      <label for="p-dir">Dirección actual</label>
+      <input type="text" id="p-dir" autocomplete="street-address" maxlength="200" placeholder="Calle, número y barrio">
+      <div class="fila" style="gap:12px; align-items:flex-start">
+        <div style="flex:2">
+          <label for="p-ciudad">Ciudad</label>
+          <input type="text" id="p-ciudad" autocomplete="address-level2" maxlength="80">
+        </div>
+        <div style="flex:1">
+          <label for="p-uf">Estado</label>
+          <input type="text" id="p-uf" maxlength="2" autocapitalize="characters" placeholder="SP">
+        </div>
+      </div>
+      <label class="check">
+        <input type="checkbox" id="p-consiento">
+        <span>Autorizo a FLUJO a guardar estos datos para contactarme sobre mi trámite. Puedo pedir que los borren cuando quiera.</span>
+      </label>
+    </div>
+
+    <div class="acciones">
+      <button type="button" class="sec oculto" id="btn-perfil-atras">Atrás</button>
+      <button type="submit" id="btn-perfil">Siguiente</button>
+      <button type="button" class="sec oculto" id="btn-perfil-cancelar">Cancelar</button>
+    </div>
+    <p class="msg" id="msg-perfil"></p>
+  </form>
+</section>
+
+<div id="vista-app" class="oculto">
+  <div class="fila" style="margin-top:16px">
+    <span class="sub" id="quien" style="margin:0"></span>
+    <span class="acciones" style="margin:0">
+      <button class="sec oculto" id="btn-planes" type="button">Ver planes</button>
+      <button class="sec" id="btn-actualizar" type="button">Actualizar</button>
+      <button class="sec" id="btn-datos" type="button">Mis datos</button>
+      <button class="sec" id="btn-salir" type="button">Salir</button>
+    </span>
+  </div>
+
+  <section>
+    <h2>Registrar mi RNM</h2>
+    <p class="sub" id="reg-gratis">Tu <b>primera consulta es gratis</b> (para tu primer RNM). Después, para seguir vigilando hasta que esté listo, hay planes mensuales: de <b>R$ 4,99</b> (1 RNM) a <b>R$ 15,99</b> (4 RNM).</p>
+    <p class="sub oculto" id="reg-adicional">Ya usaste tu consulta gratis. Los RNM adicionales se consultan con un <b>plan mensual</b>, desde <b>R$ 4,99</b> (1 RNM) hasta <b>R$ 15,99</b> (4 RNM, máximo por cuenta).</p>
+    <p class="sub oculto" id="tope-4">Llegaste al máximo de <b>4 RNM</b> por cuenta.</p>
+    <form id="form-rnm" autocomplete="off">
+      <label for="rnm">Número de RNM</label>
+      <input type="text" id="rnm" autocapitalize="characters" placeholder="Ej: A123456B" maxlength="12" required>
+      <label for="nac">Fecha de nacimiento</label>
+      <input type="text" id="nac" inputmode="numeric" placeholder="dd/mm/aaaa" maxlength="10" required>
+      <label class="check">
+        <input type="checkbox" id="consiento" required>
+        <span>Autorizo a FLUJO a guardar mi RNM y mi fecha de nacimiento y a consultarlos en la Policía Federal solo para informarme el estado de mi documento. Puedo pedir que los borren cuando quiera.</span>
+      </label>
+      <div class="acciones"><button type="submit" id="btn-registrar">Registrar mi RNM</button></div>
+      <p class="msg" id="msg-form"></p>
+    </form>
+  </section>
+
+  <div id="lista"></div>
+</div>
+
+<p class="pie">FLUJO · Esta app no es un servicio oficial del Gobierno de Brasil.<br>
+<a href="privacidad.html">Privacidad</a> · <a href="terminos.html">Términos</a></p>
+</main>
+
+<div id="modal-planes" class="modal oculto" role="dialog" aria-modal="true" aria-label="Planes de suscripción">
+  <div class="modal-caja" tabindex="-1">
+    <button id="modal-cerrar" class="cerrar" type="button" aria-label="Cerrar">&times;</button>
+    <div id="cartel"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

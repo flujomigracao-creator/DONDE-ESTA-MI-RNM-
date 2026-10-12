@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<style>
+  body { width:340px; margin:0; padding:14px; font:14px system-ui,sans-serif; color:#14213d; }
+  h1 { font-size:15px; margin:0 0 10px; }
+  input { width:100%; box-sizing:border-box; padding:8px; margin:4px 0; border:1px solid #cbd5e1; border-radius:6px; font-size:14px; }
+  button { padding:8px 12px; border:0; border-radius:6px; background:#0b5fff; color:#fff; font-weight:600; cursor:pointer; font-size:13px; }
+  button.sec { background:#eaf0ff; color:#0b5fff; }
+  .fila { display:flex; justify-content:space-between; align-items:center; gap:8px; margin:8px 0; }
+  .num { font-size:26px; font-weight:700; color:#0b5fff; }
+  .msg { color:#d93025; font-size:12px; min-height:16px; }
+  .peq { font-size:12px; color:#52607a; }
+  .item { border-top:1px solid #e2e8f0; padding:8px 0; display:flex; justify-content:space-between; gap:8px; align-items:center; }
+  .oculto { display:none; }
+</style>
+</head>
+<body>
+<h1>FLUJO · Consulta RNM</h1>
+
+<div id="vista-login" class="oculto">
+  <input id="email" type="email" placeholder="Email del panel">
+  <input id="pass" type="password" placeholder="Contraseña">
+  <div class="fila"><button id="entrar">Entrar</button></div>
+  <div class="msg" id="msg-login"></div>
+</div>
+
+<div id="vista-app" class="oculto">
+  <div class="peq" id="quien"></div>
+  <div class="fila">
+    <div><span class="num" id="n-pend">–</span><br><span class="peq">RNM por consultar</span></div>
+    <button id="empezar">Empezar a consultar</button>
+  </div>
+  <label class="peq"><input type="checkbox" id="auto" style="width:auto"> Abrir solo el siguiente cada 2 min</label>
+  <div class="msg" id="msg-app"></div>
+
+  <h1 style="margin-top:14px">Cuentas por cobrar (<span id="n-pagar">0</span>)</h1>
+  <div class="peq">Tienen RNM sin cubrir: ya usaron su consulta gratis, su plan venció o es más chico que sus RNM. Mientras no haya pasarela, elige el plan que pagaron y pulsa <b>Pagó 1 mes</b>.</div>
+  <div id="lista-pagar"></div>
+
+  <div class="fila" style="margin-top:12px"><button class="sec" id="salir">Salir</button></div>
+</div>
+<script src="popup.js"></script>
+</body>
+</html>
