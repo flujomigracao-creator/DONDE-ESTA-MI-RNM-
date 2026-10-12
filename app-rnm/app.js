@@ -441,7 +441,10 @@ function textoErrorPago(j) {
     pago_no_configurado: "Estamos activando el pago. Vuelve en unos días.",
     registra_un_rnm_primero: "Primero registra tu RNM.",
     sin_sesion: "Tu sesión venció. Sal y vuelve a entrar.",
-    tarjeta_invalida: "No pudimos leer la tarjeta. Revisa los datos e intenta de nuevo."
+    tarjeta_invalida: "No pudimos leer la tarjeta. Revisa los datos e intenta de nuevo.",
+    cpf_invalido: "Ese CPF no es válido. Revísalo e intenta de nuevo.",
+    faltan_datos_boleto: "Para el boleto necesitamos tu dirección completa (CEP, ciudad y estado). Complétala en Mi cuenta.",
+    metodo_no_disponible: "Esta forma de pago no está disponible por ahora. Prueba con otra."
   };
   if (textos[j.error]) return textos[j.error];
   if (j.motivo === "mismo_usuario") return "Esta cuenta no puede pagar su propio plan. Entra con otro correo.";
@@ -449,15 +452,42 @@ function textoErrorPago(j) {
   return "No pudimos procesar el pago. Revisa la tarjeta o prueba con otra." + (j.mp_status ? " (código " + j.mp_status + ")" : "");
 }
 
-/* ---------- Pantalla de pago dentro de la app ---------- */
-var pagandoPlan = 0; // plan que se está pagando; mientras sea > 0 el cuadro no se redibuja (si no, se borraría la tarjeta)
-var mpSdk = null, formTarjeta = null;
+/* ---------- Pantalla de pago dentro de la app: Tarjeta, Pix o Boleto ---------- */
+var pagandoPlan = 0; // plan que se está pagando; mientras sea > 0 el cuadro no se redibuja (si no, se borraría lo escrito)
+var mpSdk = null, formTarjeta = null, pollPago = null, relojPago = null;
 
 function salirDePago() {
   pagandoPlan = 0;
   try { if (formTarjeta) formTarjeta.unmount(); } catch (e) { /* ya desmontado */ }
   formTarjeta = null;
+  if (pollPago) { clearInterval(pollPago); pollPago = null; }
+  if (relojPago) { clearInterval(relojPago); relojPago = null; }
 }
+
+// Pix y Boleto: pago de un mes (no se renueva solo). El servidor crea el cobro y devuelve el código.
+async function pedirPagoUnico(cupos, metodo, cpf) {
+  var s = await sb.auth.getSession();
+  var token = s.data.session && s.data.session.access_token;
+  var r = await fetch(SUPABASE_URL + "/functions/v1/mp-crear-pago", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", apikey: SUPABASE_KEY, Authorization: "Bearer " + token },
+    body: JSON.stringify({ cupos: cupos, metodo: metodo, cpf: cpf })
+  });
+  var j = await r.json().catch(function () { return {}; });
+  return { ok: r.ok && j.ok === true, j: j };
+}
+
+function copiarTexto(texto, boton) {
+  var listo = function () { var t = boton.textContent; boton.textContent = "¡Copiado!"; setTimeout(function () { boton.textContent = t; }, 1800); };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(texto).then(listo, function () { /* sin permiso */ });
+  else { var tmp = document.createElement("textarea"); tmp.value = texto; document.body.appendChild(tmp); tmp.select(); try { document.execCommand("copy"); listo(); } catch (e) { /* sin copiar */ } tmp.remove(); }
+}
+
+var ICONOS_PAGO = {
+  tarjeta: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 10h19M6 15h4"/></svg>',
+  pix: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l4 4-4 4-4-4zM12 13l4 4-4 4-4-4zM3 12l4-4M3 12l4 4M21 12l-4-4M21 12l-4 4"/></svg>',
+  boleto: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5v14M7.5 5v14M11 5v14M14 5v14M17.5 5v14M20 5v14"/></svg>'
+};
 
 function mostrarPago(cupos) {
   var cont = $("cartel");
@@ -468,39 +498,88 @@ function mostrarPago(cupos) {
   salirDePago();
   pagandoPlan = cupos;
   cont.textContent = "";
-  var c = el("div", "tarjeta");
-  c.appendChild(el("h2", "", "Pago seguro"));
-  c.appendChild(el("p", "sub", "Plan de " + cupos + " RNM · " + reales(PRECIOS[cupos]) + " al mes. Se cobra cada mes a tu tarjeta y puedes cancelar cuando quieras."));
-  var f = document.createElement("form");
-  f.id = "form-pago"; f.setAttribute("novalidate", "novalidate");
-  f.innerHTML =
-    '<label>Número de tarjeta</label><div id="mp-numero" class="campo-mp"></div>' +
-    '<div class="fila" style="gap:12px;align-items:flex-start">' +
-      '<div style="flex:1"><label>Vencimiento</label><div id="mp-venc" class="campo-mp"></div></div>' +
-      '<div style="flex:1"><label>Código (CVV)</label><div id="mp-cvv" class="campo-mp"></div></div>' +
+  var precio = reales(PRECIOS[cupos]);
+  var c = el("div", "pay");
+  c.innerHTML =
+    '<div class="pay-top"><button type="button" class="sec" id="btn-volver-planes">← Cambiar plan</button><span class="pay-paso">Paso 2 de 2</span></div>' +
+    '<h2 class="pay-titulo">Finaliza tu suscripción</h2>' +
+    '<div class="pay-resumen"><div><b>Plan de ' + cupos + ' RNM</b><span>Vigilamos hasta ' + cupos + (cupos === 1 ? " documento" : " documentos") + ' cada mes</span></div>' +
+      '<div class="pay-precio"><b>' + precio + '</b><span>por mes</span></div></div>' +
+    '<p class="pay-sub">Elige cómo quieres pagar</p>' +
+    '<div class="metodos" role="radiogroup" aria-label="Forma de pago">' +
+      '<button type="button" class="metodo sel" data-m="tarjeta" role="radio" aria-checked="true">' + ICONOS_PAGO.tarjeta + '<b>Tarjeta</b><small>Se renueva solo</small></button>' +
+      '<button type="button" class="metodo" data-m="pix" role="radio" aria-checked="false">' + ICONOS_PAGO.pix + '<b>Pix</b><small>Al instante</small></button>' +
+      '<button type="button" class="metodo" data-m="boleto" role="radio" aria-checked="false">' + ICONOS_PAGO.boleto + '<b>Boleto</b><small>1-2 días hábiles</small></button>' +
     '</div>' +
-    '<label for="mp-nombre">Nombre en la tarjeta</label>' +
-    '<input type="text" id="mp-nombre" autocomplete="cc-name" maxlength="60" placeholder="Como aparece en la tarjeta">' +
-    '<div class="fila" style="gap:12px;align-items:flex-start">' +
-      '<div style="flex:1"><label for="mp-tipodoc">Documento</label><select id="mp-tipodoc"></select></div>' +
-      '<div style="flex:2"><label for="mp-doc">Número (CPF)</label><input type="text" id="mp-doc" inputmode="numeric" maxlength="20" placeholder="Solo números"></div>' +
+    '<form id="form-pago" class="pay-panel" novalidate>' +
+      '<label>Número de tarjeta</label><div id="mp-numero" class="campo-mp"></div>' +
+      '<div class="fila" style="gap:12px;align-items:flex-start">' +
+        '<div style="flex:1"><label>Vencimiento</label><div id="mp-venc" class="campo-mp"></div></div>' +
+        '<div style="flex:1"><label>Código (CVV)</label><div id="mp-cvv" class="campo-mp"></div></div>' +
+      '</div>' +
+      '<label for="mp-nombre">Nombre en la tarjeta</label>' +
+      '<input type="text" id="mp-nombre" autocomplete="cc-name" maxlength="60" placeholder="Como aparece en la tarjeta">' +
+      '<div class="fila" style="gap:12px;align-items:flex-start">' +
+        '<div style="flex:1"><label for="mp-tipodoc">Documento</label><select id="mp-tipodoc"></select></div>' +
+        '<div style="flex:2"><label for="mp-doc">Número (CPF)</label><input type="text" id="mp-doc" inputmode="numeric" maxlength="20" placeholder="Solo números"></div>' +
+      '</div>' +
+      '<select id="mp-emisor" class="oculto"></select><select id="mp-cuotas" class="oculto"></select>' +
+      '<input type="text" id="mp-email" class="oculto">' +
+      '<p class="pay-nota">Se cobra cada mes a tu tarjeta. Puedes cancelar cuando quieras.</p>' +
+      '<button type="submit" id="btn-pagar-tarjeta" class="pay-boton">Pagar ' + precio + ' al mes</button>' +
+    '</form>' +
+    '<div id="panel-otro" class="pay-panel oculto">' +
+      '<label for="px-cpf">Tu CPF</label>' +
+      '<input type="text" id="px-cpf" inputmode="numeric" maxlength="14" placeholder="000.000.000-00" autocomplete="off">' +
+      '<p class="pay-nota" id="px-nota"></p>' +
+      '<button type="button" id="btn-generar" class="pay-boton"></button>' +
     '</div>' +
-    '<select id="mp-emisor" class="oculto"></select><select id="mp-cuotas" class="oculto"></select>' +
-    '<input type="text" id="mp-email" class="oculto">' +
-    '<div class="acciones"><button type="submit" id="btn-pagar-tarjeta">Pagar ' + reales(PRECIOS[cupos]) + ' al mes</button>' +
-    '<button type="button" class="sec" id="btn-volver-planes">Volver</button></div>' +
-    '<p class="sub" style="margin-top:10px">🔒 Pago procesado por Mercado Pago. Tus datos de tarjeta no pasan por FLUJO.</p>' +
+    '<p class="pay-seguro">🔒 Pago procesado por Mercado Pago. FLUJO nunca ve los datos de tu tarjeta.</p>' +
     '<p class="msg" id="msg-pago" aria-live="polite"></p>';
-  c.appendChild(f);
   cont.appendChild(c);
   $("mp-email").value = (usuarioActual && usuarioActual.email) || "";
   if (perfilActual && perfilActual.nombre) $("mp-nombre").value = perfilActual.nombre.toUpperCase();
 
   $("btn-volver-planes").addEventListener("click", function () { salirDePago(); cargarRegistros(); });
 
-  var btn = $("btn-pagar-tarjeta");
   function aviso(t, bien) { var m = $("msg-pago"); if (m) { m.textContent = t || ""; m.className = "msg" + (bien ? " bien" : ""); } }
+  var metodoActual = "tarjeta";
+  var NOTAS = {
+    pix: "Pagas una vez y activamos 1 mes de tu plan. No se renueva solo: cuando termine el mes te avisamos para pagar de nuevo.",
+    boleto: "Pagas en tu banco, app o lotérica. El plan se activa cuando el banco confirma (1-2 días hábiles). No se renueva solo."
+  };
+  var TEXTOS_BOTON = { pix: "Generar código Pix", boleto: "Generar boleto" };
+  function elegir(m) {
+    metodoActual = m; aviso("");
+    c.querySelectorAll(".metodo").forEach(function (b) {
+      var on = b.getAttribute("data-m") === m; b.classList.toggle("sel", on); b.setAttribute("aria-checked", on ? "true" : "false");
+    });
+    $("form-pago").classList.toggle("oculto", m !== "tarjeta");
+    $("panel-otro").classList.toggle("oculto", m === "tarjeta");
+    if (m !== "tarjeta") { $("px-nota").textContent = NOTAS[m]; $("btn-generar").textContent = TEXTOS_BOTON[m]; }
+  }
+  c.querySelectorAll(".metodo").forEach(function (b) { b.addEventListener("click", function () { elegir(b.getAttribute("data-m")); }); });
+  $("px-cpf").addEventListener("input", function (e) {
+    var d = e.target.value.replace(/\D/g, "").slice(0, 11), s = d;
+    if (d.length > 9) s = d.slice(0, 3) + "." + d.slice(3, 6) + "." + d.slice(6, 9) + "-" + d.slice(9);
+    else if (d.length > 6) s = d.slice(0, 3) + "." + d.slice(3, 6) + "." + d.slice(6);
+    else if (d.length > 3) s = d.slice(0, 3) + "." + d.slice(3);
+    e.target.value = s;
+  });
+  $("btn-generar").addEventListener("click", async function () {
+    var cpf = $("px-cpf").value.replace(/\D/g, "");
+    if (cpf.length !== 11) return aviso("Escribe tu CPF completo (11 números).");
+    var b = this; b.disabled = true; aviso(metodoActual === "pix" ? "Generando tu código Pix…" : "Generando tu boleto…", true);
+    var res;
+    try { res = await pedirPagoUnico(cupos, metodoActual, cpf); }
+    catch (e) { b.disabled = false; return aviso("No pudimos conectar con el pago. Revisa tu internet e intenta de nuevo."); }
+    b.disabled = false;
+    if (!res.ok) return aviso(textoErrorPago(res.j));
+    aviso("");
+    mostrarCodigoPago(cupos, res.j);
+  });
 
+  var btn = $("btn-pagar-tarjeta");
   try {
     mpSdk = mpSdk || new MercadoPago(MP_PUBLIC_KEY, { locale: "es-AR" });
     formTarjeta = mpSdk.cardForm({
@@ -546,6 +625,60 @@ function mostrarPago(cupos) {
   }
 }
 
+// Pantalla con el código Pix (QR + copia y cola) o el boleto; espera sola la confirmación del pago.
+function mostrarCodigoPago(cupos, d) {
+  var cont = $("cartel");
+  try { if (formTarjeta) formTarjeta.unmount(); } catch (e) { /* ya desmontado */ }
+  formTarjeta = null;
+  cont.textContent = "";
+  var esPix = d.metodo === "pix";
+  var c = el("div", "pay");
+  var codigo = esPix ? d.pix.copia_y_cola : (d.boleto.codigo || "");
+  var h =
+    '<div class="pay-top"><button type="button" class="sec" id="btn-volver-planes">← Volver</button><span class="pay-paso">' + (esPix ? "Pago con Pix" : "Pago con boleto") + '</span></div>' +
+    '<div class="pay-resumen"><div><b>Plan de ' + cupos + ' RNM · 1 mes</b><span>' + (esPix ? "Paga y se activa en segundos" : "Se activa cuando el banco confirma") + '</span></div>' +
+      '<div class="pay-precio"><b>' + reales(PRECIOS[cupos]) + '</b></div></div>';
+  if (esPix) {
+    h += (d.pix.qr_base64 ? '<div class="pix-qr"><img alt="Código QR para pagar con Pix" src="data:image/png;base64,' + d.pix.qr_base64.replace(/[^A-Za-z0-9+/=]/g, "") + '"></div>' : "") +
+      '<ol class="pay-pasos"><li>Abre la app de tu banco y entra en <b>Pix</b>.</li><li>Escanea el QR o elige <b>Pix copia y cola</b>.</li><li>Confirma el pago. Aquí se activa solo.</li></ol>';
+  } else {
+    h += '<ol class="pay-pasos"><li>Abre el boleto y págalo en tu app del banco, caixa o lotérica.</li><li>Puede tardar 1-2 días hábiles en confirmarse.</li><li>Cuando el banco confirme, tu plan se activa solo.</li></ol>';
+  }
+  if (codigo) h += '<label>' + (esPix ? "Pix copia y cola" : "Código de barras") + '</label><div class="copiar-fila"><input type="text" id="px-codigo" readonly><button type="button" id="btn-copiar">Copiar</button></div>';
+  if (!esPix && d.boleto.url) h += '<a class="btn pay-boton" id="btn-abrir-boleto" target="_blank" rel="noopener">Abrir boleto</a>';
+  h += '<div class="pay-espera" aria-live="polite"><span class="punto"></span><span id="px-estado">Esperando tu pago…</span></div>' +
+    '<p class="pay-seguro">🔒 Pago procesado por Mercado Pago. Este pago cubre 1 mes; te avisaremos cuando toque renovar.</p>';
+  c.innerHTML = h;
+  cont.appendChild(c);
+  if (codigo) $("px-codigo").value = codigo;
+  if (codigo) $("btn-copiar").addEventListener("click", function () { copiarTexto(codigo, this); });
+  var ab = $("btn-abrir-boleto");
+  if (ab && /^https:\/\//.test(d.boleto.url)) ab.href = d.boleto.url; else if (ab) ab.remove();
+  $("btn-volver-planes").addEventListener("click", function () { salirDePago(); cargarRegistros(); });
+
+  var previo = planCargado ? planCargado.vence_at : null;
+  if (pollPago) clearInterval(pollPago);
+  pollPago = setInterval(async function () {
+    var r = await sb.from("rnm_planes").select("vence_at").maybeSingle();
+    if (r.data && r.data.vence_at !== previo && new Date(r.data.vence_at) > new Date()) {
+      salirDePago();
+      cargarRegistros(); // muestra "Tu plan está activo"
+    }
+  }, 5000);
+
+  if (esPix && d.vence) {
+    var fin = new Date(d.vence).getTime();
+    var estado = $("px-estado");
+    var pintar = function () {
+      var s = Math.max(0, Math.round((fin - Date.now()) / 1000));
+      if (!s) { estado.textContent = "El código venció. Vuelve atrás y genera uno nuevo."; if (relojPago) { clearInterval(relojPago); relojPago = null; } return; }
+      estado.textContent = "Esperando tu pago… el código vence en " + Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+    };
+    pintar();
+    relojPago = setInterval(pintar, 1000);
+  }
+}
+
 function cartelPlanes(regs, plan) {
   if (pagandoPlan) return; // se está escribiendo la tarjeta: no tocar la pantalla
   var cont = $("cartel");
@@ -555,8 +688,9 @@ function cartelPlanes(regs, plan) {
   var activo = !!plan && new Date(plan.vence_at) > new Date();
   var necesita = Math.min(abiertos, 4);
   if (esperandoPago && Date.now() - esperandoPago < 180000 && !(activo && plan.cupos >= necesita)) {
-    var espera = el("div", "tarjeta");
-    espera.appendChild(el("h2", "", "Confirmando tu pago…"));
+    var espera = el("div", "pay pay-centro");
+    espera.innerHTML = '<div class="pay-icono"><span class="punto"></span></div>';
+    espera.appendChild(el("h2", "pay-titulo", "Confirmando tu pago…"));
     espera.appendChild(el("p", "sub", "Mercado Pago nos está avisando. Puede tardar un minuto; esta pantalla se actualiza sola."));
     var cerrarEspera = el("button", "sec", "Cerrar"); cerrarEspera.type = "button";
     cerrarEspera.addEventListener("click", cerrarModalPlanes);
@@ -565,8 +699,9 @@ function cartelPlanes(regs, plan) {
     return;
   }
   if (activo && plan.cupos >= necesita) {
-    var ok = el("div", "tarjeta");
-    ok.appendChild(el("h2", "", "Tu plan está activo"));
+    var ok = el("div", "pay pay-centro");
+    ok.innerHTML = '<div class="pay-icono ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>';
+    ok.appendChild(el("h2", "pay-titulo", "Tu plan está activo"));
     ok.appendChild(el("p", "sub", "Cubre hasta " + plan.cupos + " RNM (" + reales(plan.precio_centavos) + " al mes) y está pagado hasta el " + fechaCorta(plan.vence_at) + "."));
     var cerrarOk = el("button", "", "Entendido"); cerrarOk.type = "button";
     cerrarOk.addEventListener("click", cerrarModalPlanes);
@@ -575,11 +710,12 @@ function cartelPlanes(regs, plan) {
     return;
   }
   if (planElegido < necesita) planElegido = necesita;
-  var c = el("div", "tarjeta");
-  c.appendChild(el("h2", "", activo ? "Tu plan cubre " + plan.cupos + " de tus " + abiertos + " RNM" : "Elige tu plan para seguir vigilando"));
+  var c = el("div", "pay");
+  c.appendChild(el("span", "pay-paso", "Paso 1 de 2 · Elige tu plan"));
+  c.appendChild(el("h2", "pay-titulo", activo ? "Tu plan cubre " + plan.cupos + " de tus " + abiertos + " RNM" : "Elige tu plan para seguir vigilando"));
   c.appendChild(el("p", "sub", activo
     ? "Amplía tu plan para que también vigilemos los demás."
-    : "Tu primera consulta es gratis. Para seguir vigilando, elige cuántos RNM quieres cubrir. Pago mensual; puedes cancelar cuando quieras."));
+    : "Tu primera consulta es gratis. Para seguir vigilando, elige cuántos RNM quieres cubrir. Paga con tarjeta, Pix o boleto."));
   var grid = el("div", "planes");
   [1, 2, 3, 4].forEach(function (n) {
     var b = el("button", "plan" + (n === planElegido ? " sel" : ""));
@@ -589,7 +725,7 @@ function cartelPlanes(regs, plan) {
     b.appendChild(el("small", "", reales(Math.round(PRECIOS[n] / n)) + " por RNM"));
     if (n > 1) {
       b.appendChild(el("small", "ahorro", "Ahorras " + porcentajeAhorro(n) + "%"));
-      b.appendChild(el("small", "", n + " por separado: " + reales(n * PRECIOS[1]) + " · ahorras " + reales(ahorro(n))));
+      b.appendChild(el("small", "separado", n + " por separado: " + reales(n * PRECIOS[1]) + " · ahorras " + reales(ahorro(n))));
     }
     if (n === 4) b.appendChild(el("small", "mejor", "Mejor precio por RNM"));
     b.addEventListener("click", function () { planElegido = n; cartelPlanes(regs, plan); });
@@ -722,7 +858,7 @@ function renderizarPlanes(regs, plan) {
 
   var precios = el("div", "tarjeta");
   precios.appendChild(el("h3", "", "Planes mensuales"));
-  precios.appendChild(el("p", "sub", "Se cobra cada mes a tu tarjeta y puedes cancelar cuando quieras. El precio baja por RNM cuando cubres más documentos."));
+  precios.appendChild(el("p", "sub", "Paga con tarjeta (se renueva solo), Pix o boleto (un mes por pago). El precio baja por RNM cuando cubres más documentos."));
   var tabla = el("div", "review-summary-card");
   [1, 2, 3, 4].forEach(function (n) {
     var f = el("div", "review-row");

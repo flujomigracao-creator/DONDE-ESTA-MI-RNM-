@@ -1324,3 +1324,101 @@ button:focus-visible, a:focus-visible, .nav-item:focus-visible, .bottom-nav-item
 .historial summary::after { content: "+"; color: var(--brand); font-weight: 700; font-size: 1.2rem; }
 .historial[open] summary::after { content: "–"; }
 .historial .timeline { margin: 16px 0 0; }
+
+/* ==========================================================================
+   POPUPS: modal base, diálogo de confirmación y pantalla de pago
+   ========================================================================== */
+.modal { animation: modal-fondo 0.18s ease-out; }
+.modal-caja { animation: modal-entra 0.22s cubic-bezier(0.16, 1, 0.3, 1); padding: 28px; }
+@keyframes modal-fondo { from { opacity: 0; } to { opacity: 1; } }
+@keyframes modal-entra { from { opacity: 0; transform: translateY(14px) scale(0.98); } to { opacity: 1; transform: none; } }
+.modal .cerrar { z-index: 2; width: 38px; height: 38px; }
+.modal .cerrar:focus-visible { outline: 3px solid rgba(21, 94, 239, 0.55); outline-offset: 2px; }
+#modal-planes .modal-caja { max-width: 560px; padding-top: 24px; }
+#modal-planes .modal-caja > #cartel { margin-top: 4px; }
+
+/* En celular los popups suben desde abajo, como en las apps de pago */
+@media (max-width: 640px) {
+  .modal { align-items: flex-end; padding: 0; }
+  .modal-caja { max-width: none; border-radius: 22px 22px 0 0; max-height: 94vh; padding: 22px 18px calc(22px + env(safe-area-inset-bottom, 0px)); animation: modal-sube 0.26s cubic-bezier(0.16, 1, 0.3, 1); }
+  .modal-caja::before { content: ""; display: block; width: 40px; height: 4px; border-radius: 4px; background: var(--line-strong); margin: -8px auto 14px; }
+  #modal-confirmar { align-items: center; padding: 16px; }
+  #modal-confirmar .modal-caja { border-radius: var(--radius-lg); animation: modal-entra 0.22s ease-out; }
+  #modal-confirmar .modal-caja::before { display: none; }
+  #modal-confirmar .acciones button { width: 100%; }
+}
+@keyframes modal-sube { from { transform: translateY(100%); } to { transform: none; } }
+
+/* Diálogo de confirmación */
+#modal-confirmar .modal-caja { text-align: center; padding: 28px 24px 22px; }
+#modal-confirmar .modal-caja::after { content: none; }
+#confirm-titulo { font-size: 1.15rem; margin: 0 0 8px; }
+#modal-confirmar .acciones { justify-content: center !important; margin-top: 8px; }
+#modal-confirmar .acciones button { min-width: 130px; }
+
+/* Pantalla de pago (plan -> forma de pago -> código) */
+.pay { display: block; }
+.pay-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 0 40px 14px 0; }
+.pay-top button { min-height: 36px; padding: 0 12px; font-size: 0.85rem; }
+.pay-paso { display: inline-block; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--brand); margin: 0 0 6px; }
+.pay-top .pay-paso { margin: 0; }
+.pay-titulo { margin: 0 0 6px; font-size: 1.35rem; font-weight: 800; color: var(--navy); letter-spacing: -0.02em; }
+.pay-sub { margin: 18px 0 8px; font-size: 0.85rem; font-weight: 700; color: #344054; }
+.pay-nota { margin: 12px 0 0; font-size: 0.84rem; color: var(--text-muted); line-height: 1.45; }
+.pay-resumen { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 16px 18px; margin: 12px 0 4px; border-radius: var(--radius-md); background: linear-gradient(135deg, var(--brand-soft), #FFFFFF); border: 1px solid var(--brand-line); }
+.pay-resumen b { display: block; color: var(--navy); font-size: 1rem; }
+.pay-resumen span { font-size: 0.82rem; color: var(--text-muted); }
+.pay-precio { text-align: right; flex-shrink: 0; }
+.pay-precio b { font-size: 1.45rem; font-weight: 800; color: var(--brand); letter-spacing: -0.02em; }
+.pay-precio span { display: block; }
+
+.metodos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.metodo { flex-direction: column; gap: 2px; padding: 14px 8px; min-height: 0; background: var(--surface); color: var(--text-main); border: 2px solid var(--line); box-shadow: none; text-align: center; white-space: normal; }
+.metodo:hover { background: var(--surface-alt); border-color: var(--brand-line); box-shadow: none; }
+.metodo svg { width: 26px; height: 26px; color: var(--text-muted); margin-bottom: 4px; }
+.metodo b { font-size: 0.95rem; }
+.metodo small { font-size: 0.74rem; font-weight: 500; color: var(--text-muted); }
+.metodo.sel { border-color: var(--brand); background: var(--brand-soft); box-shadow: 0 0 0 1px var(--brand); }
+.metodo.sel svg { color: var(--brand); }
+.metodo:focus-visible { outline: 3px solid rgba(21, 94, 239, 0.55); outline-offset: 2px; }
+
+.pay-panel { margin-top: 16px; padding: 18px; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--surface-alt); }
+.pay-panel label { margin-top: 12px; }
+.pay-panel label:first-child { margin-top: 0; }
+.pay-boton { width: 100%; margin-top: 16px; min-height: 52px; font-size: 1rem; }
+.pay-seguro { margin: 16px 0 0; font-size: 0.8rem; color: var(--text-muted); text-align: center; }
+
+.pix-qr { display: flex; justify-content: center; margin: 16px 0 6px; }
+.pix-qr img { width: 210px; height: 210px; padding: 10px; background: #FFFFFF; border: 1px solid var(--line); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); image-rendering: pixelated; }
+.pay-pasos { margin: 14px 0 6px; padding-left: 20px; font-size: 0.88rem; color: #344054; line-height: 1.6; }
+.copiar-fila { display: flex; gap: 8px; }
+.copiar-fila input { flex: 1; min-width: 0; font-family: monospace, sans-serif; font-size: 0.82rem; background: var(--surface-alt); }
+.copiar-fila button { flex-shrink: 0; padding: 0 18px; }
+a.pay-boton { text-decoration: none; }
+
+.pay-espera { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 16px; padding: 12px; border-radius: var(--radius-sm); background: var(--warning-soft); border: 1px solid var(--warning-line); color: var(--warning); font-size: 0.86rem; font-weight: 600; }
+.punto { width: 10px; height: 10px; border-radius: 50%; background: currentColor; animation: pulso 1.2s ease-in-out infinite; flex-shrink: 0; }
+@keyframes pulso { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.35; transform: scale(0.7); } }
+
+.pay-centro { text-align: center; padding: 8px 0 4px; }
+.pay-centro .acciones { justify-content: center; }
+.pay-icono { width: 64px; height: 64px; margin: 0 auto 14px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--warning-soft); color: var(--warning); }
+.pay-icono .punto { width: 18px; height: 18px; }
+.pay-icono.ok { background: var(--success-soft); color: var(--success); animation: modal-entra 0.35s ease-out; }
+.pay-icono svg { width: 34px; height: 34px; }
+
+@media (max-width: 420px) {
+  .metodos { gap: 8px; }
+  .metodo { padding: 12px 4px; }
+  .pix-qr img { width: 180px; height: 180px; }
+}
+@media (prefers-reduced-motion: reduce) { .punto { animation: none; } }
+
+@media (max-width: 640px) {
+  .planes { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .plan { padding: 14px 12px; }
+  .plan .precio { font-size: 1.05rem; }
+  .plan small.separado { display: none; }
+  .pay-titulo { font-size: 1.2rem; }
+}
+@media (max-width: 640px) { .pay-panel .fila { flex-direction: row; align-items: flex-start; } }

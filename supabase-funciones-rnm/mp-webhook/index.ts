@@ -93,6 +93,23 @@ async function estadoSuscripcion(id: string) {
   if (estado) await admin.from("rnm_suscripciones_mp").update({ estado, actualizado_at: new Date().toISOString() }).eq("preapproval_id", id);
 }
 
+// Pago único (Pix o Boleto) creado por mp-crear-pago: se consulta a Mercado Pago y, si está aprobado, se activa un mes.
+async function pagoUnico(id: string) {
+  const { data: fila } = await admin.from("rnm_pagos_unicos").select("*").eq("payment_id", id).maybeSingle();
+  if (!fila) return; // no es un pago nuestro de Pix/Boleto (p. ej. el cobro de una suscripción con tarjeta)
+  if (fila.aplicado_at) return;
+  const r = await mp(`/v1/payments/${encodeURIComponent(id)}`);
+  if (!r.ok) throw new Error(`payments ${r.status}`);
+  const p = r.cuerpo;
+  if (p?.status !== "approved") return; // pendiente, vencido o rechazado: no se activa nada
+  if (p?.currency_id && p.currency_id !== "BRL") { console.error("moneda_distinta", id); return; }
+  const monto = Math.round(Number(p?.transaction_amount) * 100);
+  if (monto !== fila.monto_centavos) { console.error("monto_distinto", JSON.stringify({ recibido: monto, esperado: fila.monto_centavos, id })); return; }
+  if (String(p?.external_reference ?? "") !== fila.user_id) { console.error("dueno_distinto", id); return; }
+  const { error } = await admin.rpc("rnm_registrar_pago_unico", { p_payment: id, p_user: fila.user_id, p_cupos: fila.cupos, p_monto: monto });
+  if (error) throw new Error("registrar_pago_unico: " + error.message);
+}
+
 Deno.serve(async (req) => {
   const secreto = Deno.env.get("MP_WEBHOOK_SECRET");
   if (!secreto) { console.error("MP_WEBHOOK_SECRET no configurado: se rechazan todos los avisos"); return new Response("no_configurado", { status: 503 }); }
@@ -111,7 +128,8 @@ Deno.serve(async (req) => {
   try {
     if (tipo === "subscription_authorized_payment") await cobroAutorizado(id);
     else if (tipo === "subscription_preapproval") await estadoSuscripcion(id);
-    // Otros avisos (por ejemplo "payment") se ignoran: el cobro llega por "subscription_authorized_payment".
+    else if (tipo === "payment") await pagoUnico(id);
+    // Otros avisos se ignoran: el cobro de la suscripción llega por "subscription_authorized_payment".
     return new Response("ok");
   } catch (e) {
     console.error("webhook_error", tipo, id, (e as Error).message);
