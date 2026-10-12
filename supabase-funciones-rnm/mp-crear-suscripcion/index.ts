@@ -75,7 +75,11 @@ Deno.serve(async (req) => {
   const completo = cardToken ? !!mp.id && mp.status === "authorized" : !!mp.id && !!mp.init_point;
   if (!res.ok || !completo) {
     console.error("mp_preapproval_error", res.status, JSON.stringify({ message: mp?.message, error: mp?.error, cause: mp?.cause, status: mp?.status }));
-    return json(req, { error: "mp_error", mp_status: res.status, detalle: mp?.message ?? mp?.error ?? mp?.status ?? null, causa: mp?.cause ?? null }, 502);
+    // Al navegador solo va un código; el detalle queda en el log del servidor.
+    const texto = String(mp?.message ?? mp?.error ?? mp?.status ?? "");
+    const motivo = /same user/i.test(texto) ? "mismo_usuario"
+      : /card|token|cvv|security|fund|reject|invalid/i.test(texto) ? "tarjeta_rechazada" : "otro";
+    return json(req, { error: "mp_error", mp_status: res.status, motivo }, 502);
   }
 
   // 5) Recordar a quién pertenece (lo usa el aviso de cobro)

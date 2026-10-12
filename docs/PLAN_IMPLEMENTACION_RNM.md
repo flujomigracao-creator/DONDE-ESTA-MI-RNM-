@@ -1,6 +1,26 @@
 # Plan de implementación — ¿Dónde está mi RNM?
 
-Estado: **propuesto, nada aplicado**. Cada etapa necesita autorización del propietario antes de tocar producción.
+## Estado de implementación (2026-10-12, autorizado por el propietario: "haz todo lo necesario")
+
+| Cambio | Estado | Detalle |
+|---|---|---|
+| C1 pago atómico | **Hecho y desplegado** | Migración `app_rnm_endurecimiento` + `mp-webhook` v7. Probado en transacciones con rollback: aplica, duplicado = `ya_aplicado`, plan inválido no deja pago a medias |
+| C2 firma obligatoria | **Hecho y desplegado** | Antes se comprobó que el secreto estaba configurado (401 sin firma). Sin secreto, el webhook responde 503. Probado: sin firma y firma falsa dan 401 |
+| C3 rotar token | **Pendiente (propietario)** | |
+| C4 moneda y dueño | **Hecho y desplegado** | `mp-webhook` v7 (no probado contra Mercado Pago real) |
+| C5 reembolsos | **Pendiente (decisión del propietario)** | |
+| C6 INSERT mínimo | **Hecho** | Probado: insertar con 3 columnas funciona; con `unidad_pf` o `ultima_consulta_at` da `permission denied` |
+| C7 sin detalle de MP al navegador | **Hecho y desplegado** | `mp-crear-suscripcion` v7 + `app.js` |
+| C8 contacto sin WhatsApp | **Hecho y desplegado** | Correo de contacto cuando `WHATSAPP` está vacío; no se inventó ningún número |
+| C9 esquema versionado / Vercel–GitHub | **Parcial** | Esta migración está en `supabase-migraciones-rnm/`; faltan las 12 anteriores (`supabase db pull`) y decidir conexión Vercel–GitHub |
+| C10 auditoría | **Hecho** | Tabla `rnm_auditoria`; probado con activar plan y guardar resultado |
+| C11 funciones `private` | **Hecho** | Probado: el equipo sigue funcionando (pendientes, por cobrar, activar plan, guardar resultado) |
+| C12 columnas de `rnm_planes` | **Hecho** | Probado: leer columnas permitidas funciona; `mp_preapproval_id` da `permission denied` |
+| C13 rotar RNM en un plan | Pendiente (decisión) | |
+| C14 columnas heredadas | No hecho (destructivo) | Requiere respaldo y autorización |
+| C15 otros módulos | No hecho (fuera de alcance) | |
+
+Estado original del plan (antes de implementar): propuesto. Cada etapa necesitaba autorización del propietario antes de tocar producción.
 Orden: seguridad y pagos primero; después lo funcional. Cada cambio es pequeño, revisable y reversible.
 
 ## Etapa 1 — Pagos e integridad (P1)

@@ -1,5 +1,6 @@
-// Recibe los avisos de Mercado Pago. No confía en lo que llega: consulta el pago a Mercado Pago, comprueba el monto
-// contra lo que guardamos y recién entonces activa o renueva el plan. Cada cobro se aplica una sola vez.
+// Recibe los avisos de Mercado Pago. No confía en lo que llega: exige la firma, consulta el cobro a Mercado Pago,
+// comprueba monto, moneda y dueño, y recién entonces activa o renueva el plan. Cada cobro se aplica una sola vez
+// y todo ocurre en una única transacción SQL (rnm_registrar_pago_mp).
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -17,10 +18,8 @@ async function mp(ruta: string, init: RequestInit = {}) {
   return { ok: res.ok, status: res.status, cuerpo };
 }
 
-// Firma opcional: si hay MP_WEBHOOK_SECRET, solo aceptamos avisos firmados por Mercado Pago.
-async function firmaValida(req: Request, idDato: string): Promise<boolean> {
-  const secreto = Deno.env.get("MP_WEBHOOK_SECRET");
-  if (!secreto) return true;
+// La firma es obligatoria: solo aceptamos avisos firmados por Mercado Pago con MP_WEBHOOK_SECRET.
+async function firmaValida(req: Request, secreto: string, idDato: string): Promise<boolean> {
   const cabecera = req.headers.get("x-signature") ?? "";
   const ts = /ts=([^,]+)/.exec(cabecera)?.[1];
   const v1 = /v1=([a-f0-9]+)/i.exec(cabecera)?.[1];
@@ -47,32 +46,34 @@ async function cobroAutorizado(id: string): Promise<{ ok: boolean; motivo?: stri
 
   const preapprovalId = String(ap?.preapproval_id ?? "");
   const { data: sus } = await admin.from("rnm_suscripciones_mp").select("*").eq("preapproval_id", preapprovalId).maybeSingle();
-  if (!sus) { console.error("suscripcion_desconocida", preapprovalId); throw new Error("suscripcion_desconocida"); } // aún no guardada: Mercado Pago reintenta
+  // Aún no guardada (el aviso puede llegar antes que nuestro registro): Mercado Pago reintenta.
+  if (!sus) { console.error("suscripcion_desconocida", preapprovalId); throw new Error("suscripcion_desconocida"); }
 
+  if (ap?.currency_id && ap.currency_id !== "BRL") {
+    console.error("moneda_distinta", preapprovalId, ap.currency_id);
+    return { ok: true, motivo: "moneda_distinta" };
+  }
   const monto = Math.round(Number(ap?.transaction_amount) * 100);
   if (monto !== sus.monto_centavos) {
     console.error("monto_distinto", JSON.stringify({ recibido: monto, esperado: sus.monto_centavos, preapprovalId }));
     return { ok: true, motivo: "monto_distinto" };
   }
 
-  // Un cobro = una sola vez
-  const { error: errPago } = await admin.from("rnm_pagos_mp").insert({
-    payment_id: pagoId, preapproval_id: preapprovalId, user_id: sus.user_id, cupos: sus.cupos, monto_centavos: monto,
-  });
-  if (errPago) {
-    if (errPago.code === "23505") return { ok: true, motivo: "ya_aplicado" };
-    throw new Error("guardar_pago: " + errPago.message);
+  // La suscripción debe pertenecer al mismo usuario con el que la creamos.
+  const pre = await mp(`/preapproval/${encodeURIComponent(preapprovalId)}`);
+  if (!pre.ok) throw new Error(`preapproval ${pre.status}`);
+  const dueno = pre.cuerpo?.external_reference;
+  if (dueno && String(dueno) !== sus.user_id) {
+    console.error("dueno_distinto", preapprovalId);
+    return { ok: true, motivo: "dueno_distinto" };
   }
 
-  const { data: res, error: errPlan } = await admin.rpc("rnm_activar_plan_servicio", {
-    p_user: sus.user_id, p_cupos: sus.cupos, p_ref: `mp:${pagoId}`, p_preapproval: preapprovalId,
+  // Un cobro = una sola vez, y el pago + el plan se guardan juntos o no se guarda nada.
+  const { data: res, error } = await admin.rpc("rnm_registrar_pago_mp", {
+    p_payment: pagoId, p_preapproval: preapprovalId, p_user: sus.user_id, p_cupos: sus.cupos, p_monto: monto,
   });
-  if (errPlan) {
-    await admin.from("rnm_pagos_mp").delete().eq("payment_id", pagoId); // para que el reintento de Mercado Pago lo aplique
-    throw new Error("activar_plan: " + errPlan.message);
-  }
-
-  await admin.from("rnm_suscripciones_mp").update({ estado: "activa", actualizado_at: new Date().toISOString() }).eq("preapproval_id", preapprovalId);
+  if (error) throw new Error("registrar_pago: " + error.message);
+  if (res?.aplicado === false) return { ok: true, motivo: res?.motivo ?? "ya_aplicado" };
 
   // Si cambió de plan, la suscripción anterior se cancela para no cobrarle dos veces.
   const anterior = res?.preapproval_anterior as string | null | undefined;
@@ -93,6 +94,9 @@ async function estadoSuscripcion(id: string) {
 }
 
 Deno.serve(async (req) => {
+  const secreto = Deno.env.get("MP_WEBHOOK_SECRET");
+  if (!secreto) { console.error("MP_WEBHOOK_SECRET no configurado: se rechazan todos los avisos"); return new Response("no_configurado", { status: 503 }); }
+
   const url = new URL(req.url);
   let cuerpo: any = {};
   try { cuerpo = await req.json(); } catch { /* algunos avisos vienen solo por la dirección */ }
@@ -100,7 +104,7 @@ Deno.serve(async (req) => {
   const id = String(cuerpo?.data?.id ?? url.searchParams.get("data.id") ?? url.searchParams.get("id") ?? "");
   if (!id) return new Response("ok");
 
-  if (!(await firmaValida(req, String(url.searchParams.get("data.id") ?? cuerpo?.data?.id ?? id)))) {
+  if (!(await firmaValida(req, secreto, String(url.searchParams.get("data.id") ?? cuerpo?.data?.id ?? id)))) {
     return new Response("firma_invalida", { status: 401 });
   }
 

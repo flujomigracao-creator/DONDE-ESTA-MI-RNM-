@@ -5,6 +5,9 @@ var SUPABASE_KEY = "sb_publishable_7znj3ENrTWXDE2dibUzv_A_a7HUoud_";
 var WHATSAPP = "";
 // Clave pública de Mercado Pago (pensada para ir en el navegador; no permite cobrar ni leer nada).
 var MP_PUBLIC_KEY = "APP_USR-d9efd8e3-53cb-4c67-bb1f-585c8fcd5358";
+// Contacto de respaldo mientras no haya WhatsApp configurado (así nunca se muestra un enlace roto ni se pide escribir sin dar un canal).
+var CONTACTO_EMAIL = "flujoescalaempresas@gmail.com";
+var VIA_CONTACTO = WHATSAPP ? "por WhatsApp" : "a " + CONTACTO_EMAIL;
 
 var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 var $ = function (id) { return document.getElementById(id); };
@@ -241,9 +244,8 @@ function textoErrorPago(j) {
     tarjeta_invalida: "No pudimos leer la tarjeta. Revisa los datos e intenta de nuevo."
   };
   if (textos[j.error]) return textos[j.error];
-  var d = String(j.detalle || "");
-  if (/same user/i.test(d)) return "Esta cuenta no puede pagar su propio plan. Entra con otro correo.";
-  if (/card|token|invalid|rejected|fund|cvv|security/i.test(d)) return "La tarjeta no fue aceptada. Revisa los datos o prueba con otra.";
+  if (j.motivo === "mismo_usuario") return "Esta cuenta no puede pagar su propio plan. Entra con otro correo.";
+  if (j.motivo === "tarjeta_rechazada") return "La tarjeta no fue aceptada. Revisa los datos o prueba con otra.";
   return "No pudimos procesar el pago. Revisa la tarjeta o prueba con otra." + (j.mp_status ? " (código " + j.mp_status + ")" : "");
 }
 
@@ -601,7 +603,7 @@ function cajaUnidad(x) {
       ? "Es distinta al estado donde vives (" + ESTADOS_BR[miUF] + "). Si no puedes ir hasta allá, podemos ayudarte con el cambio de dirección."
       : "Coincide con el estado donde vives (" + ESTADOS_BR[miUF] + ")."));
   } else {
-    caja.appendChild(el("p", "", "Revisa que esté en tu ciudad. Si no, escríbenos y te ayudamos con el cambio de dirección."));
+    caja.appendChild(el("p", "", "Revisa que esté en tu ciudad. Si no, escríbenos " + VIA_CONTACTO + " y te ayudamos con el cambio de dirección."));
   }
   if (x.cambio_direccion) {
     var lineas = lineasCambio(x.cambio_direccion);
@@ -618,6 +620,11 @@ function cajaUnidad(x) {
   }
   if (WHATSAPP && (otra || !sabeDondeVive || x.cambio_direccion)) {
     caja.appendChild(enlaceWhatsapp(x, "Hola, mi RNM " + x.rnm + " está listo en " + x.unidad_pf + (ciudadU ? " (" + ciudadU + ")" : "") + " y quiero cambiar la dirección de entrega."));
+  } else if (!WHATSAPP && (otra || !sabeDondeVive || x.cambio_direccion)) {
+    var correo = el("a", "btn-enlace", "Escribir a FLUJO para cambiar la dirección");
+    correo.style.background = "var(--azul)"; correo.style.color = "#fff";
+    correo.href = "mailto:" + CONTACTO_EMAIL + "?subject=" + encodeURIComponent("Cambio de dirección RNM " + x.rnm) + "&body=" + encodeURIComponent("Hola, mi RNM " + x.rnm + " está listo en " + x.unidad_pf + " y quiero cambiar la dirección de entrega.");
+    caja.appendChild(correo);
   }
   return caja;
 }
@@ -674,9 +681,9 @@ var ESTADOS = [
   { re: /entregue|retirado em/i, tono: "ok", t: "Tu documento ya fue entregado",
     p: ["El sistema indica que el carné ya fue entregado. Si no lo tienes, contáctanos cuanto antes."] },
   { re: /indeferid|negad|rejeitad|arquivad/i, tono: "mal", t: "Tu solicitud tiene un problema",
-    p: ["El sistema indica que no fue aprobada o fue archivada.", "Escríbenos por WhatsApp para revisar tu caso."] },
+    p: ["El sistema indica que no fue aprobada o fue archivada.", "Escríbenos " + VIA_CONTACTO + " para revisar tu caso."] },
   { re: /pend[eê]ncia|exig[eê]ncia|complement|inconsist/i, tono: "aviso", t: "Falta algo en tu trámite",
-    p: ["La Policía Federal pide información o documentos adicionales.", "Escríbenos por WhatsApp y te ayudamos a responder a tiempo."] },
+    p: ["La Policía Federal pide información o documentos adicionales.", "Escríbenos " + VIA_CONTACTO + " y te ayudamos a responder a tiempo."] },
   { re: /an[aá]lise|em andamento|processamento|aguard|confec[cç][aã]o|produ[cç][aã]o/i, tono: "aviso", t: "Tu trámite sigue en proceso",
     p: ["Tu solicitud está siendo analizada o el carné está en fabricación.", "No tienes que hacer nada por ahora; seguimos vigilando."] },
   { re: /n[aã]o (foi )?encontrad|nenhum|sin resultados/i, tono: "aviso", t: "No encontramos tu trámite",
@@ -684,7 +691,7 @@ var ESTADOS = [
 ];
 function explicar(txt) {
   var e = ESTADOS.find(function (x) { return x.re.test(txt); });
-  return e || { tono: "aviso", t: "Hay una novedad en tu trámite", p: ["Escríbenos por WhatsApp y te la explicamos."] };
+  return e || { tono: "aviso", t: "Hay una novedad en tu trámite", p: ["Escríbenos " + VIA_CONTACTO + " y te la explicamos."] };
 }
 
 iniciar();

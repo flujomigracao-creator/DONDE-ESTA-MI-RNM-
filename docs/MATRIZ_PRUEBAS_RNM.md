@@ -55,3 +55,26 @@ Todas **No ejecutadas** o **Bloqueadas**: no hay entorno sandbox configurado ni 
 | Q2 | Comprobación de sintaxis de `app.js` | **Aprobada** | `node --check` |
 | Q3 | Vercel: proyecto, rama, directorio raíz, variables | Bloqueada | API devolvió 403 |
 | Q4 | Esquemas expuestos por PostgREST | Bloqueada | Sin acceso a la configuración |
+
+## E. Pruebas tras la implementación (2026-10-12)
+
+Todas ejecutadas en transacciones que se deshacen al final; se comprobó después que no quedó ninguna fila de prueba (0 pagos, 0 suscripciones de prueba, 0 registros de prueba, 0 filas de auditoría).
+
+| Id | Prueba | Esperado | Observado | Estado |
+|---|---|---|---|---|
+| R1 | Primer cobro con `rnm_registrar_pago_mp` | Aplica el plan | `aplicado=true`, suscripción `activa` | **Aprobada** |
+| R2 | El mismo cobro dos veces | Segundo no cambia nada | `ya_aplicado`, `vence_at` igual | **Aprobada** |
+| R3 | Plan inválido (9 RNM) | Todo o nada | `plan_invalido`, 0 pagos guardados | **Aprobada** |
+| R4 | Cliente inserta con `user_id, rnm, fecha_nacimiento` | Permitido | ok | **Aprobada** |
+| R5 | Cliente inserta `unidad_pf` / `ultima_consulta_at` | Denegado | `permission denied for table rnm_registros` | **Aprobada** (cierra H6, S8) |
+| R6 | Cliente lee `mp_preapproval_id` de `rnm_planes` | Denegado | `permission denied for table rnm_planes` | **Aprobada** (cierra H13) |
+| R7 | Cliente actualiza `rnm_planes` | Denegado | `permission denied` | **Aprobada** (cierra S7) |
+| R8 | Cliente ejecuta `private.rnm_aplicar_plan` | Denegado | `permission denied for schema private` | **Aprobada** |
+| R9 | Equipo: `rnm_pendientes`, `rnm_por_cobrar`, `rnm_activar_plan`, `rnm_guardar_resultado` | Siguen funcionando | todas ok; 2 filas de auditoría | **Aprobada** |
+| R10 | Webhook sin firma / con firma falsa | 401 | 401 / 401 | **Aprobada** (cierra M-P4 en producción) |
+| R11 | Aviso vacío al webhook | 200 | 200 | **Aprobada** |
+| R12 | `mp-crear-suscripcion` sin sesión | 401 | 401 | **Aprobada** |
+| R13 | `app.js`: mensajes de error por código y contacto sin WhatsApp (vista previa local) | Texto y enlace `mailto:` correctos, sin errores de consola | ok | **Aprobada** |
+| R14 | Archivos de Vercel idénticos al repositorio | iguales | `cmp` igual (app.js, sw.js, index.html) | **Aprobada** |
+| R15 | Cobro real con tarjeta + webhook de extremo a extremo (incluye moneda y dueño) | Plan activo | — | **No ejecutada** (requiere pagador distinto a la cuenta cobradora) |
+| R16 | Prueba con dos usuarios reales de prueba (A no ve a B) | Sin acceso | — | **No ejecutada** |
