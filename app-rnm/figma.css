@@ -325,3 +325,28 @@ button, .btn, .btn-enlace, .filter-pill, .nav-item, .bottom-nav-item, summary { 
 .donde-ahora small { display: block; font-size: 0.74rem; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase; color: var(--text-muted); }
 .donde-ahora b { display: block; font-size: 1rem; line-height: 1.25; color: var(--text-main); }
 .hero-fig .hero-ubic { margin: 0 0 12px; padding: 8px 12px; border-radius: 12px; background: rgba(255, 255, 255, 0.12); color: #fff; font-weight: 600; font-size: 0.9rem; }
+
+/* ==========================================================================
+   Detalle del RNM: lectura en 3 pasos (estado -> dónde está -> qué hacer)
+   ========================================================================== */
+.detalle-cab { margin-bottom: var(--sp-3); }
+.detalle-cab .fila { flex-direction: row; align-items: center; justify-content: space-between; gap: var(--sp-3); }
+.detalle-cab h2 { margin: 0; font-size: 1.5rem; }
+.detalle-cab .insignia { flex: none; font-size: 0.82rem; padding: 5px 12px; }
+.detalle-meta { margin: 6px 0 0; font-size: 0.82rem; color: var(--text-muted); }
+.res-estado { margin: 0 0 var(--sp-3); padding: var(--sp-5); border-radius: 20px; border: 0; }
+.res-estado h3 { font-size: 1.35rem; font-weight: 800; letter-spacing: -0.01em; margin: 0 0 var(--sp-2); }
+.res-estado .resumen-estado { margin: var(--sp-2) 0 0; font-size: 1rem; color: var(--text-main); }
+.pasos-card { padding: var(--sp-4) var(--sp-5); }
+.pasos-num { list-style: none; counter-reset: paso; margin: var(--sp-2) 0 0; padding: 0; display: grid; gap: var(--sp-3); }
+.pasos-num li { counter-increment: paso; display: flex; gap: var(--sp-3); align-items: flex-start; font-size: 0.95rem; line-height: 1.4; color: var(--text-main); }
+.pasos-num li::before { content: counter(paso); flex: none; width: 26px; height: 26px; border-radius: 50%; background: var(--brand-soft); color: var(--brand); font-weight: 800; font-size: 0.82rem; display: grid; place-items: center; }
+.pie-detalle { margin: var(--sp-3) 0; }
+.pie-detalle .aviso-orientativo { margin: 0 0 var(--sp-2); font-size: 0.8rem; color: var(--text-muted); font-style: italic; }
+.pie-detalle .texto-original summary { cursor: pointer; font-size: 0.84rem; font-weight: 600; color: var(--brand); list-style: none; min-height: 44px; display: flex; align-items: center; }
+.pie-detalle .texto-original summary::-webkit-details-marker { display: none; }
+.pie-detalle .texto-original summary::before { content: "▸ "; margin-right: 4px; }
+.pie-detalle .texto-original[open] summary::before { content: "▾ "; }
+.pie-detalle .texto-original p { margin: 0; padding: var(--sp-3); border-radius: 12px; background: #fff; border: 1px solid var(--line); font-size: 0.82rem; color: var(--text-muted); word-break: break-word; white-space: pre-line; }
+.btn-quitar { display: block; margin: var(--sp-2) auto; background: none !important; color: var(--danger); font-weight: 600; font-size: 0.9rem; box-shadow: none; text-decoration: underline; text-underline-offset: 3px; }
+#contenedor-detalle-rnm .ubicacion { margin-top: 0; }

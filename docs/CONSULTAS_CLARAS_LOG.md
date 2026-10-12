@@ -27,3 +27,6 @@ Con sesión y datos reales; textos de la PF que no estén en el catálogo (caen 
 - sw v36.
 
 Probado (375×812, textos reales de la PF + cambios de ejemplo "Deferido"/"Indeferido"): ubicación para listo, traslado, sin información y en trámite; chips Aprobada/Desaprobada; sin scroll horizontal. No probado con datos reales de Supabase.
+
+## Detalle del RNM reordenado (12-oct-2026)
+Orden de lectura: **cabecera** (RNM + etiqueta de estado + última revisión + si hay seguimiento semanal) → **tarjeta de estado** (título, barra de etapas, "Dónde está tu RNM ahora", resumen) → **Qué puedes hacer** (pasos numerados en tarjeta propia) → dónde retirar (si hay unidad) → historial plegado → texto original de la PF plegado + aviso orientativo → "Quitar este RNM" como enlace discreto. Se eliminó la repetición de la unidad de retiro y la etiqueta confusa "Consulta lista". sw v37. Probado en 375×812 con listo, traslado y sin información (sin scroll horizontal).

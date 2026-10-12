@@ -1187,23 +1187,25 @@ function construirDetalle(id) {
   if (!cont) return;
   cont.textContent = "";
 
-  // 1. Tarjeta principal de cabecera del RNM
-  var cardCab = el("div", "tarjeta");
+  // 1. Cabecera: RNM, estado en una etiqueta, última revisión y plan
+  var ep = estadoPresentacion(x);
+  var cab = el("div", "detalle-cab");
   var fila = el("div", "fila");
-  var titBox = el("div", "");
-  titBox.appendChild(el("h2", "", "RNM " + x.rnm));
-  fila.appendChild(titBox);
+  fila.appendChild(el("h2", "", "RNM " + x.rnm));
+  fila.appendChild(el("span", "insignia" + (ep.badge ? " " + ep.badge : ""), ep.corto));
+  cab.appendChild(fila);
+  var metas = [];
+  metas.push(x.ultima_consulta_at ? "Última revisión: " + fechaHora(x.ultima_consulta_at) : "Aún sin revisión");
+  metas.push(x.cubierto ? "Seguimiento semanal activo hasta " + fechaCorta(x.planVence) : "Sin seguimiento semanal");
+  cab.appendChild(el("p", "detalle-meta", metas.join(" · ")));
+  cont.appendChild(cab);
 
+  // 1b. Estado, dónde está y qué hacer
+  cont.appendChild(cajaResultado(x));
   var consultado = !!x.ultimo_resultado;
-  var etiqueta = x.cerrado ? "Listo" : (x.cubierto ? "Vigilando hasta " + fechaCorta(x.planVence) : (consultado ? "Consulta lista" : (x.requiere_pago ? "Pendiente de plan" : "Consultando")));
-  var clase = x.cerrado ? " ok" : (x.cubierto ? " vigila" : "");
-  fila.appendChild(el("span", "insignia" + clase, etiqueta));
-  cardCab.appendChild(fila);
-
-  if (consultado) cardCab.appendChild(cajaResultado(x));
-  else cardCab.appendChild(el("p", "sub", "Estamos verificando la información disponible ante la Policía Federal."));
-  cont.appendChild(cardCab);
   if (!x.cerrado && !x.cubierto && consultado) cont.appendChild(avisoPlan([x]));
+  var cardPasos = tarjetaPasos(x);
+  if (cardPasos) cont.appendChild(cardPasos);
 
   // 2. Información policial y delegacia
   if (x.unidad_pf) {
@@ -1258,12 +1260,14 @@ function construirDetalle(id) {
   cardTime.appendChild(tl);
   cont.appendChild(cardTime);
 
+  cont.appendChild(pieOriginal(x));
+
   // 4. Acciones del detalle (Eliminar / Quitar RNM con ConfirmDialog)
   if (!x.cerrado) {
     var cardAcc = el("div", "");
     var q = el("div", "acciones");
     var avisoBorrar = el("p", "msg", "");
-    var borrar = el("button", "btn danger", "Quitar este RNM");
+    var borrar = el("button", "btn-quitar", "Quitar este RNM");
     borrar.type = "button";
     borrar.addEventListener("click", async function () {
       var ok = await mostrarConfirmacion({
@@ -1322,7 +1326,7 @@ function etapasConsulta(e) {
 }
 function cajaResultado(x) {
   var e = estadoPresentacion(x);
-  var caja = el("div", "res " + e.tono);
+  var caja = el("div", "res res-estado " + e.tono);
   caja.appendChild(el("h3", "", e.t));
   var et = etapasConsulta(e);
   if (et) caja.appendChild(et);
@@ -1335,28 +1339,38 @@ function cajaResultado(x) {
     ub.appendChild(ubt);
     caja.appendChild(ub);
   }
-  caja.appendChild(el("p", "", e.resumen));
+  caja.appendChild(el("p", "resumen-estado", e.resumen));
   if (e.detalles && e.detalles.length) {
     var dl = el("div", "detalles-consulta");
     e.detalles.forEach(function (d) { var f = el("div", "detalle-fila"); f.appendChild(el("span", "", d[0])); f.appendChild(el("b", "", d[1])); dl.appendChild(f); });
     caja.appendChild(dl);
   }
-  if (e.pasos && e.pasos.length) {
-    caja.appendChild(el("h4", "pasos-titulo", "Qué puedes hacer"));
-    var ol = el("ol", "pasos-lista");
-    e.pasos.forEach(function (p) { ol.appendChild(el("li", "", p)); });
-    caja.appendChild(ol);
-  }
-  caja.appendChild(el("p", "aviso-orientativo", "Explicación orientativa de FLUJO. No es una decisión oficial ni una promesa de plazo."));
-  var of = el("div", "oficial");
-  if (x.ultima_consulta_at) of.appendChild(el("small", "", "Última revisión: " + fechaHora(x.ultima_consulta_at)));
-  if (!x.ultimo_resultado) return caja;
-  var det = el("details", "texto-original");
-  det.appendChild(el("summary", "", "Ver lo que dice la Policía Federal (texto original en portugués)"));
-  det.appendChild(el("p", "", (x.ultimo_resultado || "").trim()));
-  of.appendChild(det);
-  caja.appendChild(of);
   return caja;
+}
+
+// "Qué puedes hacer": pasos numerados en su propia tarjeta
+function tarjetaPasos(x) {
+  var e = estadoPresentacion(x);
+  if (!e.pasos || !e.pasos.length) return null;
+  var c = el("div", "tarjeta pasos-card");
+  c.appendChild(el("p", "hero-eyebrow", "Qué puedes hacer"));
+  var ol = el("ol", "pasos-num");
+  e.pasos.forEach(function (p) { ol.appendChild(el("li", "", p)); });
+  c.appendChild(ol);
+  return c;
+}
+
+// Texto original de la PF (plegado) + aviso orientativo
+function pieOriginal(x) {
+  var pie = el("div", "pie-detalle");
+  pie.appendChild(el("p", "aviso-orientativo", "Explicación orientativa de FLUJO. No es una decisión oficial ni una promesa de plazo."));
+  if (x.ultimo_resultado) {
+    var det = el("details", "texto-original");
+    det.appendChild(el("summary", "", "Ver lo que dice la Policía Federal (texto original en portugués)"));
+    det.appendChild(el("p", "", x.ultimo_resultado.trim()));
+    pie.appendChild(det);
+  }
+  return pie;
 }
 
 function avisoOtraCiudad(x) {
@@ -1567,7 +1581,6 @@ var REGLAS_CONSULTA = [
   { re: /pronto para ser retirado|confeccionado/i, tono: "ok", badge: "ok", corto: "Listo", t: "¡Tu documento está listo para retirar!",
     f: function (txt) {
       var u = unidadesDeTexto(txt), det = [];
-      if (u.length) det.push(["Unidad de retiro", etiquetaUnidad(u[0])]);
       return { resumen: "Tu documento fue confeccionado y ya puedes retirarlo" + (u.length ? " en la unidad de " + lugarDeUnidad(u[0]) : " en la unidad indicada") + ".",
         pasos: ["Llena el formulario de entrega de carteiras de la Policía Federal y agenda tu retirada en la unidad correcta.",
                 "Algunas unidades no requieren agenda: si el sistema dice «no hay agenda para el servicio elegido», puedes ir directamente.",
