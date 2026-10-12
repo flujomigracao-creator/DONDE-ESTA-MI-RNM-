@@ -17,3 +17,12 @@ Rama `redesign/premium-ui`. **No se tocó**: precios (R$ 4,99 / 8,99 / 12,99 / 1
 
 ## No probado
 Pago real con tarjeta (rechazo, aprobación), generación real de Pix/boleto, retorno de Mercado Pago, confirmación real vía servidor, método no disponible, teclado/lector de pantalla completos, 360×800 y escritorio.
+
+## Ajuste: ampliar plan (12-oct-2026)
+**Problemas encontrados** al reproducir "Ampliar" con un plan de 1 RNM y 3 RNM registrados: (1) se podían tocar planes que no cubren todos los RNM y el clic volvía solo al plan mínimo, sin explicación; (2) el plan actual aparecía como elegible; (3) el cobro mostraba el precio completo del plan nuevo sin decir cómo se relaciona con el plan que ya está pagado.
+
+**Cambios (solo UI):** los planes que no alcanzan quedan bloqueados con el motivo ("No alcanza para tus 3 RNM" / "Tu plan actual"); aviso "Cómo funciona ampliar" con el importe y el efecto real.
+
+**Comportamiento del servidor (leído en la base, sin cambios):** `private.rnm_aplicar_plan` pone `cupos` y `precio` del plan nuevo y `vence_at = now() + 1 mes`. **Solo suma meses si el plan tiene los mismos cupos.** Es decir, al ampliar **no hay prorrateo**: se paga el plan nuevo completo y los días que quedaban del anterior se pierden. La suscripción de tarjeta anterior se devuelve como `preapproval_anterior`. Si se quiere descontar o sumar los días restantes, es una decisión comercial + cambio de servidor, no de diseño.
+
+Probado en 375×812: planes bloqueados/seleccionables, aviso con importe, cambio de plan a 4, caso sin plan.

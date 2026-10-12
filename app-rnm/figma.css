@@ -393,3 +393,9 @@ button, .btn, .btn-enlace, .filter-pill, .nav-item, .bottom-nav-item, summary { 
 .pay-espera.vencido { color: var(--warning); }
 .pay-espera.vencido .punto { animation: none; background: var(--warning); }
 .pay-nota { font-size: 0.82rem; }
+
+/* Ampliar plan */
+#modal-planes .plan.no-cubre, #modal-planes .plan:disabled { opacity: 0.55; cursor: not-allowed; background: var(--surface-alt) !important; border-style: dashed; }
+#modal-planes .plan small.aviso-chico { color: var(--text-muted); font-weight: 600; margin-top: 2px; }
+.nota-ampliar { margin: var(--sp-3) 0 var(--sp-1); padding: var(--sp-3) var(--sp-4); border-radius: 14px; background: var(--warning-soft); border: 1px solid var(--warning-line); font-size: 0.86rem; line-height: 1.4; color: var(--text-main); }
+.nota-ampliar b { color: var(--text-main); }

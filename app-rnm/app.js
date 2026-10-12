@@ -823,12 +823,24 @@ function cartelPlanes(regs, plan) {
     b.appendChild(el("b", "", n + (n === 1 ? " RNM" : " RNM")));
     b.appendChild(el("span", "precio", reales(PRECIOS[n]) + " /mes"));
     b.appendChild(el("small", "", reales(Math.round(PRECIOS[n] / n)) + " por RNM"));
-    b.appendChild(el("small", n > 1 ? "ahorro" : "", n > 1 ? "Ahorras " + porcentajeAhorro(n) + "%" : " "));
-    if (n === 4) b.classList.add("mejor-precio");
-    b.addEventListener("click", function () { planElegido = n; cartelPlanes(regs, plan); });
+    var esActual = activo && plan.cupos === n;
+    if (n < necesita) {
+      b.disabled = true; b.classList.add("no-cubre");
+      b.setAttribute("aria-label", "Plan de " + n + " RNM: no alcanza para tus " + necesita + " RNM");
+      b.appendChild(el("small", "aviso-chico", esActual ? "Tu plan actual" : "No alcanza para tus " + necesita + " RNM"));
+    } else {
+      b.appendChild(el("small", n > 1 ? "ahorro" : "", n > 1 ? "Ahorras " + porcentajeAhorro(n) + "%" : "\u00a0"));
+      if (n === 4) b.classList.add("mejor-precio");
+      b.addEventListener("click", function () { planElegido = n; cartelPlanes(regs, plan); });
+    }
     grid.appendChild(b);
   });
   c.appendChild(grid);
+  if (activo) {
+    var nota = el("p", "nota-ampliar");
+    nota.innerHTML = "<b>Cómo funciona ampliar:</b> pagas el plan nuevo completo (" + reales(PRECIOS[planElegido]) + ") y reemplaza a tu plan actual de " + plan.cupos + (plan.cupos === 1 ? " RNM" : " RNM") + ". Pasa a cubrir " + planElegido + " RNM durante 1 mes desde hoy; los días que te quedaban del plan anterior no se suman.";
+    c.appendChild(nota);
+  }
   var acc = el("div", "acciones");
   var pagar = el("button", "", (activo ? "Ampliar a " : "Continuar · ") + planElegido + " RNM · " + reales(PRECIOS[planElegido]) + "/mes");
   pagar.type = "button";
