@@ -1032,7 +1032,7 @@ function actualizarDashboard(regs, plan) {
 
       var hero = el("div", "hero-fig");
       var top = el("div", "hero-fig-top");
-      top.appendChild(el("span", "", "RNM " + enmascarar(p.rnm)));
+      top.appendChild(el("span", "", "RNM " + p.rnm));
       var ico = el("span", "");
       ico.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h4M14 3l5 5v3"/><circle cx="17" cy="17" r="4"/><path d="M17 15v2l1 1"/></svg>';
       top.appendChild(ico);
