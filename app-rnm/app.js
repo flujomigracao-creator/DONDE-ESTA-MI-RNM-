@@ -678,6 +678,23 @@ function mostrarCodigoPago(cupos, d) {
   }
 }
 
+// Aviso insistente: la primera consulta ya se hizo y sin plan el estado no se actualiza.
+function avisoPlan(regs) {
+  var sinPlan = regs.filter(function (x) { return !x.cerrado && !x.cubierto && !!x.ultimo_resultado; });
+  if (!sinPlan.length) return null;
+  var d = el("div", "aviso-plan");
+  d.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v5M12 16.5v.01"/><circle cx="12" cy="12" r="9"/></svg>';
+  var cuerpo = el("div", "");
+  var p = el("p", "", "");
+  p.innerHTML = "<b>Tu primera consulta ya está lista.</b> Para saber dónde está tu RNM, activa un plan: así el estado se actualiza <b>cada semana</b>. Sin plan, lo que ves no se vuelve a actualizar.";
+  cuerpo.appendChild(p);
+  var b = el("button", "", "Activar un plan"); b.type = "button";
+  b.addEventListener("click", abrirModalPlanes);
+  cuerpo.appendChild(b);
+  d.appendChild(cuerpo);
+  return d;
+}
+
 // Aviso fijo: todos los planes se revisan una vez por semana.
 function notaSemanal() {
   var n = el("div", "nota-semanal");
@@ -721,10 +738,13 @@ function cartelPlanes(regs, plan) {
   if (planElegido < necesita) planElegido = necesita;
   var c = el("div", "pay");
   c.appendChild(el("span", "pay-paso", "Paso 1 de 2 · Elige tu plan"));
-  c.appendChild(el("h2", "pay-titulo", activo ? "Tu plan cubre " + plan.cupos + " de tus " + abiertos + " RNM" : "Elige tu plan para seguir vigilando"));
+  var primeraHecha = regs.some(function (r) { return !r.cerrado && !r.cubierto && !!r.ultimo_resultado; });
+  c.appendChild(el("h2", "pay-titulo", activo ? "Tu plan cubre " + plan.cupos + " de tus " + abiertos + " RNM" : (primeraHecha ? "Activa un plan para saber dónde está tu RNM" : "Elige tu plan para seguir vigilando")));
   c.appendChild(el("p", "sub", activo
     ? "Amplía tu plan para que también vigilemos los demás."
-    : "Tu primera consulta es gratis. Para seguir vigilando, elige cuántos RNM quieres cubrir. Paga con tarjeta, Pix o boleto."));
+    : (primeraHecha
+      ? "Tu primera consulta gratis ya se hizo. Para que el estado de tu RNM se actualice cada semana necesitas un plan; sin plan no volvemos a revisarlo. Paga con tarjeta, Pix o boleto."
+      : "Tu primera consulta es gratis. Para seguir vigilando, elige cuántos RNM quieres cubrir. Paga con tarjeta, Pix o boleto.")));
   c.appendChild(notaSemanal());
   var grid = el("div", "planes");
   [1, 2, 3, 4].forEach(function (n) {
@@ -763,8 +783,9 @@ function cartelPlanes(regs, plan) {
 // Se muestra una sola vez por RNM; después queda el botón "Ver planes".
 var planesVistos = (function () { try { return JSON.parse(localStorage.getItem("rnm_planes_vistos") || "[]"); } catch (e) { return []; } })();
 var esperaMostrada = false;
+function hoyClave() { return new Date().toISOString().slice(0, 10); }
 function marcarVistos(ids) {
-  ids.forEach(function (id) { if (planesVistos.indexOf(id) < 0) planesVistos.push(id); });
+  ids.forEach(function (id) { var k = id + "|" + hoyClave(); if (planesVistos.indexOf(k) < 0) planesVistos.push(k); });
   try { localStorage.setItem("rnm_planes_vistos", JSON.stringify(planesVistos.slice(-50))); } catch (e) { /* sin almacenamiento */ }
 }
 function abrirModalPlanes() {
@@ -784,7 +805,7 @@ document.addEventListener("keydown", function (e) { if (e.key === "Escape") cerr
 function actualizarPlanes(regs, plan) {
   var necesitan = regs.filter(function (x) { return !x.cerrado && !x.cubierto && (!!x.ultimo_resultado || x.requiere_pago); });
   var espera = !!esperandoPago && Date.now() - esperandoPago < 180000;
-  var nuevos = necesitan.filter(function (x) { return planesVistos.indexOf(x.id) < 0; });
+  var nuevos = necesitan.filter(function (x) { return planesVistos.indexOf(x.id + "|" + hoyClave()) < 0; });
   var cerrada = $("modal-planes").classList.contains("oculto");
   if (espera && !esperaMostrada) { esperaMostrada = true; abrirModalPlanes(); return; }
   if (nuevos.length && cerrada) { marcarVistos(nuevos.map(function (x) { return x.id; })); abrirModalPlanes(); }
@@ -1009,17 +1030,8 @@ function actualizarDashboard(regs, plan) {
       // Todos los RNM con su estado: primero los listos, luego los que siguen en trámite
       var rango = function (x) { return x.estado_pf === "listo" ? 0 : (!x.cerrado ? 1 : 2); };
       var orden = regs.slice().sort(function (p, q) { return rango(p) - rango(q); });
-      var nListos = regs.filter(function (x) { return x.estado_pf === "listo"; }).length;
-      var nSin = regs.filter(function (x) { return !x.cerrado && !x.cubierto && (x.requiere_pago || x.ultimo_resultado); }).length;
-      var nTramite = regs.filter(function (x) { return !x.cerrado && x.estado_pf !== "listo"; }).length - nSin;
-      var kp = el("div", "kpis");
-      [[regs.length, "RNM", ""], [nListos, "Listos", "ok"], [Math.max(nTramite, 0), "En trámite", "aviso"], [nSin, "Sin plan", "plan"]].forEach(function (k) {
-        var c = el("div", "kpi " + k[2]);
-        c.appendChild(el("b", "", String(k[0])));
-        c.appendChild(el("span", "", k[1]));
-        kp.appendChild(c);
-      });
-      heroCont.appendChild(kp);
+      var av = avisoPlan(regs);
+      if (av) heroCont.appendChild(av);
       var titLista = el("h3", "", "Tus RNM");
       titLista.style.cssText = "margin: 0 0 10px; font-size: 1.05rem; color: #102A56;";
       heroCont.appendChild(titLista);
@@ -1159,6 +1171,7 @@ function construirDetalle(id) {
   if (consultado) cardCab.appendChild(cajaResultado(x));
   else cardCab.appendChild(el("p", "sub", "Estamos verificando la información disponible ante la Policía Federal."));
   cont.appendChild(cardCab);
+  if (!x.cerrado && !x.cubierto && consultado) cont.appendChild(avisoPlan([x]));
 
   // 2. Información policial y delegacia
   if (x.unidad_pf) {
@@ -1390,7 +1403,7 @@ function fechaCorta(iso) { return new Date(iso).toLocaleDateString("es", { day: 
 function etiquetaRnm(x) {
   if (x.cerrado) return ["Listo", " ok"];
   if (x.cubierto) return ["Vigilando", " vigila"];
-  if (x.ultimo_resultado) return x.tuvoPlan ? ["Sin cobertura", ""] : ["Consultado", " vigila"];
+  if (x.ultimo_resultado) return x.tuvoPlan ? ["Sin cobertura", ""] : ["Activa un plan", ""];
   if (x.requiere_pago) return ["Pendiente de plan", ""];
   return ["Consultando", " vigila"];
 }

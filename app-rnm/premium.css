@@ -1503,13 +1503,6 @@ button:not(.sec):not(.danger):not(.google):not(.plan):not(.metodo):not(.filter-p
 button.sec { box-shadow: var(--shadow-sm); }
 
 /* Resumen numérico del Inicio */
-.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 0 0 18px; }
-.kpi { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 12px 14px; box-shadow: var(--shadow-sm); }
-.kpi b { display: block; font-size: 1.5rem; line-height: 1.1; font-weight: 800; color: var(--navy); letter-spacing: -0.03em; }
-.kpi span { display: block; margin-top: 3px; font-size: 0.74rem; font-weight: 600; letter-spacing: 0.02em; color: var(--text-muted); }
-.kpi.ok b { color: var(--success); }
-.kpi.aviso b { color: var(--warning); }
-.kpi.plan b { color: var(--brand); }
 
 /* Filas de RNM */
 .fila-rnm { gap: 14px; padding: 12px 14px; border-left-width: 1px; border-left-color: var(--line); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); }
@@ -1547,8 +1540,6 @@ input[type="text"], select { border-radius: 10px; min-height: 46px; }
 .metodo { border-radius: 12px; }
 
 @media (max-width: 640px) {
-  .kpis { grid-template-columns: repeat(2, 1fr); }
-  .kpi b { font-size: 1.3rem; }
   .app-header { background: #FFFFFF; }
 }
 
@@ -1557,3 +1548,10 @@ input[type="text"], select { border-radius: 10px; min-height: 46px; }
 .nota-semanal svg { width: 22px; height: 22px; flex-shrink: 0; color: var(--brand); margin-top: 1px; }
 .nota-semanal p { margin: 0; font-size: 0.86rem; line-height: 1.45; color: #1D3A7A; }
 .nota-semanal b { color: var(--navy); }
+
+/* Aviso: activar plan tras la primera consulta */
+.aviso-plan { display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; margin: 0 0 16px; background: var(--warning-soft); border: 1px solid var(--warning-line); border-left: 4px solid var(--warning); border-radius: var(--radius-md); }
+.aviso-plan > svg { width: 22px; height: 22px; flex-shrink: 0; color: var(--warning); margin-top: 1px; }
+.aviso-plan p { margin: 0 0 10px; font-size: 0.9rem; line-height: 1.45; color: #5A2E06; }
+.aviso-plan b { color: #3E1F04; }
+.aviso-plan button { min-height: 40px; font-size: 0.9rem; }
