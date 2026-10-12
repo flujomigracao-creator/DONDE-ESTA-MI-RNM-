@@ -222,23 +222,26 @@ function errorPaso(n) {
 }
 
 /* Error pegado al campo (aria-invalid + aria-describedby); se borra al corregir y no se pierde lo escrito */
-function limpiarErroresPerfil() {
-  document.querySelectorAll("#vista-perfil .error-campo").forEach(function (p) { p.remove(); });
-  document.querySelectorAll("#vista-perfil [aria-invalid]").forEach(function (c) { c.removeAttribute("aria-invalid"); c.removeAttribute("aria-describedby"); });
+function limpiarErroresEn(sel) {
+  document.querySelectorAll(sel + " .error-campo").forEach(function (p) { p.remove(); });
+  document.querySelectorAll(sel + " [aria-invalid]").forEach(function (c) { c.removeAttribute("aria-invalid"); c.removeAttribute("aria-describedby"); });
 }
-function marcarCampo(id, texto) {
-  limpiarErroresPerfil();
+function marcarCampoEn(sel, id, texto, msgId) {
+  limpiarErroresEn(sel);
   var c = $(id);
-  if (!c || !texto) return msg("msg-perfil", texto);
+  if (!c || !texto) return msg(msgId, texto);
   var p = el("p", "error-campo", texto);
   p.id = "err-" + id; p.setAttribute("role", "alert");
   var ancla = c.type === "checkbox" ? c.closest("label") : c;
-  ancla.insertAdjacentElement("afterend", p);
+  var apoyo = ancla.nextElementSibling;
+  (apoyo && apoyo.classList.contains("ayuda-campo") ? apoyo : ancla).insertAdjacentElement("afterend", p);
   c.setAttribute("aria-invalid", "true"); c.setAttribute("aria-describedby", p.id);
-  msg("msg-perfil", "");
+  msg(msgId, "");
   c.focus();
 }
-document.querySelectorAll("#form-perfil input").forEach(function (c) {
+function limpiarErroresPerfil() { limpiarErroresEn("#vista-perfil"); }
+function marcarCampo(id, texto) { marcarCampoEn("#vista-perfil", id, texto, "msg-perfil"); }
+document.querySelectorAll("#form-perfil input, #form-rnm input").forEach(function (c) {
   c.addEventListener("input", function () {
     var p = $("err-" + c.id); if (p) p.remove();
     c.removeAttribute("aria-invalid"); c.removeAttribute("aria-describedby");
@@ -377,9 +380,13 @@ $("form-rnm").addEventListener("submit", function (e) {
   var nacTxt = $("nac").value.trim();
   var iso = fechaISO(nacTxt);
 
-  if (!/^[A-Z0-9]{6,12}$/.test(rnm)) return msg("msg-form", "Revisa tu número de RNM (debe tener entre 6 y 12 caracteres).");
-  if (!iso) return msg("msg-form", "La fecha debe ser válida, con formato dd/mm/aaaa.");
-  if (!$("consiento").checked) return msg("msg-form", "Debes autorizar el resguardo y consulta de tus datos para continuar.");
+  limpiarErroresEn("#form-rnm");
+  var ME = function (id, t) { return marcarCampoEn("#form-rnm", id, t, "msg-form"); };
+  if (!rnm) return ME("rnm", "Escribe tu número de RNM.");
+  if (!/^[A-Z0-9]{6,12}$/.test(rnm)) return ME("rnm", "Revisa tu RNM: deben ser entre 6 y 12 letras y números, sin espacios ni símbolos.");
+  if (!nacTxt) return ME("nac", "Escribe tu fecha de nacimiento (dd/mm/aaaa).");
+  if (!iso) return ME("nac", "Esa fecha no es válida. Usa el formato dd/mm/aaaa, por ejemplo 14/03/1992, y que no sea una fecha futura.");
+  if (!$("consiento").checked) return ME("consiento", "Marca la autorización para poder continuar.");
 
   consultaPendiente = { rnm: rnm, iso: iso, nacTexto: nacTxt };
 
@@ -446,12 +453,18 @@ if (btnConfEnviar) {
 
 /* ---------- Lista de RNM ---------- */
 var gratisDisponible = true;
+// Muestra un solo aviso: primera consulta gratis, cubierto por el plan, RNM adicional con plan, o límite de 4.
+function mostrarCosteAplicable() {
+  var lleno = registrosCargados.length >= 4;
+  var activo = !!planCargado && new Date(planCargado.vence_at) > new Date();
+  var cual = lleno ? "tope-4" : (gratisDisponible ? "reg-gratis" : (activo && registrosCargados.length + 1 <= planCargado.cupos ? "reg-cubierto" : "reg-adicional"));
+  ["reg-gratis", "reg-cubierto", "reg-adicional", "tope-4"].forEach(function (id) { var n = $(id); if (n) n.classList.toggle("oculto", id !== cual); });
+}
 async function actualizarAvisoRegistro() {
   var g = await sb.rpc("rnm_gratis_disponible");
   if (g.error || typeof g.data !== "boolean") return;
   gratisDisponible = g.data;
-  $("reg-gratis").classList.toggle("oculto", !gratisDisponible);
-  $("reg-adicional").classList.toggle("oculto", gratisDisponible);
+  mostrarCosteAplicable();
 }
 
 var PRECIOS = { 1: 499, 2: 899, 3: 1299, 4: 1599 }; // centavos al mes por cuenta, según cuántos RNM cubre el plan
@@ -868,7 +881,7 @@ async function cargarRegistros() {
   planCargado = plan;
   var lleno = r.data.length >= 4;
   $("form-rnm").classList.toggle("oculto", lleno);
-  $("tope-4").classList.toggle("oculto", !lleno);
+  mostrarCosteAplicable();
   actualizarDashboard(r.data, plan);
   renderizarMisRnm(r.data, plan);
   cartelPlanes(r.data, plan);
@@ -965,16 +978,22 @@ function bloqueError(titulo, texto, reintentar) {
 }
 
 /* ---------- Historial de Consultas (Pantalla 12) ---------- */
+var cargaHistorialId = 0; // si llegan dos cargas seguidas, solo cuenta la última (evita listas duplicadas)
 async function cargarHistorialConsultas() {
   var cont = $("lista-historial-consultas");
   if (!cont) return;
+  var miCarga = ++cargaHistorialId;
   cont.textContent = "";
 
-  var loading = el("p", "sub", "Cargando historial de consultas…");
+  cont.setAttribute("aria-busy", "true");
+  var loading = el("div", "cargando-lista");
+  loading.innerHTML = '<span class="spinner-azul" aria-hidden="true"></span> Cargando historial de consultas…';
   cont.appendChild(loading);
 
   var r = await sb.from("rnm_consultas").select(COLUMNAS_CONSULTA).order("created_at", { ascending: false }).limit(200);
+  if (miCarga !== cargaHistorialId) return; // llegó tarde: otra carga más nueva manda
   loading.remove();
+  cont.removeAttribute("aria-busy");
 
   if (r.error) { // un fallo de carga no se presenta como "sin consultas"
     cont.appendChild(bloqueError("No pudimos cargar tu historial", "Revisa tu conexión e inténtalo de nuevo.", cargarHistorialConsultas));
@@ -1679,7 +1698,12 @@ document.querySelectorAll("#mis-rnm-filtros button").forEach(function (btn) {
 var btnActualizarHist = $("btn-actualizar-historial");
 if (btnActualizarHist) {
   btnActualizarHist.addEventListener("click", function () {
-    cargarHistorialConsultas();
+    var b = this, t = b.textContent;
+    b.disabled = true; b.textContent = "Actualizando…"; b.setAttribute("aria-busy", "true");
+    cargarHistorialConsultas().then(function () {
+      b.disabled = false; b.textContent = "Lista actualizada ✓"; b.removeAttribute("aria-busy");
+      setTimeout(function () { b.textContent = t; }, 1800);
+    });
   });
 }
 

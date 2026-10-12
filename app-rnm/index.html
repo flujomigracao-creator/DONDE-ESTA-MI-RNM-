@@ -254,24 +254,28 @@
               <div class="page-header page-header-compacto">
                 <div class="page-header-text">
                   <h2>Agregar RNM</h2>
-                  <p id="reg-gratis" class="sub">Tu <b>primera consulta es gratis</b>. Después, con un plan, la revisamos <b>cada semana</b>.</p>
-                  <p id="reg-adicional" class="sub oculto">Los RNM adicionales requieren un <b>plan mensual</b> (desde R$ 4,99) con <b>revisión semanal</b>.</p>
-                  <p id="tope-4" class="sub oculto">Llegaste al máximo de <b>4 RNM</b> por cuenta.</p>
+                  <p class="sub">Paso 1 de 2 · Escribe los datos como aparecen en tu documento. Antes de registrar podrás revisarlos.</p>
+                  <p id="reg-gratis" class="aviso-coste gratis"><b>Primera consulta gratis.</b> Después, con un plan, la revisamos cada semana.</p>
+                  <p id="reg-cubierto" class="aviso-coste cubierto oculto"><b>Cubierto por tu plan.</b> Este RNM entra en tu seguimiento semanal.</p>
+                  <p id="reg-adicional" class="aviso-coste plan oculto"><b>RNM adicional.</b> Requiere un plan mensual (desde R$ 4,99) con revisión semanal.</p>
+                  <p id="tope-4" class="aviso-coste limite oculto"><b>Límite alcanzado.</b> Tu cuenta ya tiene 4 RNM, el máximo permitido.</p>
                 </div>
               </div>
 
-              <form id="form-rnm" autocomplete="off">
+              <form id="form-rnm" autocomplete="off" novalidate>
                 <div class="form-field">
                   <label for="rnm">Número de RNM</label>
                   <input type="text" id="rnm" autocapitalize="characters" placeholder="Ej: A123456B" maxlength="12" required>
+                  <p class="sub ayuda-campo">De 6 a 12 letras y números, sin espacios. Lo encuentras en tu protocolo o en tu carné.</p>
                 </div>
                 <div class="form-field">
                   <label for="nac">Fecha de nacimiento</label>
                   <input type="text" id="nac" inputmode="numeric" placeholder="dd/mm/aaaa" maxlength="10" required>
+                  <p class="sub ayuda-campo">Formato dd/mm/aaaa. Ejemplo: 14/03/1992.</p>
                 </div>
                 <label class="check">
                   <input type="checkbox" id="consiento" required>
-                  <span>Autorizo a FLUJO a resguardar mi RNM y fecha de nacimiento y consultarlos ante la Policía Federal únicamente para informarme sobre mi documento.</span>
+                  <span><b>Para qué usamos estos datos:</b> Autorizo a FLUJO a resguardar mi RNM y fecha de nacimiento y consultarlos ante la Policía Federal únicamente para informarme sobre mi documento.</span>
                 </label>
                 <div class="acciones">
                   <button type="submit" id="btn-registrar">Continuar a revisión</button>
