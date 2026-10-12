@@ -737,15 +737,14 @@ function cartelPlanes(regs, plan) {
   }
   if (planElegido < necesita) planElegido = necesita;
   var c = el("div", "pay");
-  c.appendChild(el("span", "pay-paso", "Paso 1 de 2 · Elige tu plan"));
+  c.appendChild(el("span", "pay-paso", "Paso 1 de 2"));
   var primeraHecha = regs.some(function (r) { return !r.cerrado && !r.cubierto && !!r.ultimo_resultado; });
-  c.appendChild(el("h2", "pay-titulo", activo ? "Tu plan cubre " + plan.cupos + " de tus " + abiertos + " RNM" : (primeraHecha ? "Activa un plan para saber dónde está tu RNM" : "Elige tu plan para seguir vigilando")));
+  c.appendChild(el("h2", "pay-titulo", activo ? "Tu plan cubre " + plan.cupos + " de tus " + abiertos + " RNM" : (primeraHecha ? "Activa un plan para seguir tu RNM" : "Elige tu plan")));
   c.appendChild(el("p", "sub", activo
-    ? "Amplía tu plan para que también vigilemos los demás."
+    ? "Amplía tu plan para cubrir los demás."
     : (primeraHecha
-      ? "Tu primera consulta gratis ya se hizo. Para que el estado de tu RNM se actualice cada semana necesitas un plan; sin plan no volvemos a revisarlo. Paga con tarjeta, Pix o boleto."
-      : "Tu primera consulta es gratis. Para seguir vigilando, elige cuántos RNM quieres cubrir. Paga con tarjeta, Pix o boleto.")));
-  c.appendChild(notaSemanal());
+      ? "Con un plan revisamos tu RNM cada 7 días. Sin plan, el estado ya no se actualiza."
+      : "Elige cuántos RNM cubrir. Revisión cada 7 días.")));
   var grid = el("div", "planes");
   [1, 2, 3, 4].forEach(function (n) {
     var b = el("button", "plan" + (n === planElegido ? " sel" : ""));
@@ -753,16 +752,14 @@ function cartelPlanes(regs, plan) {
     b.appendChild(el("b", "", n + (n === 1 ? " RNM" : " RNM")));
     b.appendChild(el("span", "precio", reales(PRECIOS[n]) + " /mes"));
     b.appendChild(el("small", "", reales(Math.round(PRECIOS[n] / n)) + " por RNM"));
-    if (n > 1) {
-      b.appendChild(el("small", "ahorro", "Ahorras " + porcentajeAhorro(n) + "% (" + reales(ahorro(n)) + ")"));
-    }
-    if (n === 4) b.appendChild(el("small", "mejor", "Mejor precio por RNM"));
+    b.appendChild(el("small", n > 1 ? "ahorro" : "", n > 1 ? "Ahorras " + porcentajeAhorro(n) + "%" : " "));
+    if (n === 4) b.classList.add("mejor-precio");
     b.addEventListener("click", function () { planElegido = n; cartelPlanes(regs, plan); });
     grid.appendChild(b);
   });
   c.appendChild(grid);
   var acc = el("div", "acciones");
-  var pagar = el("button", "", (activo ? "Ampliar a " : "Suscribirme: ") + planElegido + " RNM por " + reales(PRECIOS[planElegido]) + " al mes");
+  var pagar = el("button", "", (activo ? "Ampliar a " : "Continuar · ") + planElegido + " RNM · " + reales(PRECIOS[planElegido]) + "/mes");
   pagar.type = "button";
   pagar.addEventListener("click", function () { mostrarPago(planElegido); });
   acc.appendChild(pagar);
