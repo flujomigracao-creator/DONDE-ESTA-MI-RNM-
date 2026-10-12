@@ -754,15 +754,13 @@ function cartelPlanes(regs, plan) {
     b.appendChild(el("span", "precio", reales(PRECIOS[n]) + " /mes"));
     b.appendChild(el("small", "", reales(Math.round(PRECIOS[n] / n)) + " por RNM"));
     if (n > 1) {
-      b.appendChild(el("small", "ahorro", "Ahorras " + porcentajeAhorro(n) + "%"));
-      b.appendChild(el("small", "separado", n + " por separado: " + reales(n * PRECIOS[1]) + " · ahorras " + reales(ahorro(n))));
+      b.appendChild(el("small", "ahorro", "Ahorras " + porcentajeAhorro(n) + "% (" + reales(ahorro(n)) + ")"));
     }
     if (n === 4) b.appendChild(el("small", "mejor", "Mejor precio por RNM"));
     b.addEventListener("click", function () { planElegido = n; cartelPlanes(regs, plan); });
     grid.appendChild(b);
   });
   c.appendChild(grid);
-  c.appendChild(el("p", "sub", "El ahorro se calcula frente a pagar R$ 4,99 por cada RNM por separado."));
   var acc = el("div", "acciones");
   var pagar = el("button", "", (activo ? "Ampliar a " : "Suscribirme: ") + planElegido + " RNM por " + reales(PRECIOS[planElegido]) + " al mes");
   pagar.type = "button";

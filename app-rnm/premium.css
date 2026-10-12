@@ -1555,3 +1555,10 @@ input[type="text"], select { border-radius: 10px; min-height: 46px; }
 .aviso-plan p { margin: 0 0 10px; font-size: 0.9rem; line-height: 1.45; color: #5A2E06; }
 .aviso-plan b { color: #3E1F04; }
 .aviso-plan button { min-height: 40px; font-size: 0.9rem; }
+
+/* Popup de planes: tarjetas que no se desbordan y botón visible sin desplazarse */
+.plan { white-space: normal; padding: 12px 14px; gap: 2px; min-height: 0; }
+.plan small { white-space: normal; }
+.planes { margin: 12px 0 4px; }
+#cartel .pay > .acciones { margin-top: 12px; }
+#cartel .pay > .acciones button { flex: 1 1 auto; }
