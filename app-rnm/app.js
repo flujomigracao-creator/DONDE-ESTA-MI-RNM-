@@ -678,6 +678,16 @@ function mostrarCodigoPago(cupos, d) {
   }
 }
 
+// Aviso fijo: todos los planes se revisan una vez por semana.
+function notaSemanal() {
+  var n = el("div", "nota-semanal");
+  n.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>';
+  var t = el("p", "", "");
+  t.innerHTML = "<b>Revisión semanal.</b> Con un plan revisamos cada RNM una vez por semana (cada 7 días) hasta que el documento esté listo. No es en tiempo real.";
+  n.appendChild(t);
+  return n;
+}
+
 function cartelPlanes(regs, plan) {
   if (pagandoPlan) return; // se está escribiendo la tarjeta: no tocar la pantalla
   var cont = $("cartel");
@@ -715,6 +725,7 @@ function cartelPlanes(regs, plan) {
   c.appendChild(el("p", "sub", activo
     ? "Amplía tu plan para que también vigilemos los demás."
     : "Tu primera consulta es gratis. Para seguir vigilando, elige cuántos RNM quieres cubrir. Paga con tarjeta, Pix o boleto."));
+  c.appendChild(notaSemanal());
   var grid = el("div", "planes");
   [1, 2, 3, 4].forEach(function (n) {
     var b = el("button", "plan" + (n === planElegido ? " sel" : ""));
@@ -829,6 +840,7 @@ function renderizarPlanes(regs, plan) {
     [["Precio mensual", reales(plan.precio_centavos)],
      ["Pagado hasta", fechaCorta(plan.vence_at)],
      ["RNM incluidos", String(plan.cupos)],
+     ["Frecuencia de revisión", "1 vez por semana"],
      ["RNM en seguimiento", abiertos + " de " + plan.cupos + (abiertos > plan.cupos ? " (" + (abiertos - plan.cupos) + " sin cobertura)" : "")]
     ].forEach(function (par) {
       var f = el("div", "review-row");
@@ -854,6 +866,7 @@ function renderizarPlanes(regs, plan) {
   acc.appendChild(ver);
   estado.appendChild(acc);
   cont.appendChild(estado);
+  cont.appendChild(notaSemanal());
 
   var precios = el("div", "tarjeta");
   precios.appendChild(el("h3", "", "Planes mensuales"));
@@ -1044,7 +1057,7 @@ function actualizarDashboard(regs, plan) {
           if (l) abrirDetalleRnm(l.id);
         });
       } else if (haySinCubrir) {
-        nP.textContent = "Elige un plan para seguir vigilando tus RNM.";
+        nP.textContent = "Elige un plan: revisamos tus RNM cada semana.";
         nBtn.textContent = "Ver planes";
         nBtn.addEventListener("click", function () { navegarA("planes"); });
       } else {

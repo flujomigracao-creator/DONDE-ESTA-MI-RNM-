@@ -1551,3 +1551,9 @@ input[type="text"], select { border-radius: 10px; min-height: 46px; }
   .kpi b { font-size: 1.3rem; }
   .app-header { background: #FFFFFF; }
 }
+
+/* Aviso de revisión semanal */
+.nota-semanal { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; margin: 14px 0 4px; background: var(--brand-soft); border: 1px solid var(--brand-line); border-radius: var(--radius-md); }
+.nota-semanal svg { width: 22px; height: 22px; flex-shrink: 0; color: var(--brand); margin-top: 1px; }
+.nota-semanal p { margin: 0; font-size: 0.86rem; line-height: 1.45; color: #1D3A7A; }
+.nota-semanal b { color: var(--navy); }
