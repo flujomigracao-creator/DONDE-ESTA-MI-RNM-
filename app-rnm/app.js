@@ -3,6 +3,8 @@ var SUPABASE_URL = "https://rumpfqevyspdmhaggxtq.supabase.co";
 var SUPABASE_KEY = "sb_publishable_7znj3ENrTWXDE2dibUzv_A_a7HUoud_";
 // WhatsApp de FLUJO, solo dígitos con código de país (ej: 5511912345678). Vacío = no se muestra el botón.
 var WHATSAPP = "";
+// Clave pública de Mercado Pago (pensada para ir en el navegador; no permite cobrar ni leer nada).
+var MP_PUBLIC_KEY = "APP_USR-d9efd8e3-53cb-4c67-bb1f-585c8fcd5358";
 
 var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 var $ = function (id) { return document.getElementById(id); };
@@ -218,34 +220,132 @@ var planElegido = 1;
 
 var esperandoPago = 0; // hora en que la persona volvió de Mercado Pago; mientras tanto se confirma el cobro
 
-async function irAPagar(cupos, boton) {
-  var aviso = $("msg-pago");
-  if (aviso) aviso.textContent = "";
-  if (boton) boton.disabled = true;
+// Pide al servidor que cree la suscripción con el código de la tarjeta (los datos de la tarjeta nunca pasan por FLUJO).
+async function pedirSuscripcion(cupos, tarjetaToken) {
+  var s = await sb.auth.getSession();
+  var token = s.data.session && s.data.session.access_token;
+  var r = await fetch(SUPABASE_URL + "/functions/v1/mp-crear-suscripcion", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", apikey: SUPABASE_KEY, Authorization: "Bearer " + token },
+    body: JSON.stringify({ cupos: cupos, card_token_id: tarjetaToken })
+  });
+  var j = await r.json().catch(function () { return {}; });
+  return { ok: r.ok && j.ok === true, j: j };
+}
+
+function textoErrorPago(j) {
+  var textos = {
+    pago_no_configurado: "Estamos activando el pago. Vuelve en unos días.",
+    registra_un_rnm_primero: "Primero registra tu RNM.",
+    sin_sesion: "Tu sesión venció. Sal y vuelve a entrar.",
+    tarjeta_invalida: "No pudimos leer la tarjeta. Revisa los datos e intenta de nuevo."
+  };
+  if (textos[j.error]) return textos[j.error];
+  var d = String(j.detalle || "");
+  if (/same user/i.test(d)) return "Esta cuenta no puede pagar su propio plan. Entra con otro correo.";
+  if (/card|token|invalid|rejected|fund|cvv|security/i.test(d)) return "La tarjeta no fue aceptada. Revisa los datos o prueba con otra.";
+  return "No pudimos procesar el pago. Revisa la tarjeta o prueba con otra." + (j.mp_status ? " (código " + j.mp_status + ")" : "");
+}
+
+/* ---------- Pantalla de pago dentro de la app ---------- */
+var pagandoPlan = 0; // plan que se está pagando; mientras sea > 0 el cuadro no se redibuja (si no, se borraría la tarjeta)
+var mpSdk = null, formTarjeta = null;
+
+function salirDePago() {
+  pagandoPlan = 0;
+  try { if (formTarjeta) formTarjeta.unmount(); } catch (e) { /* ya desmontado */ }
+  formTarjeta = null;
+}
+
+function mostrarPago(cupos) {
+  var cont = $("cartel");
+  if (!window.MercadoPago) { // el script de Mercado Pago no cargó (sin internet o bloqueado)
+    var av = $("msg-pago"); if (av) av.textContent = "No pudimos cargar el pago seguro. Revisa tu internet e intenta de nuevo.";
+    return;
+  }
+  salirDePago();
+  pagandoPlan = cupos;
+  cont.textContent = "";
+  var c = el("div", "tarjeta");
+  c.appendChild(el("h2", "", "Pago seguro"));
+  c.appendChild(el("p", "sub", "Plan de " + cupos + " RNM · " + reales(PRECIOS[cupos]) + " al mes. Se cobra cada mes a tu tarjeta y puedes cancelar cuando quieras."));
+  var f = document.createElement("form");
+  f.id = "form-pago"; f.setAttribute("novalidate", "novalidate");
+  f.innerHTML =
+    '<label>Número de tarjeta</label><div id="mp-numero" class="campo-mp"></div>' +
+    '<div class="fila" style="gap:12px;align-items:flex-start">' +
+      '<div style="flex:1"><label>Vencimiento</label><div id="mp-venc" class="campo-mp"></div></div>' +
+      '<div style="flex:1"><label>Código (CVV)</label><div id="mp-cvv" class="campo-mp"></div></div>' +
+    '</div>' +
+    '<label for="mp-nombre">Nombre en la tarjeta</label>' +
+    '<input type="text" id="mp-nombre" autocomplete="cc-name" maxlength="60" placeholder="Como aparece en la tarjeta">' +
+    '<div class="fila" style="gap:12px;align-items:flex-start">' +
+      '<div style="flex:1"><label for="mp-tipodoc">Documento</label><select id="mp-tipodoc"></select></div>' +
+      '<div style="flex:2"><label for="mp-doc">Número (CPF)</label><input type="text" id="mp-doc" inputmode="numeric" maxlength="20" placeholder="Solo números"></div>' +
+    '</div>' +
+    '<select id="mp-emisor" class="oculto"></select><select id="mp-cuotas" class="oculto"></select>' +
+    '<input type="text" id="mp-email" class="oculto">' +
+    '<div class="acciones"><button type="submit" id="btn-pagar-tarjeta">Pagar ' + reales(PRECIOS[cupos]) + ' al mes</button>' +
+    '<button type="button" class="sec" id="btn-volver-planes">Volver</button></div>' +
+    '<p class="sub" style="margin-top:10px">🔒 Pago procesado por Mercado Pago. Tus datos de tarjeta no pasan por FLUJO.</p>' +
+    '<p class="msg" id="msg-pago" aria-live="polite"></p>';
+  c.appendChild(f);
+  cont.appendChild(c);
+  $("mp-email").value = (usuarioActual && usuarioActual.email) || "";
+  if (perfilActual && perfilActual.nombre) $("mp-nombre").value = perfilActual.nombre.toUpperCase();
+
+  $("btn-volver-planes").addEventListener("click", function () { salirDePago(); cargarRegistros(); });
+
+  var btn = $("btn-pagar-tarjeta");
+  function aviso(t, bien) { var m = $("msg-pago"); if (m) { m.textContent = t || ""; m.className = "msg" + (bien ? " bien" : ""); } }
+
   try {
-    var s = await sb.auth.getSession();
-    var token = s.data.session && s.data.session.access_token;
-    var r = await fetch(SUPABASE_URL + "/functions/v1/mp-crear-suscripcion", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", apikey: SUPABASE_KEY, Authorization: "Bearer " + token },
-      body: JSON.stringify({ cupos: cupos })
+    mpSdk = mpSdk || new MercadoPago(MP_PUBLIC_KEY, { locale: "es-AR" });
+    formTarjeta = mpSdk.cardForm({
+      amount: String(PRECIOS[cupos] / 100),
+      iframe: true,
+      form: {
+        id: "form-pago",
+        cardNumber: { id: "mp-numero", placeholder: "0000 0000 0000 0000" },
+        expirationDate: { id: "mp-venc", placeholder: "MM/AA" },
+        securityCode: { id: "mp-cvv", placeholder: "123" },
+        cardholderName: { id: "mp-nombre" },
+        issuer: { id: "mp-emisor" },
+        installments: { id: "mp-cuotas" },
+        identificationType: { id: "mp-tipodoc" },
+        identificationNumber: { id: "mp-doc" },
+        cardholderEmail: { id: "mp-email" }
+      },
+      callbacks: {
+        onFormMounted: function (error) { if (error) aviso("No pudimos cargar el formulario de pago. Intenta de nuevo."); },
+        onError: function (errores) {
+          var lista = (Array.isArray(errores) ? errores : [errores]).map(function (e) { return e && e.message; }).filter(Boolean);
+          if (lista.length) aviso(lista[0]);
+        },
+        onSubmit: async function (ev) {
+          ev.preventDefault();
+          aviso("");
+          var d = formTarjeta.getCardFormData();
+          if (!d || !d.token) return aviso("Revisa los datos de la tarjeta.");
+          btn.disabled = true; aviso("Procesando el pago…", true);
+          var res;
+          try { res = await pedirSuscripcion(cupos, d.token); }
+          catch (e) { btn.disabled = false; return aviso("No pudimos conectar con el pago. Revisa tu internet e intenta de nuevo."); }
+          if (!res.ok) { btn.disabled = false; return aviso(textoErrorPago(res.j)); }
+          salirDePago();
+          esperandoPago = Date.now();
+          esperaMostrada = true;
+          cargarRegistros();
+        }
+      }
     });
-    var j = await r.json().catch(function () { return {}; });
-    if (r.ok && j.url) { location.href = j.url; return; }
-    var textos = {
-      pago_no_configurado: "Estamos activando el pago. Vuelve en unos días.",
-      registra_un_rnm_primero: "Primero registra tu RNM.",
-      sin_sesion: "Tu sesión venció. Sal y vuelve a entrar."
-    };
-    if (aviso) aviso.textContent = textos[j.error] || "No pudimos iniciar el pago. Intenta de nuevo en un momento.";
   } catch (e) {
-    if (aviso) aviso.textContent = "No pudimos conectar con el pago. Revisa tu internet e intenta de nuevo.";
-  } finally {
-    if (boton) boton.disabled = false;
+    aviso("No pudimos cargar el formulario de pago. Intenta de nuevo.");
   }
 }
 
 function cartelPlanes(regs, plan) {
+  if (pagandoPlan) return; // se está escribiendo la tarjeta: no tocar la pantalla
   var cont = $("cartel");
   cont.textContent = "";
   var abiertos = regs.filter(function (r) { return !r.cerrado; }).length;
@@ -298,7 +398,7 @@ function cartelPlanes(regs, plan) {
   var acc = el("div", "acciones");
   var pagar = el("button", "", (activo ? "Ampliar a " : "Suscribirme: ") + planElegido + " RNM por " + reales(PRECIOS[planElegido]) + " al mes");
   pagar.type = "button";
-  pagar.addEventListener("click", function () { irAPagar(planElegido, pagar); });
+  pagar.addEventListener("click", function () { mostrarPago(planElegido); });
   acc.appendChild(pagar);
   var ahoraNo = el("button", "sec", "Ahora no"); ahoraNo.type = "button";
   ahoraNo.addEventListener("click", cerrarModalPlanes);
@@ -325,6 +425,7 @@ function abrirModalPlanes() {
   $("modal-planes").querySelector(".modal-caja").focus();
 }
 function cerrarModalPlanes() {
+  if (pagandoPlan) { salirDePago(); cargarRegistros(); }
   $("modal-planes").classList.add("oculto");
   document.body.style.overflow = "";
 }

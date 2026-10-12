@@ -47,7 +47,7 @@ async function cobroAutorizado(id: string): Promise<{ ok: boolean; motivo?: stri
 
   const preapprovalId = String(ap?.preapproval_id ?? "");
   const { data: sus } = await admin.from("rnm_suscripciones_mp").select("*").eq("preapproval_id", preapprovalId).maybeSingle();
-  if (!sus) { console.error("suscripcion_desconocida", preapprovalId); return { ok: true, motivo: "suscripcion_desconocida" }; }
+  if (!sus) { console.error("suscripcion_desconocida", preapprovalId); throw new Error("suscripcion_desconocida"); } // aún no guardada: Mercado Pago reintenta
 
   const monto = Math.round(Number(ap?.transaction_amount) * 100);
   if (monto !== sus.monto_centavos) {
