@@ -1281,3 +1281,10 @@ input:focus, select:focus {
   .header-actions { flex: none; }
   .header-actions #btn-planes, .header-actions #btn-datos { display: none; }
 }
+
+/* --- Accesibilidad: foco visible al navegar con teclado --- */
+button:focus-visible, a:focus-visible, .nav-item:focus-visible, .bottom-nav-item:focus-visible,
+.quick-action-card:focus-visible, .filter-pill:focus-visible, summary:focus-visible {
+  outline: 3px solid rgba(21, 94, 239, 0.55);
+  outline-offset: 2px;
+}
