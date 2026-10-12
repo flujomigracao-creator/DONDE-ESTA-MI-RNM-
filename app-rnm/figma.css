@@ -307,3 +307,21 @@ button, .btn, .btn-enlace, .filter-pill, .nav-item, .bottom-nav-item, summary { 
 .res.ok .etapas li.hecha::before, .res.ok .etapas li.actual::before { background: var(--success); }
 .nombre-etapa { font-size: 0.74rem; font-weight: 600; color: var(--text-muted); line-height: 1.2; }
 .etapas li.actual .nombre-etapa { color: var(--text-main); font-weight: 800; }
+
+/* Detalles de la consulta y cambios de dirección (aprobada / desaprobada) */
+.detalles-consulta { margin: var(--sp-3) 0; padding: var(--sp-3); border-radius: 12px; background: rgba(255, 255, 255, 0.7); display: grid; gap: var(--sp-2); }
+.detalle-fila { display: flex; justify-content: space-between; gap: var(--sp-3); font-size: 0.86rem; }
+.detalle-fila span { color: var(--text-muted); flex: none; }
+.detalle-fila b { text-align: right; overflow-wrap: anywhere; color: var(--text-main); }
+.cambios-consulta { margin-top: var(--sp-2); display: grid; gap: var(--sp-1); }
+.cambios-consulta .fila-cambio { margin: 0; font-size: 0.86rem; color: var(--text-main); }
+.insignia-cambio { margin-left: 4px; vertical-align: middle; }
+.timeline-dot.mal { background: var(--danger); border-color: var(--danger); }
+
+/* Dónde está el RNM en este momento */
+.res .donde-ahora { display: flex; gap: var(--sp-3); align-items: center; margin: var(--sp-3) 0; padding: var(--sp-3) var(--sp-4); border-radius: 14px; background: #fff; border: 1px solid var(--line); }
+.res .donde-ahora svg { width: 26px; height: 26px; color: var(--brand); flex: none; }
+.res.ok .donde-ahora svg { color: var(--success); }
+.donde-ahora small { display: block; font-size: 0.74rem; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase; color: var(--text-muted); }
+.donde-ahora b { display: block; font-size: 1rem; line-height: 1.25; color: var(--text-main); }
+.hero-fig .hero-ubic { margin: 0 0 12px; padding: 8px 12px; border-radius: 12px; background: rgba(255, 255, 255, 0.12); color: #fff; font-weight: 600; font-size: 0.9rem; }

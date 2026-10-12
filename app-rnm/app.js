@@ -998,7 +998,8 @@ async function cargarHistorialConsultas() {
     izq.appendChild(el("span", "history-rnm", reg ? "RNM " + reg.rnm : "Documento"));
     izq.appendChild(el("div", "history-date", fechaHora(c.created_at)));
     if (c.resultado_texto) izq.appendChild(el("p", "history-resumen", ie.resumen));
-    if (c.unidad_pf) izq.appendChild(el("p", "sub history-unidad", "Unidad: " + lugarDeUnidad(c.unidad_pf)));
+    if (c.unidad_pf) izq.appendChild(el("p", "sub history-unidad", "Unidad: " + etiquetaUnidad(c.unidad_pf)));
+    var cambH = bloqueCambios(c.cambio_direccion); if (cambH) izq.appendChild(cambH);
     card.appendChild(izq);
 
     var der = el("div", "");
@@ -1015,8 +1016,7 @@ async function cargarHistorialConsultas() {
 /* ---------- Dashboard (Pantalla 5, diseño Figma) ---------- */
 function enmascarar(r) { r = r || ""; return r.length > 2 ? r.charAt(0) + "••••••" + r.charAt(r.length - 1) : r; }
 function estadoCorto(x) {
-  if (!x.ultimo_resultado) return x.requiere_pago && !x.cubierto ? "Espera un plan" : "Revisión en curso";
-  return explicar(x.ultimo_resultado).corto;
+  return estadoPresentacion(x).corto;
 }
 
 function actualizarDashboard(regs, plan) {
@@ -1065,6 +1065,7 @@ function actualizarDashboard(regs, plan) {
       hero.appendChild(top);
       hero.appendChild(el("h3", "", estadoCorto(p)));
       hero.appendChild(el("p", "", e.p[0] || e.t));
+      if (e.ubicacion) hero.appendChild(el("p", "hero-ubic", "📍 " + e.ubicacion));
       hero.appendChild(el("small", "", p.ultima_consulta_at ? "Consultado el " + fechaHora(p.ultima_consulta_at) : "Aún sin resultado"));
       var bv = el("button", "", "Ver detalle de mi RNM"); bv.type = "button";
       bv.addEventListener("click", function () { abrirDetalleRnm(p.id); });
@@ -1170,6 +1171,8 @@ async function cargarConsultasDe(id, box) {
     cc.appendChild(el("div", "timeline-date", fechaHora(c.created_at)));
     cc.appendChild(el("h4", "timeline-title", "Revisión: " + n[1]));
     if (c.resultado_texto) cc.appendChild(el("p", "timeline-desc", ie.resumen));
+    if (c.unidad_pf) cc.appendChild(el("p", "timeline-desc", "Unidad: " + etiquetaUnidad(c.unidad_pf)));
+    var cambT = bloqueCambios(c.cambio_direccion); if (cambT) cc.appendChild(cambT);
     item.appendChild(cc);
     box.appendChild(item);
   });
@@ -1221,10 +1224,12 @@ function construirDetalle(id) {
     lineas.forEach(function (l) {
       hayEventos = true;
       var item = el("div", "timeline-item");
-      item.appendChild(el("div", "timeline-dot" + (l.estado === "concluida" ? " ok" : "")));
+      item.appendChild(el("div", "timeline-dot" + (l.estado === "aprobada" ? " ok" : (l.estado === "desaprobada" ? " mal" : ""))));
       var tCont = el("div", "timeline-content");
       if (l.fecha) tCont.appendChild(el("div", "timeline-date", l.fecha));
-      tCont.appendChild(el("h4", "timeline-title", "Cambio de dirección: " + l.estado));
+      var tt = el("h4", "timeline-title", "Cambio de dirección ");
+      tt.appendChild(insigniaCambio(l.estado));
+      tCont.appendChild(tt);
       if (l.destino) tCont.appendChild(el("p", "timeline-desc", "Hacia " + l.destino));
       item.appendChild(tCont);
       tl.appendChild(item);
@@ -1302,7 +1307,7 @@ function el(tag, cls, texto) {
 }
 
 function etapasConsulta(e) {
-  var idx = { "En trámite": 0, "En traslado": 1, "Listo": 2, "Entregado": 3 }[e.corto];
+  var idx = { "En confección": 0, "En trámite": 0, "En traslado": 1, "Listo": 2, "Entregado": 3 }[e.corto];
   if (idx === undefined) return null; // problemas / no encontrado: sin barra de etapas
   var cont = el("ol", "etapas");
   cont.setAttribute("aria-label", "Etapa del documento");
@@ -1316,12 +1321,26 @@ function etapasConsulta(e) {
   return cont;
 }
 function cajaResultado(x) {
-  var e = explicar(x.ultimo_resultado);
+  var e = estadoPresentacion(x);
   var caja = el("div", "res " + e.tono);
   caja.appendChild(el("h3", "", e.t));
   var et = etapasConsulta(e);
   if (et) caja.appendChild(et);
+  if (e.ubicacion) {
+    var ub = el("div", "donde-ahora");
+    ub.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s7-6 7-12a7 7 0 10-14 0c0 6 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>';
+    var ubt = el("div", "");
+    ubt.appendChild(el("small", "", "Dónde está tu RNM ahora"));
+    ubt.appendChild(el("b", "", e.ubicacion));
+    ub.appendChild(ubt);
+    caja.appendChild(ub);
+  }
   caja.appendChild(el("p", "", e.resumen));
+  if (e.detalles && e.detalles.length) {
+    var dl = el("div", "detalles-consulta");
+    e.detalles.forEach(function (d) { var f = el("div", "detalle-fila"); f.appendChild(el("span", "", d[0])); f.appendChild(el("b", "", d[1])); dl.appendChild(f); });
+    caja.appendChild(dl);
+  }
   if (e.pasos && e.pasos.length) {
     caja.appendChild(el("h4", "pasos-titulo", "Qué puedes hacer"));
     var ol = el("ol", "pasos-lista");
@@ -1331,6 +1350,7 @@ function cajaResultado(x) {
   caja.appendChild(el("p", "aviso-orientativo", "Explicación orientativa de FLUJO. No es una decisión oficial ni una promesa de plazo."));
   var of = el("div", "oficial");
   if (x.ultima_consulta_at) of.appendChild(el("small", "", "Última revisión: " + fechaHora(x.ultima_consulta_at)));
+  if (!x.ultimo_resultado) return caja;
   var det = el("details", "texto-original");
   det.appendChild(el("summary", "", "Ver lo que dice la Policía Federal (texto original en portugués)"));
   det.appendChild(el("p", "", (x.ultimo_resultado || "").trim()));
@@ -1395,8 +1415,9 @@ function normalizar(txt) {
 // "09/10/2026 · Ainda não foi iniciado… · → DPF/SOD/SP" -> [{ fecha, estado, destino: "Sorocaba/SP" }]
 function estadoCambio(sit) {
   if (/ainda n[aã]o foi iniciado/i.test(sit)) return "aún no iniciada";
-  if (/indeferid|negad|rejeitad|cancelad/i.test(sit)) return "rechazada o cancelada";
-  if (/conclu[ií]d|deferid|finalizad|atendid/i.test(sit)) return "concluida";
+  if (/indeferid|negad|rejeitad/i.test(sit)) return "desaprobada";
+  if (/cancelad/i.test(sit)) return "cancelada";
+  if (/conclu[ií]d|deferid|aprovad|finalizad|atendid/i.test(sit)) return "aprobada";
   if (/an[aá]lise|andamento|agendad|aguard/i.test(sit)) return "en trámite";
   return sit || "en trámite";
 }
@@ -1456,10 +1477,12 @@ function cajaUnidad(x) {
     var tl = el("div", "timeline");
     lineas.forEach(function (l) {
       var item = el("div", "timeline-item");
-      item.appendChild(el("div", "timeline-dot" + (l.estado === "concluida" ? " ok" : "")));
+      item.appendChild(el("div", "timeline-dot" + (l.estado === "aprobada" ? " ok" : (l.estado === "desaprobada" ? " mal" : ""))));
       var c = el("div", "timeline-content");
       if (l.fecha) c.appendChild(el("div", "timeline-date", l.fecha));
-      c.appendChild(el("h4", "timeline-title", (l.destino ? "Hacia " + l.destino : "Destino no indicado") + " · " + l.estado));
+      var th = el("h4", "timeline-title", (l.destino ? "Hacia " + l.destino : "Destino no indicado") + " ");
+      th.appendChild(insigniaCambio(l.estado));
+      c.appendChild(th);
       item.appendChild(c);
       tl.appendChild(item);
     });
@@ -1529,44 +1552,76 @@ function lugarDeUnidad(codigo) {
 function unidadesDeTexto(txt) {
   return (txt.match(/DELEMIG\/DREX\/SR\/(?:D?PF)\/[A-Z]{2}|DPF\/[A-Z]{3}\/[A-Z]{2}/g) || []);
 }
+function etiquetaUnidad(codigo) { return lugarDeUnidad(codigo) + " (" + codigo + ")"; }
 var REGLAS_CONSULTA = [
   { re: /entregue|retirado em/i, tono: "ok", badge: "ok", corto: "Entregado", t: "Tu documento ya fue entregado",
-    f: function () { return { resumen: "El carné ya figura como entregado.", pasos: ["Si no lo tienes contigo, escríbenos " + VIA_CONTACTO + "."] }; } },
+    f: function () { return { resumen: "La Policía Federal indica que el carné ya fue entregado.", pasos: ["Si no lo tienes contigo, escríbenos " + VIA_CONTACTO + "."], detalles: [], ubic: "Ya está contigo (entregado)" }; } },
   { re: /transfer[eê]ncia/i, tono: "aviso", badge: "vigila", corto: "En traslado", t: "Tu documento está en traslado",
     f: function (txt) {
-      var u = unidadesDeTexto(txt);
+      var u = unidadesDeTexto(txt), det = [];
+      if (u.length >= 2) { det.push(["Sale de", etiquetaUnidad(u[0])]); det.push(["Llega a", etiquetaUnidad(u[1])]); }
       var ruta = u.length >= 2 ? "Va de " + lugarDeUnidad(u[0]) + " hacia " + lugarDeUnidad(u[1]) + "." : "Se está moviendo entre unidades de la Policía Federal.";
-      return { resumen: ruta + " Al llegar aparecerá como listo.", pasos: ["No tienes que hacer nada por ahora.", "Si necesitas retirarlo en otra ciudad, escríbenos " + VIA_CONTACTO + "."] };
+      return { resumen: ruta + " Cuando llegue, aparecerá como listo para retirar.", pasos: ["No tienes que hacer nada por ahora.", "Si necesitas retirarlo en otra ciudad, escríbenos " + VIA_CONTACTO + "."], detalles: det,
+        ubic: u.length >= 2 ? "En camino de " + lugarDeUnidad(u[0]) + " a " + lugarDeUnidad(u[1]) : "En camino entre unidades de la PF" };
     } },
   { re: /pronto para ser retirado|confeccionado/i, tono: "ok", badge: "ok", corto: "Listo", t: "¡Tu documento está listo para retirar!",
     f: function (txt) {
-      var u = unidadesDeTexto(txt);
-      return { resumen: "Ya puedes retirarlo" + (u.length ? " en la unidad de " + lugarDeUnidad(u[0]) : " en la unidad indicada") + ".",
-        pasos: ["Agenda tu retirada en el formulario de la Policía Federal.",
-                "Si dice «no hay agenda», esa unidad no pide cita: ve directo.",
-                "Lleva tu protocolo y un documento con foto."] };
+      var u = unidadesDeTexto(txt), det = [];
+      if (u.length) det.push(["Unidad de retiro", etiquetaUnidad(u[0])]);
+      return { resumen: "Tu documento fue confeccionado y ya puedes retirarlo" + (u.length ? " en la unidad de " + lugarDeUnidad(u[0]) : " en la unidad indicada") + ".",
+        pasos: ["Llena el formulario de entrega de carteiras de la Policía Federal y agenda tu retirada en la unidad correcta.",
+                "Algunas unidades no requieren agenda: si el sistema dice «no hay agenda para el servicio elegido», puedes ir directamente.",
+                "Lleva tu protocolo y un documento con foto."], detalles: det,
+        ubic: u.length ? "En la unidad de " + lugarDeUnidad(u[0]) + ", listo para retirar" : "En la unidad indicada por la PF, listo para retirar" };
     } },
   { re: /indeferid|negad|rejeitad|arquivad/i, tono: "mal", badge: "danger", corto: "Con problema", t: "Tu solicitud tiene un problema",
-    f: function () { return { resumen: "La solicitud no fue aprobada o fue archivada.", pasos: ["Escríbenos " + VIA_CONTACTO + " para revisar tu caso."] }; } },
+    f: function () { return { resumen: "La solicitud no fue aprobada o fue archivada.", pasos: ["Escríbenos " + VIA_CONTACTO + " para revisar tu caso."], detalles: [] }; } },
   { re: /pend[eê]ncia|exig[eê]ncia|complement|inconsist/i, tono: "aviso", badge: "", corto: "Falta algo", t: "Falta algo en tu trámite",
-    f: function () { return { resumen: "La PF pide información o documentos.", pasos: ["Escríbenos " + VIA_CONTACTO + " y te ayudamos a responder a tiempo."] }; } },
+    f: function () { return { resumen: "La Policía Federal pide información o documentos adicionales.", pasos: ["Escríbenos " + VIA_CONTACTO + " y te ayudamos a responder a tiempo."], detalles: [] }; } },
   { re: /an[aá]lise|em andamento|processamento|aguard|confec[cç][aã]o|produ[cç][aã]o/i, tono: "aviso", badge: "vigila", corto: "En trámite", t: "Tu trámite sigue en proceso",
-    f: function () { return { resumen: "Está en análisis o en fabricación.", pasos: ["No tienes que hacer nada por ahora.", "Con un plan activo lo revisamos cada 7 días."] }; } },
+    f: function () { return { resumen: "Está en análisis o en fabricación.", pasos: ["No tienes que hacer nada por ahora.", "Con un plan activo lo revisamos cada 7 días."], detalles: [] }; } },
   { re: /n[aã]o (foi )?encontrad|nenhum|sin resultados/i, tono: "aviso", badge: "", corto: "No encontrado", t: "No encontramos tu trámite",
-    f: function () { return { resumen: "La PF no encontró tu trámite con esos datos.", pasos: ["Revisa tu RNM y fecha de nacimiento.", "Si todo está bien, escríbenos " + VIA_CONTACTO + "."] }; } }
+    f: function () { return { resumen: "La Policía Federal no encontró tu trámite con los datos registrados.", pasos: ["Revisa que tu RNM y tu fecha de nacimiento estén bien escritos.", "Si todo está bien, escríbenos " + VIA_CONTACTO + "."], detalles: [] }; } }
 ];
+function insigniaCambio(estado) {
+  var cls = estado === "aprobada" ? " ok" : (estado === "desaprobada" ? " danger" : (estado === "en trámite" ? " vigila" : ""));
+  return el("span", "insignia insignia-cambio" + cls, estado.charAt(0).toUpperCase() + estado.slice(1));
+}
+function bloqueCambios(texto) {
+  if (!texto) return null;
+  var lineas = lineasCambio(texto);
+  if (!lineas.length) return null;
+  var cont = el("div", "cambios-consulta");
+  lineas.forEach(function (l) {
+    var p = el("p", "fila-cambio", "");
+    p.appendChild(el("b", "", "Cambio de dirección"));
+    p.appendChild(document.createTextNode((l.destino ? " hacia " + l.destino : "") + (l.fecha ? " · " + l.fecha : "") + " "));
+    p.appendChild(insigniaCambio(l.estado));
+    cont.appendChild(p);
+  });
+  return cont;
+}
 function interpretarConsulta(txt) {
   txt = txt || "";
   var regla = REGLAS_CONSULTA.find(function (x) { return x.re.test(txt); });
-  if (!regla) return { tono: "aviso", badge: "", corto: "Novedad", t: "Hay una novedad en tu trámite", resumen: "La PF registró una novedad que no podemos explicar sola.", pasos: ["Escríbenos " + VIA_CONTACTO + " y te la explicamos."], p: ["La PF registró una novedad que no podemos explicar sola."], original: txt };
+  if (!regla) return { tono: "aviso", badge: "", corto: "Novedad", t: "Hay una novedad en tu trámite", resumen: "La Policía Federal registró una novedad que no podemos explicar automáticamente. Mira el texto original más abajo.", pasos: ["Escríbenos " + VIA_CONTACTO + " y te la explicamos."], detalles: [], ubicacion: "", p: ["La Policía Federal registró una novedad que no podemos explicar automáticamente."], original: txt };
   var d = regla.f(txt);
-  return { tono: regla.tono, badge: regla.badge, corto: regla.corto, t: regla.t, resumen: d.resumen, pasos: d.pasos, p: [d.resumen], original: txt };
+  return { tono: regla.tono, badge: regla.badge, corto: regla.corto, t: regla.t, resumen: d.resumen, pasos: d.pasos, detalles: d.detalles || [], ubicacion: d.ubic || "", p: [d.resumen], original: txt };
 }
 // Estado que se muestra para un registro: si todavía no hay resultado, se dice tal cual (nunca "novedad").
 function estadoPresentacion(x) {
-  if (x.ultimo_resultado) return explicar(x.ultimo_resultado);
-  if (x.requiere_pago && !x.cubierto) return { tono: "aviso", t: "Este RNM espera un plan", p: ["Se consulta cuando actives un plan mensual que lo cubra."], pasos: [] };
-  return { tono: "aviso", t: "Estamos haciendo tu primera consulta", p: ["Es gratis. Verás aquí el resultado en cuanto lo tengamos."], pasos: [] };
+  if (x.ultimo_resultado) {
+    var e0 = explicar(x.ultimo_resultado);
+    if (!e0.ubicacion && x.unidad_pf) e0.ubicacion = "En la unidad de " + lugarDeUnidad(x.unidad_pf);
+    if (!e0.ubicacion) e0.ubicacion = "La PF todavía no indica en qué unidad está";
+    return e0;
+  }
+  var plan = x.requiere_pago && !x.cubierto;
+  return { tono: "aviso", badge: "vigila", corto: "En confección", t: "Tu documento se está confeccionando",
+    resumen: plan ? "Todavía no hay información de la Policía Federal. Activa un plan para que consultemos tu RNM cada semana."
+                  : "Todavía no hay información de la Policía Federal. Cuando haya novedades las verás aquí.",
+    p: [plan ? "Todavía no hay información de la Policía Federal. Activa un plan para que consultemos tu RNM cada semana." : "Todavía no hay información de la Policía Federal. Cuando haya novedades las verás aquí."],
+    pasos: plan ? ["Elige un plan para empezar el seguimiento semanal."] : ["No tienes que hacer nada por ahora."], detalles: [], ubicacion: "Aún sin información de ubicación" };
 }
 function explicar(txt) { return interpretarConsulta(txt); }
 

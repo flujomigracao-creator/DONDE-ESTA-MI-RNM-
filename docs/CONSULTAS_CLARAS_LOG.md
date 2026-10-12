@@ -18,3 +18,12 @@ Listo (BA), en traslado (RR→PR), en análisis y no encontrado devuelven títul
 
 ## No probado
 Con sesión y datos reales; textos de la PF que no estén en el catálogo (caen en "novedad" con el original plegado); revisión de redacción por alguien de soporte.
+
+## Ajuste del mismo día (detalles que faltaban)
+- **Sin información todavía**: el título es "Tu documento se está confeccionando" (con aviso de plan si el RNM espera uno).
+- **Dónde está tu RNM ahora**: bloque destacado en el detalle y línea 📍 en la tarjeta principal de Inicio — "En la unidad de Salvador/BA, listo para retirar", "En camino de Boa Vista/RR a Curitiba/PR", o la unidad que figura en el registro.
+- **Detalles completos otra vez**: unidad con ciudad y código (`DELEMIG/DREX/SR/PF/BA`), origen y destino del traslado, instrucciones completas de retirada (formulario de carteiras, unidades sin agenda).
+- **Cambios de dirección**: ahora se muestran también en cada fila del historial y de la línea de tiempo, con destino, fecha y estado **Aprobada / Desaprobada** (insignia verde/roja; además "en trámite", "aún no iniciada", "cancelada").
+- sw v36.
+
+Probado (375×812, textos reales de la PF + cambios de ejemplo "Deferido"/"Indeferido"): ubicación para listo, traslado, sin información y en trámite; chips Aprobada/Desaprobada; sin scroll horizontal. No probado con datos reales de Supabase.
