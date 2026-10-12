@@ -346,6 +346,19 @@
           <div class="page-header">
             <div class="page-header-text">
               <h2>Ayuda y soporte</h2>
+              <p>Respuestas rápidas y cómo hablar con nosotros.</p>
+            </div>
+          </div>
+
+          <div class="aviso-claro">
+            <b>Servicio independiente de FLUJO.</b> No somos la Policía Federal ni garantizamos plazos o decisiones. Con un plan, revisamos tu RNM <b>una vez por semana</b> (no en tiempo real).
+          </div>
+
+          <div class="tarjeta contacto-card">
+            <h3 class="titulo-bloque">¿Necesitas ayuda de una persona?</h3>
+            <div class="acciones">
+              <a href="#" id="ayuda-whatsapp" target="_blank" rel="noopener" class="btn-enlace">Escribir por WhatsApp</a>
+              <a href="mailto:flujoescalaempresas@gmail.com" class="btn sec">Escribir por correo</a>
             </div>
           </div>
 
@@ -360,22 +373,12 @@
                 <p>Una vez por semana (cada 7 días) mientras tengas un plan activo, hasta que el documento esté listo. La primera consulta es inmediata y gratis. La revisión no es en tiempo real: si el estado cambia entre una revisión y otra, lo verás en la siguiente.</p></details>
               <details><summary>¿Cómo veo que mi pago se confirmó?</summary>
                 <p>Pagas dentro de la app con tarjeta, Pix o boleto (Mercado Pago). La tarjeta se renueva sola cada mes; Pix y boleto pagan un mes cada vez. Cuando el pago se confirma, tu plan aparece activo en Planes y pagos. Si tarda más de unos minutos, escríbenos.</p></details>
+              <details><summary>Quiero cubrir más RNM: ¿cómo amplío mi plan?</summary>
+                <p>En Planes y pagos eliges un plan que cubra todos tus RNM. Pagas el plan nuevo completo y reemplaza al actual durante 1 mes desde hoy; los días que quedaban del plan anterior no se suman.</p></details>
               <details><summary>No veo datos de mi RNM</summary>
                 <p>Si acabas de registrarlo, la primera revisión puede tardar. Si aparece “No encontramos tu trámite”, revisaremos tu RNM y fecha de nacimiento y te escribiremos si algo no coincide.</p></details>
               <details><summary>Mi documento está listo en otra ciudad</summary>
-                <p>Te orientamos con el cambio de dirección: usa el botón de WhatsApp que aparece en el detalle del RNM.</p></details>
-            </div>
-
-            <div class="separador-bloque">
-              <h4 class="titulo-sub">Escríbenos</h4>
-              <div class="acciones">
-                <a href="#" id="ayuda-whatsapp" target="_blank" rel="noopener" class="btn-enlace">
-                  Atención por WhatsApp
-                </a>
-                <a href="mailto:flujoescalaempresas@gmail.com" class="btn sec">
-                  Escribir por correo electrónico
-                </a>
-              </div>
+                <p>Te orientamos con el cambio de dirección: usa el botón de WhatsApp que aparece en el detalle del RNM. La entrega y el cambio los decide la Policía Federal.</p></details>
             </div>
           </div>
         </section>
@@ -385,8 +388,10 @@
           <div class="page-header">
             <div class="page-header-text">
               <h2>Mi cuenta</h2>
+              <p>Tus datos y tu acceso.</p>
             </div>
           </div>
+
           <div class="tarjeta tarjeta-cuenta">
             <div class="cuenta-cabecera">
               <div class="user-avatar-circle avatar-grande">U</div>
@@ -395,17 +400,27 @@
                 <span id="perfil-email-display" class="cuenta-email">correo@ejemplo.com</span>
               </div>
             </div>
+            <p class="eyebrow-datos">Tus datos</p>
             <div class="review-summary-card resumen-cuenta">
               <div class="review-row"><span>Teléfono:</span><b id="perfil-tel-display">—</b></div>
+              <div class="review-row"><span>Dirección:</span><b id="perfil-dir-display">—</b></div>
               <div class="review-row"><span>Ciudad:</span><b id="perfil-ciudad-display">—</b></div>
             </div>
-            <div class="acciones">
-              <button type="button" class="btn" id="btn-editar-perfil-directo">Editar mis datos</button>
-              <button type="button" class="btn sec" data-seccion="ayuda">Ayuda y soporte</button>
-              <button type="button" class="btn sec" id="btn-salir-perfil">Cerrar sesión</button>
-            </div>
+            <button type="button" class="btn" id="btn-editar-perfil-directo">Editar mis datos</button>
+            <p class="nota-cuenta-chica">Editar te lleva a los mismos 3 pasos: nombre, teléfono y dirección.</p>
           </div>
-          <p class="sub nota-cuenta">Entras con Google, por eso no guardamos contraseña. Para cambiarla usa la <a href="https://myaccount.google.com/security" target="_blank" rel="noopener" class="enlace-marca">seguridad de tu cuenta de Google</a>. Para eliminar tu cuenta y tus datos, escríbenos.</p>
+
+          <div class="tarjeta tarjeta-cuenta">
+            <span class="insignia">Acceso con Google</span>
+            <p class="nota-cuenta-texto">Entras con Google, por eso no guardamos contraseña. Para cambiarla usa la <a href="https://myaccount.google.com/security" target="_blank" rel="noopener" class="enlace-marca">seguridad de tu cuenta de Google</a>.</p>
+            <button type="button" class="btn sec" id="btn-salir-perfil">Cerrar sesión</button>
+          </div>
+
+          <div class="tarjeta tarjeta-cuenta">
+            <h3 class="titulo-bloque">Tu cuenta y tus datos</h3>
+            <p class="nota-cuenta-texto">Si quieres eliminar tu cuenta y tus datos, escríbenos: no se hace automáticamente desde esta pantalla.</p>
+            <button type="button" class="btn sec" data-seccion="ayuda">Ayuda y soporte</button>
+          </div>
         </section>
 
         <p class="pie">

@@ -56,6 +56,7 @@ function mostrarConfirmacion(opts) {
     if (!modal) {
       return resolve(window.confirm(opts.desc || opts.titulo || "¿Confirmar?"));
     }
+    var focoPrevio = document.activeElement;
     var tit = $("confirm-titulo"), desc = $("confirm-desc");
     var btnCanc = $("confirm-btn-cancelar"), btnAcc = $("confirm-btn-accion");
 
@@ -69,6 +70,7 @@ function mostrarConfirmacion(opts) {
     function limpiar() {
       modal.classList.add("oculto");
       document.body.style.overflow = "";
+      if (focoPrevio && document.contains(focoPrevio)) { try { focoPrevio.focus(); } catch (e) { /* sin foco */ } }
       btnCanc.removeEventListener("click", onCanc);
       btnAcc.removeEventListener("click", onAcc);
       document.removeEventListener("keydown", onKey);
@@ -141,11 +143,12 @@ function actualizarInfoUsuario(user, perfil) {
   var nombre = (perfil && perfil.nombre) || meta.full_name || meta.name || email.split("@")[0] || "Usuario";
   var inicial = (nombre.charAt(0) || "U").toUpperCase();
 
-  var av = $("user-avatar-letter"); if (av) av.textContent = inicial;
+  document.querySelectorAll(".user-avatar-circle").forEach(function (a) { a.textContent = inicial; });
   var q = $("quien"); if (q) q.textContent = email;
   var nd = $("perfil-nombre-display"); if (nd) nd.textContent = nombre;
   var ed = $("perfil-email-display"); if (ed) ed.textContent = email;
-  var pt = $("perfil-tel-display"); if (pt) pt.textContent = (perfil && perfil.telefono) || "—";
+  var pt = $("perfil-tel-display"); if (pt) pt.textContent = (perfil && perfil.telefono) ? "+" + perfil.telefono : "—";
+  var pd = $("perfil-dir-display"); if (pd) pd.textContent = (perfil && perfil.direccion) ? perfil.direccion + (perfil.cep ? " · CEP " + perfil.cep.slice(0, 5) + "-" + perfil.cep.slice(5) : "") : "—";
   var pc = $("perfil-ciudad-display"); if (pc) pc.textContent = perfil && perfil.ciudad ? perfil.ciudad + (perfil.estado ? " / " + perfil.estado : "") : "—";
 }
 
@@ -866,19 +869,34 @@ function marcarVistos(ids) {
   ids.forEach(function (id) { var k = id + "|" + hoyClave(); if (planesVistos.indexOf(k) < 0) planesVistos.push(k); });
   try { localStorage.setItem("rnm_planes_vistos", JSON.stringify(planesVistos.slice(-50))); } catch (e) { /* sin almacenamiento */ }
 }
+var focoAntesModal = null;
 function abrirModalPlanes() {
+  if ($("modal-planes").classList.contains("oculto")) focoAntesModal = document.activeElement;
   $("modal-planes").classList.remove("oculto");
   document.body.style.overflow = "hidden";
   $("modal-planes").querySelector(".modal-caja").focus();
 }
 function cerrarModalPlanes() {
   if (pagandoPlan) { salirDePago(); cargarRegistros(); }
+  var estabaAbierto = !$("modal-planes").classList.contains("oculto");
   $("modal-planes").classList.add("oculto");
   document.body.style.overflow = "";
+  if (estabaAbierto && focoAntesModal && document.contains(focoAntesModal)) { try { focoAntesModal.focus(); } catch (e) { /* sin foco */ } }
+  if (estabaAbierto) focoAntesModal = null;
 }
 $("modal-cerrar").addEventListener("click", cerrarModalPlanes);
 $("modal-planes").addEventListener("click", function (e) { if (e.target === this) cerrarModalPlanes(); });
-document.addEventListener("keydown", function (e) { if (e.key === "Escape") cerrarModalPlanes(); });
+document.addEventListener("keydown", function (e) {
+  if (e.key === "Escape") cerrarModalPlanes();
+  if (e.key !== "Tab") return;
+  var abierto = document.querySelector(".modal:not(.oculto) .modal-caja");
+  if (!abierto) return;
+  var f = Array.prototype.slice.call(abierto.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]):not(.oculto), select:not([disabled]):not(.oculto), [tabindex]:not([tabindex="-1"])')).filter(function (n) { return n.offsetParent !== null; });
+  if (!f.length) return;
+  var primero = f[0], ultimo = f[f.length - 1];
+  if (e.shiftKey && (document.activeElement === primero || document.activeElement === abierto)) { e.preventDefault(); ultimo.focus(); }
+  else if (!e.shiftKey && document.activeElement === ultimo) { e.preventDefault(); primero.focus(); }
+});
 
 function actualizarPlanes(regs, plan) {
   var necesitan = regs.filter(function (x) { return !x.cerrado && !x.cubierto && (!!x.ultimo_resultado || x.requiere_pago); });

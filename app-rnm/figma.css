@@ -399,3 +399,22 @@ button, .btn, .btn-enlace, .filter-pill, .nav-item, .bottom-nav-item, summary { 
 #modal-planes .plan small.aviso-chico { color: var(--text-muted); font-weight: 600; margin-top: 2px; }
 .nota-ampliar { margin: var(--sp-3) 0 var(--sp-1); padding: var(--sp-3) var(--sp-4); border-radius: 14px; background: var(--warning-soft); border: 1px solid var(--warning-line); font-size: 0.86rem; line-height: 1.4; color: var(--text-main); }
 .nota-ampliar b { color: var(--text-main); }
+
+/* ==========================================================================
+   FASE 6 · Ayuda, cuenta y modales (pantallas 15–18)
+   ========================================================================== */
+.aviso-claro { margin: 0 0 var(--sp-4); padding: var(--sp-3) var(--sp-4); border-radius: 14px; background: var(--brand-soft); border: 1px solid var(--brand-line); font-size: 0.9rem; line-height: 1.45; color: var(--text-main); }
+.contacto-card .acciones { margin-top: var(--sp-3); }
+.contacto-card .btn-enlace { display: flex; align-items: center; justify-content: center; min-height: 52px; text-decoration: none; }
+.faq details { border-bottom: 1px solid var(--line); }
+.faq summary { min-height: 52px; display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); padding: var(--sp-2) 0; font-size: 0.97rem; }
+.faq summary:focus-visible { outline: 3px solid rgba(33, 88, 214, 0.55); outline-offset: 2px; border-radius: 6px; }
+.faq details p { margin: 0 0 var(--sp-4); font-size: 0.93rem; line-height: 1.55; }
+.eyebrow-datos { margin: var(--sp-4) 0 var(--sp-2); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--brand); }
+.nota-cuenta-chica { margin: var(--sp-2) 0 0; font-size: 0.8rem; color: var(--text-muted); }
+.nota-cuenta-texto { margin: var(--sp-3) 0 var(--sp-3); font-size: 0.92rem; color: var(--text-muted); line-height: 1.5; }
+.tarjeta-cuenta .btn, .tarjeta-cuenta button { width: 100%; }
+.review-row b { overflow-wrap: anywhere; text-align: right; }
+.modal-caja:focus { outline: none; }
+.contacto-card .acciones { flex-direction: column; } .contacto-card .btn-enlace, .contacto-card .btn { width: 100%; flex: none; }
+.review-row b { font-family: inherit; font-variant-numeric: tabular-nums; }
