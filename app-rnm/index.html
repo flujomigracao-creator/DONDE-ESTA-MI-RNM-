@@ -3,183 +3,615 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0b5fff">
+<meta name="theme-color" content="#102A56">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
-<title>¿Dónde está mi RNM?</title>
-<style>
-  :root { --azul:#0b5fff; --fondo:#f4f6fb; --txt:#14213d; --ok:#0f9d58; --aviso:#e8a200; --mal:#d93025; --borde:#dbe1ee; --suave:#52607a; }
-  * { box-sizing:border-box; }
-  body { margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif; background:var(--fondo); color:var(--txt); line-height:1.45; }
-  header { background:var(--azul); color:#fff; padding:20px 16px 24px; }
-  header h1 { margin:0 0 4px; font-size:1.4rem; }
-  header p { margin:0; opacity:.9; font-size:.95rem; }
-  main { max-width:620px; margin:0 auto; padding:0 16px 40px; }
-  section, .tarjeta { background:#fff; border:1px solid var(--borde); border-radius:14px; padding:16px; margin-top:16px; }
-  h2 { margin:0 0 6px; font-size:1.05rem; }
-  .sub { margin:0 0 12px; color:var(--suave); font-size:.9rem; }
-  label { display:block; font-size:.85rem; font-weight:600; margin:10px 0 4px; }
-  input[type=text] { width:100%; font-size:1rem; padding:12px; border:1px solid var(--borde); border-radius:10px; background:#fff; color:var(--txt); }
-  select { width:100%; font-size:1rem; padding:12px; border:1px solid var(--borde); border-radius:10px; background:#fff; color:var(--txt); }
-  .campo-mp { height:48px; padding:0 12px; border:1px solid var(--borde); border-radius:10px; background:#fff; display:flex; align-items:center; }
-  .campo-mp iframe { height:46px !important; }
-  button { font-size:1rem; padding:12px 16px; border:0; border-radius:10px; background:var(--azul); color:#fff; font-weight:600; cursor:pointer; }
-  button.sec { background:#eaf0ff; color:var(--azul); }
-  button.google { width:100%; background:#fff; color:#1f1f1f; border:1px solid #747775; display:flex; gap:10px; align-items:center; justify-content:center; }
-  button:disabled { opacity:.55; cursor:default; }
-  .check { display:flex; gap:10px; align-items:flex-start; font-size:.85rem; color:var(--suave); margin-top:12px; font-weight:400; }
-  .check input { margin-top:3px; width:18px; height:18px; flex:none; }
-  .fila { display:flex; justify-content:space-between; align-items:center; gap:8px; }
-  .insignia { display:inline-block; font-size:.78rem; font-weight:700; padding:3px 10px; border-radius:99px; background:#fff3cd; color:#7a5a00; }
-  .insignia.ok { background:#d8f3e3; color:#0b6b3a; }
-  .insignia.vigila { background:#dbe7ff; color:#0a3fa8; }
-  .rnm { font-size:1.15rem; font-weight:700; letter-spacing:.04em; }
-  .res { margin-top:10px; padding:12px; border-radius:10px; border-left:6px solid var(--aviso); background:#fff8e1; }
-  .res.ok { border-color:var(--ok); background:#e8f6ee; }
-  .res.mal { border-color:var(--mal); background:#fdecea; }
-  .res h3 { margin:0 0 4px; font-size:.98rem; }
-  .res p { margin:3px 0; font-size:.92rem; }
-  .msg { margin-top:10px; font-size:.9rem; color:var(--mal); min-height:1.2em; }
-  .msg.bien { color:var(--ok); }
-  .oculto { display:none !important; }
-  .progreso { display:flex; gap:6px; margin-bottom:10px; }
-  .progreso i { flex:1; height:6px; border-radius:99px; background:var(--borde); }
-  .progreso i.on { background:var(--azul); }
-  .btn-enlace { display:inline-block; margin-top:8px; padding:11px 16px; border-radius:10px; background:#25d366; color:#06361a; font-weight:700; text-decoration:none; }
-  .planes { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:12px 0 4px; }
-  .plan { display:flex; flex-direction:column; align-items:flex-start; gap:2px; text-align:left; padding:12px; border-radius:12px; border:2px solid var(--borde); background:#fff; color:var(--txt); font-weight:400; }
-  .plan b { font-size:1rem; } .plan .precio { font-size:1.05rem; font-weight:700; color:var(--azul); }
-  .plan small { font-size:.78rem; color:var(--suave); } .plan small.ahorro { color:var(--ok); font-weight:700; } .plan small.mejor { color:var(--azul); font-weight:700; }
-  .plan.sel { border-color:var(--azul); background:#eaf0ff; }
-  .modal { position:fixed; inset:0; z-index:50; background:rgba(10,20,40,.55); display:flex; align-items:center; justify-content:center; padding:16px; }
-  .modal-caja { position:relative; width:100%; max-width:560px; max-height:90vh; overflow:auto; background:var(--fondo); border-radius:18px; padding:12px; box-shadow:0 20px 60px rgba(0,0,0,.35); outline:none; }
-  .modal-caja .tarjeta { margin-top:0; border:0; background:transparent; padding:8px 8px 4px; }
-  .modal .cerrar { position:absolute; top:6px; right:8px; z-index:2; width:36px; height:36px; padding:0; border-radius:50%; font-size:1.5rem; line-height:1; background:#eaf0ff; color:var(--azul); }
-  .acciones { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
-  .pie { font-size:.8rem; color:var(--suave); text-align:center; margin-top:24px; }
-  @media (prefers-color-scheme: dark) {
-    :root { --fondo:#0f1626; --txt:#e8ecf5; --borde:#2a3550; --suave:#9fb0cf; }
-    section, .tarjeta, input[type=text], select { background:#18223a; }
-    .campo-mp { background:#fff; }
-    button.sec { background:#243152; color:#9ec1ff; }
-    .plan { background:#18223a; } .plan.sel { background:#1a2d57; }
-    .modal-caja { background:#18223a; } .modal .cerrar { background:#243152; color:#9ec1ff; }
-    .res { background:#3a3115; } .res.ok { background:#12301f; } .res.mal { background:#3a1a17; }
-    .insignia { background:#4a3d12; color:#ffe08a; } .insignia.ok { background:#12301f; color:#7be0a6; } .insignia.vigila { background:#1a2d57; color:#9ec1ff; }
-  }
-</style>
+<title>¿Dónde está mi RNM? — Seguimiento Migratorio</title>
+<link rel="stylesheet" href="premium.css">
 </head>
 <body>
-<header>
-  <h1>¿Dónde está mi RNM?</h1>
-  <p>Nosotros vigilamos tu RNM en la Policía Federal y te mostramos el estado aquí.</p>
-</header>
-<main>
 
-<section id="vista-login" class="oculto">
-  <h2>Entra para empezar</h2>
-  <p class="sub">Usa tu cuenta de Google. Es rápido y no tienes que crear contraseña.</p>
-  <button class="google" id="btn-google" type="button">
-    <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.5 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.2 5.5-4.7 7.2l7.6 5.9c4.4-4.1 6.9-10.1 6.9-17.6z"/><path fill="#FBBC05" d="M10.5 28.7A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.2.9-4.7l-7.9-6.1A24 24 0 0 0 0 24c0 3.9.9 7.5 2.6 10.8l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/></svg>
-    Entrar con Google
-  </button>
-  <p class="msg" id="msg-login"></p>
-</section>
+<div id="app-root">
 
-<section id="vista-perfil" class="oculto">
-  <div class="progreso" aria-hidden="true"><i></i><i></i><i></i></div>
-  <p class="sub" id="perfil-paso" style="margin-bottom:2px">Paso 1 de 3</p>
-  <form id="form-perfil" autocomplete="on" novalidate>
+  <!-- ==================== VISTA NO AUTENTICADA (BIENVENIDA / LOGIN) ==================== -->
+  <div id="vista-login" class="oculto">
+    <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; background: linear-gradient(135deg, #102A56 0%, #155EEF 100%);">
+      <div style="width: 100%; max-width: 940px; background: #FFFFFF; border-radius: 20px; overflow: hidden; box-shadow: 0 24px 64px rgba(16,42,86,0.25); display: flex; flex-direction: row; flex-wrap: wrap;">
 
-    <div class="paso-ob" data-paso="1">
-      <h2 id="perfil-titulo">¿Cómo te llamas?</h2>
-      <p class="sub">Escribe tu nombre completo, como aparece en tu documento.</p>
-      <label for="p-nombre">Nombre completo</label>
-      <input type="text" id="p-nombre" autocomplete="name" maxlength="120" placeholder="Nombre y apellidos">
-    </div>
+        <!-- Columna Izquierda: Identidad y Beneficios -->
+        <div style="flex: 1 1 360px; padding: 40px 36px; background: #F8FAFC; border-right: 1px solid #E4E7EC; display: flex; flex-direction: column; justify-content: space-between;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 28px;">
+              <div class="brand-icon">R</div>
+              <div>
+                <h1 style="margin: 0; font-size: 1.25rem; font-weight: 800; color: #102A56; letter-spacing: -0.02em;">¿Dónde está mi RNM?</h1>
+                <span class="brand-badge" style="color: #155EEF;">Seguimiento Migratorio</span>
+              </div>
+            </div>
 
-    <div class="paso-ob oculto" data-paso="2">
-      <h2>¿Cuál es tu teléfono?</h2>
-      <p class="sub">Mejor si tiene WhatsApp. Lo usamos solo para contactarte por tu trámite.</p>
-      <label for="p-tel">Teléfono / WhatsApp</label>
-      <input type="text" id="p-tel" inputmode="tel" autocomplete="tel" maxlength="20" placeholder="Ej: +55 11 91234-5678">
-    </div>
+            <h2 style="font-size: 1.45rem; line-height: 1.25; color: #102A56; margin: 0 0 12px; letter-spacing: -0.02em;">
+              Tu documento en la Policía Federal, con información clara y a tu alcance.
+            </h2>
+            <p style="color: #667085; font-size: 0.95rem; margin: 0 0 24px;">
+              Consulta el estado disponible de tu trámite sin confusiones ni tecnicismos.
+            </p>
 
-    <div class="paso-ob oculto" data-paso="3">
-      <h2>¿Dónde vives ahora?</h2>
-      <p class="sub">Escribe tu CEP y completamos el resto.</p>
-      <label for="p-cep">CEP</label>
-      <input type="text" id="p-cep" inputmode="numeric" autocomplete="postal-code" maxlength="9" placeholder="00000-000">
-      <p class="sub" id="cep-estado" style="margin:4px 0 0" aria-live="polite">Escribe tu CEP y completamos calle, ciudad y estado.</p>
-      <label for="p-dir">Dirección actual</label>
-      <input type="text" id="p-dir" autocomplete="street-address" maxlength="200" placeholder="Calle, número y barrio">
-      <div class="fila" style="gap:12px; align-items:flex-start">
-        <div style="flex:2">
-          <label for="p-ciudad">Ciudad</label>
-          <input type="text" id="p-ciudad" autocomplete="address-level2" maxlength="80">
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+              <div style="display: flex; gap: 12px; align-items: flex-start;">
+                <div style="width: 28px; height: 28px; border-radius: 8px; background: #EFF6FF; color: #155EEF; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: 700;">✓</div>
+                <div>
+                  <b style="display: block; font-size: 0.92rem; color: #182230;">Monitoreo centralizado</b>
+                  <span style="font-size: 0.85rem; color: #667085;">Supervisión continua de tu trámite oficial en Brasil.</span>
+                </div>
+              </div>
+              <div style="display: flex; gap: 12px; align-items: flex-start;">
+                <div style="width: 28px; height: 28px; border-radius: 8px; background: #EFF6FF; color: #155EEF; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: 700;">✓</div>
+                <div>
+                  <b style="display: block; font-size: 0.92rem; color: #182230;">Explicación comprensible</b>
+                  <span style="font-size: 0.85rem; color: #667085;">Te decimos qué significa cada novedad y tu siguiente paso.</span>
+                </div>
+              </div>
+              <div style="display: flex; gap: 12px; align-items: flex-start;">
+                <div style="width: 28px; height: 28px; border-radius: 8px; background: #EFF6FF; color: #155EEF; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: 700;">✓</div>
+                <div>
+                  <b style="display: block; font-size: 0.92rem; color: #182230;">Acceso seguro y protegido</b>
+                  <span style="font-size: 0.85rem; color: #667085;">Tus datos confidenciales bajo estrictos estándares de seguridad.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top: 32px; font-size: 0.8rem; color: #98A2B3;">
+            Servicio independiente desarrollado por FLUJO. No es un canal oficial de la PF.
+          </div>
         </div>
-        <div style="flex:1">
-          <label for="p-uf">Estado</label>
-          <input type="text" id="p-uf" maxlength="2" autocapitalize="characters" placeholder="SP">
+
+        <!-- Columna Derecha: Acceso -->
+        <div style="flex: 1 1 340px; padding: 48px 36px; display: flex; flex-direction: column; justify-content: center;">
+          <h2 style="font-size: 1.35rem; font-weight: 700; color: #102A56; margin: 0 0 6px;">Comienza aquí</h2>
+          <p style="font-size: 0.92rem; color: #667085; margin: 0 0 24px;">Accede para consultar tus registros y actualizaciones disponibles.</p>
+
+          <button class="google" id="btn-google" type="button" style="height: 52px; font-size: 0.96rem;">
+            <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true" style="margin-right: 4px;"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.5 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.2 5.5-4.7 7.2l7.6 5.9c4.4-4.1 6.9-10.1 6.9-17.6z"/><path fill="#FBBC05" d="M10.5 28.7A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.2.9-4.7l-7.9-6.1A24 24 0 0 0 0 24c0 3.9.9 7.5 2.6 10.8l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/></svg>
+            Continuar con Google
+          </button>
+
+          <p class="msg" id="msg-login" role="alert" style="text-align: center;"></p>
+
+          <div style="margin-top: 36px; padding-top: 20px; border-top: 1px solid #E4E7EC; font-size: 0.82rem; color: #667085; text-align: center;">
+            Al ingresar aceptas nuestros <a href="terminos.html" target="_blank" style="color: #155EEF; font-weight: 500;">Términos</a> y <a href="privacidad.html" target="_blank" style="color: #155EEF; font-weight: 500;">Política de Privacidad</a>.
+          </div>
         </div>
+
       </div>
-      <label class="check">
-        <input type="checkbox" id="p-consiento">
-        <span>Autorizo a FLUJO a guardar estos datos para contactarme sobre mi trámite. Puedo pedir que los borren cuando quiera.</span>
-      </label>
     </div>
-
-    <div class="acciones">
-      <button type="button" class="sec oculto" id="btn-perfil-atras">Atrás</button>
-      <button type="submit" id="btn-perfil">Siguiente</button>
-      <button type="button" class="sec oculto" id="btn-perfil-cancelar">Cancelar</button>
-    </div>
-    <p class="msg" id="msg-perfil"></p>
-  </form>
-</section>
-
-<div id="vista-app" class="oculto">
-  <div class="fila" style="margin-top:16px">
-    <span class="sub" id="quien" style="margin:0"></span>
-    <span class="acciones" style="margin:0">
-      <button class="sec oculto" id="btn-planes" type="button">Ver planes</button>
-      <button class="sec" id="btn-actualizar" type="button">Actualizar</button>
-      <button class="sec" id="btn-datos" type="button">Mis datos</button>
-      <button class="sec" id="btn-salir" type="button">Salir</button>
-    </span>
   </div>
 
-  <section>
-    <h2>Registrar mi RNM</h2>
-    <p class="sub" id="reg-gratis">Tu <b>primera consulta es gratis</b> (para tu primer RNM). Después, para seguir vigilando hasta que esté listo, hay planes mensuales: de <b>R$ 4,99</b> (1 RNM) a <b>R$ 15,99</b> (4 RNM).</p>
-    <p class="sub oculto" id="reg-adicional">Ya usaste tu consulta gratis. Los RNM adicionales se consultan con un <b>plan mensual</b>, desde <b>R$ 4,99</b> (1 RNM) hasta <b>R$ 15,99</b> (4 RNM, máximo por cuenta).</p>
-    <p class="sub oculto" id="tope-4">Llegaste al máximo de <b>4 RNM</b> por cuenta.</p>
-    <form id="form-rnm" autocomplete="off">
-      <label for="rnm">Número de RNM</label>
-      <input type="text" id="rnm" autocapitalize="characters" placeholder="Ej: A123456B" maxlength="12" required>
-      <label for="nac">Fecha de nacimiento</label>
-      <input type="text" id="nac" inputmode="numeric" placeholder="dd/mm/aaaa" maxlength="10" required>
-      <label class="check">
-        <input type="checkbox" id="consiento" required>
-        <span>Autorizo a FLUJO a guardar mi RNM y mi fecha de nacimiento y a consultarlos en la Policía Federal solo para informarme el estado de mi documento. Puedo pedir que los borren cuando quiera.</span>
-      </label>
-      <div class="acciones"><button type="submit" id="btn-registrar">Registrar mi RNM</button></div>
-      <p class="msg" id="msg-form"></p>
-    </form>
+  <!-- ==================== ONBOARDING / PERFIL ==================== -->
+  <section id="vista-perfil" class="oculto" style="min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px;">
+    <div class="tarjeta" style="width: 100%; max-width: 520px; box-shadow: var(--shadow-lg); margin: 0;">
+      <div style="display: flex; gap: 6px; margin-bottom: 16px;" class="progreso" aria-hidden="true">
+        <i style="flex:1; height:6px; border-radius:99px; background:#155EEF;"></i>
+        <i style="flex:1; height:6px; border-radius:99px; background:#D0D5DD;"></i>
+        <i style="flex:1; height:6px; border-radius:99px; background:#D0D5DD;"></i>
+      </div>
+      <p class="sub" id="perfil-paso" style="margin-bottom: 6px; font-weight: 600; color: #155EEF;">Paso 1 de 3</p>
+
+      <form id="form-perfil" autocomplete="on" novalidate>
+        <div class="paso-ob" data-paso="1">
+          <h2 id="perfil-titulo" style="font-size: 1.3rem; margin: 0 0 6px;">¿Cómo te llamas?</h2>
+          <p class="sub">Escribe tu nombre completo, exactamente como figura en tu documento.</p>
+          <div class="form-field">
+            <label for="p-nombre">Nombre completo</label>
+            <input type="text" id="p-nombre" autocomplete="name" maxlength="120" placeholder="Nombre y apellidos" required>
+          </div>
+        </div>
+
+        <div class="paso-ob oculto" data-paso="2">
+          <h2 style="font-size: 1.3rem; margin: 0 0 6px;">¿Cuál es tu teléfono?</h2>
+          <p class="sub">De preferencia con WhatsApp para avisarte sobre tu trámite.</p>
+          <div class="form-field">
+            <label for="p-tel">Teléfono / WhatsApp</label>
+            <input type="text" id="p-tel" inputmode="tel" autocomplete="tel" maxlength="20" placeholder="Ej: +55 11 91234-5678">
+          </div>
+        </div>
+
+        <div class="paso-ob oculto" data-paso="3">
+          <h2 style="font-size: 1.3rem; margin: 0 0 6px;">¿Dónde resides actualmente?</h2>
+          <p class="sub">Escribe tu CEP y completamos automáticamente la dirección.</p>
+          <div class="form-field">
+            <label for="p-cep">CEP</label>
+            <input type="text" id="p-cep" inputmode="numeric" autocomplete="postal-code" maxlength="9" placeholder="00000-000">
+            <p class="sub" id="cep-estado" style="margin:4px 0 0; font-size: 0.8rem;" aria-live="polite">Escribe tu CEP y completamos calle, ciudad y estado.</p>
+          </div>
+          <div class="form-field">
+            <label for="p-dir">Dirección actual</label>
+            <input type="text" id="p-dir" autocomplete="street-address" maxlength="200" placeholder="Calle, número y barrio">
+          </div>
+          <div class="fila" style="gap:12px; align-items:flex-start">
+            <div style="flex:2" class="form-field">
+              <label for="p-ciudad">Ciudad</label>
+              <input type="text" id="p-ciudad" autocomplete="address-level2" maxlength="80">
+            </div>
+            <div style="flex:1" class="form-field">
+              <label for="p-uf">Estado (UF)</label>
+              <input type="text" id="p-uf" maxlength="2" autocapitalize="characters" placeholder="SP">
+            </div>
+          </div>
+          <label class="check">
+            <input type="checkbox" id="p-consiento">
+            <span>Autorizo a FLUJO a resguardar estos datos exclusivamente para informarme sobre mi trámite. Puedo solicitar su eliminación en cualquier momento.</span>
+          </label>
+        </div>
+
+        <div class="acciones" style="margin-top: 20px;">
+          <button type="button" class="sec oculto" id="btn-perfil-atras">Atrás</button>
+          <button type="submit" id="btn-perfil">Siguiente</button>
+          <button type="button" class="sec oculto" id="btn-perfil-cancelar">Cancelar</button>
+        </div>
+        <p class="msg" id="msg-perfil" role="alert"></p>
+      </form>
+    </div>
   </section>
 
-  <div id="lista"></div>
-</div>
+  <!-- ==================== APPLAYOUT (ÁREA AUTENTICADA) ==================== -->
+  <div id="vista-app" class="oculto app-shell">
 
-<p class="pie">FLUJO · Esta app no es un servicio oficial del Gobierno de Brasil.<br>
-<a href="privacidad.html">Privacidad</a> · <a href="terminos.html">Términos</a></p>
-</main>
+    <!-- BARRA LATERAL (Desktop) -->
+    <aside class="app-sidebar" aria-label="Navegación principal">
+      <div class="sidebar-brand">
+        <div class="brand-icon">R</div>
+        <div>
+          <h1 class="brand-title">¿Dónde está mi RNM?</h1>
+          <span class="brand-badge">Seguimiento Migratorio</span>
+        </div>
+      </div>
 
-<div id="modal-planes" class="modal oculto" role="dialog" aria-modal="true" aria-label="Planes de suscripción">
-  <div class="modal-caja" tabindex="-1">
-    <button id="modal-cerrar" class="cerrar" type="button" aria-label="Cerrar">&times;</button>
-    <div id="cartel"></div>
+      <nav class="sidebar-nav">
+        <button type="button" class="nav-item active" data-seccion="inicio" id="nav-inicio">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+          Inicio
+        </button>
+        <button type="button" class="nav-item" data-seccion="mis-rnm" id="nav-mis-rnm">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          Mis RNM
+        </button>
+        <button type="button" class="nav-item" data-seccion="nueva-consulta" id="nav-nueva-consulta">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          Nueva consulta
+        </button>
+        <button type="button" class="nav-item" data-seccion="historial" id="nav-historial">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          Historial de consultas
+        </button>
+        <button type="button" class="nav-item" data-seccion="planes" id="nav-planes">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+          Planes y pagos
+        </button>
+        <button type="button" class="nav-item" data-seccion="ayuda" id="nav-ayuda">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          Ayuda y soporte
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-badge-sidebar">
+          <div class="user-avatar-circle" id="user-avatar-letter">U</div>
+          <div class="user-info-text">
+            <span class="user-email-text" id="quien">usuario@correo.com</span>
+          </div>
+        </div>
+        <button type="button" class="nav-item" data-seccion="perfil" id="nav-perfil">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+          Mi cuenta
+        </button>
+        <button type="button" class="nav-item" id="btn-salir" style="color: #FDA29B;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+          Cerrar sesión
+        </button>
+      </div>
+    </aside>
+
+    <!-- ÁREA PRINCIPAL -->
+    <div class="app-main">
+
+      <!-- CABECERA SUPERIOR -->
+      <header class="app-header">
+        <div class="header-title-box">
+          <h1 id="app-header-titulo">Inicio</h1>
+          <p id="app-header-sub">Resumen de tus trámites y estado disponible</p>
+        </div>
+        <div class="header-actions">
+          <button type="button" class="sec" id="btn-planes" style="min-height: 40px; padding: 0 14px; font-size: 0.88rem;">Planes</button>
+          <button type="button" class="sec" id="btn-actualizar" style="min-height: 40px; padding: 0 14px; font-size: 0.88rem;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            Actualizar
+          </button>
+          <button type="button" class="sec" id="btn-datos" style="min-height: 40px; padding: 0 14px; font-size: 0.88rem;">Mis datos</button>
+        </div>
+      </header>
+
+      <!-- CONTENEDOR DE VISTAS -->
+      <main class="app-content">
+
+        <!-- SECCIÓN 1: INICIO / DASHBOARD (Pantalla 5) -->
+        <section id="seccion-inicio" class="seccion-app">
+          <!-- Saludo personalizado -->
+          <div id="dashboard-saludo" style="margin-bottom: 20px;"></div>
+
+          <!-- Tarjeta Dominante de Estado del RNM -->
+          <div id="dashboard-hero-container"></div>
+
+          <!-- Siguiente Paso Recomendado -->
+          <div id="dashboard-siguiente-paso"></div>
+
+          <!-- Accesos Rápidos (4 bloques destacados) -->
+          <div style="margin-bottom: 24px;">
+            <h3 style="font-size: 1.05rem; font-weight: 700; color: #102A56; margin: 0 0 12px;">Accesos rápidos</h3>
+            <div class="quick-actions-grid">
+              <div class="quick-action-card" data-seccion="mis-rnm">
+                <div class="quick-action-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                </div>
+                <div class="quick-action-text">
+                  <b>Mis RNM</b>
+                  <span>Ver todos tus registros</span>
+                </div>
+              </div>
+              <div class="quick-action-card" data-seccion="nueva-consulta">
+                <div class="quick-action-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                </div>
+                <div class="quick-action-text">
+                  <b>Nueva consulta</b>
+                  <span>Registrar otro documento</span>
+                </div>
+              </div>
+              <div class="quick-action-card" data-seccion="planes">
+                <div class="quick-action-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                </div>
+                <div class="quick-action-text">
+                  <b>Planes y pagos</b>
+                  <span>Gestionar cobertura mensual</span>
+                </div>
+              </div>
+              <div class="quick-action-card" data-seccion="ayuda">
+                <div class="quick-action-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </div>
+                <div class="quick-action-text">
+                  <b>Ayuda y soporte</b>
+                  <span>Preguntas y WhatsApp</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Resumen de orientación general y lista de documentos -->
+          <div id="contenedor-resumen-dashboard"></div>
+
+          <div style="margin-top: 24px;">
+            <div class="fila" style="margin-bottom: 14px;">
+              <div>
+                <h3 style="margin: 0; font-size: 1.1rem; color: #102A56;">Todos tus documentos</h3>
+                <p class="sub" style="margin: 0;">Lista general en seguimiento activo</p>
+              </div>
+              <button type="button" class="btn sec" id="btn-ir-nueva-consulta" style="min-height: 38px; font-size: 0.86rem;">
+                + Registrar RNM
+              </button>
+            </div>
+            <div id="lista"></div>
+          </div>
+        </section>
+
+        <!-- SECCIÓN 2: MIS RNM (Pantalla 6) -->
+        <section id="seccion-mis-rnm" class="seccion-app oculto">
+          <div class="page-header">
+            <div class="page-header-text">
+              <h2>Mis RNM</h2>
+              <p>Revisa la información disponible, el estado y las delegaciones asignadas.</p>
+            </div>
+            <button type="button" class="btn" id="btn-nueva-consulta-mis-rnm" style="min-height: 42px; font-size: 0.9rem;">
+              + Nueva consulta
+            </button>
+          </div>
+
+          <!-- Filtros de estado -->
+          <div class="filter-pills" id="mis-rnm-filtros">
+            <button type="button" class="filter-pill active" data-filtro="todos">Todos (<span id="count-todos">0</span>)</button>
+            <button type="button" class="filter-pill" data-filtro="proceso">En trámite (<span id="count-proceso">0</span>)</button>
+            <button type="button" class="filter-pill" data-filtro="listos">Listos para retirar (<span id="count-listos">0</span>)</button>
+          </div>
+
+          <div id="lista-mis-rnm-clon"></div>
+        </section>
+
+        <!-- SECCIÓN: DETALLE DEL RNM (Pantallas 7 y 8) -->
+        <section id="seccion-detalle-rnm" class="seccion-app oculto">
+          <div style="margin-bottom: 20px;">
+            <button type="button" class="btn sec" id="btn-volver-mis-rnm" style="min-height: 38px; padding: 0 14px; font-size: 0.88rem;">
+              ← Volver a Mis RNM
+            </button>
+          </div>
+          <div id="contenedor-detalle-rnm"></div>
+        </section>
+
+        <!-- SECCIÓN 3: NUEVA CONSULTA (Pantallas 9, 10 y 11) -->
+        <section id="seccion-nueva-consulta" class="seccion-app oculto">
+          <div class="tarjeta" style="max-width: 620px; margin: 0 auto;">
+
+            <!-- Barra de pasos (Stepper) -->
+            <div class="stepper-bar">
+              <div class="stepper-step active" id="step-indicador-1">
+                <span class="step-num">1</span>
+                <span class="step-label">Datos</span>
+              </div>
+              <div class="stepper-line"></div>
+              <div class="stepper-step" id="step-indicador-2">
+                <span class="step-num">2</span>
+                <span class="step-label">Confirmación</span>
+              </div>
+              <div class="stepper-line"></div>
+              <div class="stepper-step" id="step-indicador-3">
+                <span class="step-num">3</span>
+                <span class="step-label">Resultado</span>
+              </div>
+            </div>
+
+            <!-- PASO 1: Formulario de Datos (Pantalla 9) -->
+            <div id="paso-consulta-1">
+              <div class="page-header" style="margin-bottom: 16px;">
+                <div class="page-header-text">
+                  <h2>Nueva consulta</h2>
+                  <p id="reg-gratis" class="sub">Tu <b>primera consulta es gratis</b>. Para continuar vigilando, existen planes mensuales desde R$ 4,99.</p>
+                  <p id="reg-adicional" class="sub oculto">Los RNM adicionales requieren un <b>plan mensual</b> (desde R$ 4,99).</p>
+                  <p id="tope-4" class="sub oculto">Has alcanzado el límite máximo de <b>4 RNM</b> por cuenta.</p>
+                </div>
+              </div>
+
+              <form id="form-rnm" autocomplete="off">
+                <div class="form-field">
+                  <label for="rnm">Número de RNM</label>
+                  <input type="text" id="rnm" autocapitalize="characters" placeholder="Ej: A123456B" maxlength="12" required>
+                  <span style="font-size: 0.8rem; color: #667085; margin-top: 4px;">Tal como figura en tu protocolo o cédula RNM.</span>
+                </div>
+                <div class="form-field">
+                  <label for="nac">Fecha de nacimiento</label>
+                  <input type="text" id="nac" inputmode="numeric" placeholder="dd/mm/aaaa" maxlength="10" required>
+                  <span style="font-size: 0.8rem; color: #667085; margin-top: 4px;">Formato de dos dígitos para día y mes, cuatro para año.</span>
+                </div>
+                <label class="check">
+                  <input type="checkbox" id="consiento" required>
+                  <span>Autorizo a FLUJO a resguardar mi RNM y fecha de nacimiento y consultarlos ante la Policía Federal únicamente para informarme sobre mi documento.</span>
+                </label>
+                <div class="acciones">
+                  <button type="submit" id="btn-registrar">Continuar a revisión</button>
+                </div>
+                <p class="msg" id="msg-form" role="alert"></p>
+              </form>
+            </div>
+
+            <!-- PASO 2: Confirmación de Datos (Pantalla 10) -->
+            <div id="paso-consulta-2" class="oculto">
+              <div class="page-header" style="margin-bottom: 16px;">
+                <div class="page-header-text">
+                  <h2>Revisa tus datos</h2>
+                  <p class="sub">Confirma que la información sea exacta antes de procesar la consulta.</p>
+                </div>
+              </div>
+
+              <div class="review-summary-card">
+                <div class="review-row">
+                  <span>Número de RNM:</span>
+                  <b id="conf-rnm-val">A•••••••B</b>
+                </div>
+                <div class="review-row">
+                  <span>Fecha de nacimiento:</span>
+                  <b id="conf-nac-val">--/--/----</b>
+                </div>
+                <div class="review-row">
+                  <span>Costo de consulta:</span>
+                  <span id="conf-costo-val" style="font-weight: 600; color: #067647;">Primera consulta gratuita</span>
+                </div>
+              </div>
+
+              <p class="sub" style="font-size: 0.85rem; color: #667085;">
+                🔒 Los datos serán enviados de forma cifrada a través de nuestros canales seguros.
+              </p>
+
+              <div class="acciones">
+                <button type="button" class="btn sec" id="btn-confirmar-editar">← Corregir datos</button>
+                <button type="button" class="btn" id="btn-confirmar-enviar">Confirmar y registrar</button>
+              </div>
+              <p class="msg" id="msg-confirmar" role="alert"></p>
+            </div>
+
+            <!-- PASO 3: Resultado de la Consulta (Pantalla 11) -->
+            <div id="paso-consulta-3" class="oculto">
+              <div class="page-header" style="margin-bottom: 16px;">
+                <div class="page-header-text">
+                  <h2>Resultado de la consulta</h2>
+                  <p class="sub">Estado devuelto para tu trámite</p>
+                </div>
+              </div>
+
+              <div id="res-consulta-box"></div>
+
+              <div class="acciones" style="margin-top: 24px;">
+                <button type="button" class="btn" id="btn-res-ir-mis-rnm">Ver en Mis RNM</button>
+                <button type="button" class="btn sec" id="btn-res-otra-consulta">Registrar otro documento</button>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- SECCIÓN: HISTORIAL DE CONSULTAS (Pantalla 12) -->
+        <section id="seccion-historial" class="seccion-app oculto">
+          <div class="page-header">
+            <div class="page-header-text">
+              <h2>Historial de consultas</h2>
+              <p>Registro de operaciones y revisiones anteriores de tus documentos.</p>
+            </div>
+            <button type="button" class="btn sec" id="btn-actualizar-historial" style="min-height: 40px; font-size: 0.88rem;">
+              Actualizar lista
+            </button>
+          </div>
+          <div id="lista-historial-consultas"></div>
+        </section>
+
+        <!-- SECCIÓN 4: PLANES Y PAGOS -->
+        <section id="seccion-planes" class="seccion-app oculto">
+          <div class="page-header">
+            <div class="page-header-text">
+              <h2>Planes de seguimiento</h2>
+              <p>Elige la cobertura mensual adecuada para tus documentos.</p>
+            </div>
+          </div>
+          <div id="planes-contenido"></div>
+        </section>
+
+        <!-- SECCIÓN 5: AYUDA Y SOPORTE -->
+        <section id="seccion-ayuda" class="seccion-app oculto">
+          <div class="page-header">
+            <div class="page-header-text">
+              <h2>Centro de ayuda y soporte</h2>
+              <p>Resolvemos tus dudas sobre el seguimiento de tu trámite migratorio.</p>
+            </div>
+          </div>
+
+          <div class="tarjeta">
+            <h3 style="margin-top: 0; color: #102A56;">Preguntas frecuentes</h3>
+            <div style="display: flex; flex-direction: column; gap: 14px; margin-top: 14px;">
+              <div>
+                <b style="color: #182230;">¿Esta aplicación pertenece a la Policía Federal?</b>
+                <p style="margin: 4px 0 0; color: #667085; font-size: 0.92rem;">No. ¿Dónde está mi RNM? es una plataforma independiente de FLUJO que consulta la información pública de tu documento y te la presenta en un formato claro y comprensible.</p>
+              </div>
+              <div>
+                <b style="color: #182230;">¿Cómo funciona la primera consulta gratis?</b>
+                <p style="margin: 4px 0 0; color: #667085; font-size: 0.92rem;">Tu primer documento registrado recibe su primera verificación sin costo. Para mantener la vigilancia constante hasta que esté listo, puedes activar un plan mensual accesible.</p>
+              </div>
+              <div>
+                <b style="color: #182230;">¿Cada cuánto se actualiza mi estado?</b>
+                <p style="margin: 4px 0 0; color: #667085; font-size: 0.92rem;">El equipo de FLUJO revisa tu RNM en la Polícia Federal y la pantalla se actualiza sola. Mientras tengas un plan activo, la revisión se repite periódicamente hasta que el documento esté listo. No podemos garantizar plazos ni decisiones de la Polícia Federal.</p>
+              </div>
+              <div>
+                <b style="color: #182230;">¿Cómo se paga el plan y cómo veo que se confirmó?</b>
+                <p style="margin: 4px 0 0; color: #667085; font-size: 0.92rem;">Pagas con tarjeta dentro de la aplicación (procesado por Mercado Pago) y el cobro se repite cada mes. Cuando Mercado Pago confirma el cobro, tu plan aparece activo en Planes y pagos. Si no se confirma en unos minutos, escríbenos.</p>
+              </div>
+              <div>
+                <b style="color: #182230;">No veo datos de mi RNM, ¿qué hago?</b>
+                <p style="margin: 4px 0 0; color: #667085; font-size: 0.92rem;">Si acabas de registrarlo, la primera revisión puede tardar. Si aparece “No encontramos tu trámite”, revisaremos que el RNM y la fecha de nacimiento sean correctos; si algo no coincide, te escribiremos.</p>
+              </div>
+              <div>
+                <b style="color: #182230;">¿Mi documento está listo en otra ciudad?</b>
+                <p style="margin: 4px 0 0; color: #667085; font-size: 0.92rem;">Si la delegación asignada no coincide con tu lugar de residencia actual, te orientamos y apoyamos con el trámite de cambio de dirección.</p>
+              </div>
+            </div>
+
+            <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid #E4E7EC;">
+              <h4 style="margin: 0 0 10px; color: #102A56;">Canales oficiales de atención:</h4>
+              <div class="acciones">
+                <a href="#" id="ayuda-whatsapp" target="_blank" rel="noopener" class="btn-enlace">
+                  Atención por WhatsApp
+                </a>
+                <a href="mailto:flujoescalaempresas@gmail.com" class="btn sec">
+                  Escribir por correo electrónico
+                </a>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SECCIÓN 6: PERFIL Y CUENTA -->
+        <section id="seccion-perfil" class="seccion-app oculto">
+          <div class="page-header">
+            <div class="page-header-text">
+              <h2>Mi cuenta</h2>
+              <p>Administra tu información personal y preferencias.</p>
+            </div>
+          </div>
+          <div class="tarjeta" style="max-width: 600px;">
+            <div style="display: flex; gap: 16px; align-items: center; margin-bottom: 20px;">
+              <div class="user-avatar-circle" style="width: 52px; height: 52px; font-size: 1.3rem;">U</div>
+              <div>
+                <b id="perfil-nombre-display" style="font-size: 1.1rem; color: #102A56; display: block;">Usuario</b>
+                <span id="perfil-email-display" style="font-size: 0.88rem; color: #667085;">correo@ejemplo.com</span>
+              </div>
+            </div>
+            <div class="review-summary-card" style="margin-bottom: 16px;">
+              <div class="review-row"><span>Teléfono:</span><b id="perfil-tel-display">—</b></div>
+              <div class="review-row"><span>Ciudad:</span><b id="perfil-ciudad-display">—</b></div>
+            </div>
+            <div class="acciones">
+              <button type="button" class="btn" id="btn-editar-perfil-directo">Editar mis datos</button>
+              <button type="button" class="btn sec" data-seccion="ayuda">Ayuda y soporte</button>
+              <button type="button" class="btn sec" id="btn-salir-perfil">Cerrar sesión</button>
+            </div>
+          </div>
+          <div class="tarjeta" style="max-width: 600px;">
+            <h3 style="margin-top: 0; color: #102A56;">Seguridad</h3>
+            <p class="sub" style="margin: 0 0 8px;">Entras con tu cuenta de Google, así que no guardamos ninguna contraseña. Para cambiar tu contraseña o revisar los accesos usa la seguridad de tu cuenta de Google.</p>
+            <a class="btn sec" href="https://myaccount.google.com/security" target="_blank" rel="noopener">Seguridad de mi cuenta de Google</a>
+            <p class="sub" style="margin: 16px 0 0;">Para eliminar tu cuenta y tus datos, escríbenos y lo gestionamos contigo.</p>
+          </div>
+        </section>
+
+        <p class="pie">
+          ¿Dónde está mi RNM? · Plataforma independiente desarrollada por FLUJO.<br>
+          <a href="privacidad.html">Política de privacidad</a> · <a href="terminos.html">Términos de servicio</a>
+        </p>
+
+      </main>
+    </div>
+
+    <!-- NAVEGACIÓN INFERIOR (Móvil) -->
+    <nav class="app-bottom-nav" aria-label="Navegación móvil">
+      <button type="button" class="bottom-nav-item active" data-seccion="inicio">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+        Inicio
+      </button>
+      <button type="button" class="bottom-nav-item" data-seccion="mis-rnm">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        Mis RNM
+      </button>
+      <button type="button" class="bottom-nav-item" data-seccion="nueva-consulta">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        Consulta
+      </button>
+      <button type="button" class="bottom-nav-item" data-seccion="planes">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+        Planes
+      </button>
+      <button type="button" class="bottom-nav-item" data-seccion="perfil">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+        Perfil
+      </button>
+    </nav>
+
   </div>
+
+  <!-- MODAL DE PLANES Y PAGO DE MERCADO PAGO -->
+  <div id="modal-planes" class="modal oculto" role="dialog" aria-modal="true" aria-label="Planes de suscripción">
+    <div class="modal-caja" tabindex="-1">
+      <button id="modal-cerrar" class="cerrar" type="button" aria-label="Cerrar">&times;</button>
+      <div id="cartel"></div>
+    </div>
+  </div>
+
+  <!-- MODAL DE CONFIRMACIÓN ACCESIBLE (ConfirmDialog) -->
+  <div id="modal-confirmar" class="modal oculto" role="dialog" aria-modal="true" aria-labelledby="confirm-titulo" aria-describedby="confirm-desc">
+    <div class="modal-caja" tabindex="-1" style="max-width: 440px;">
+      <h3 id="confirm-titulo" style="margin: 0 0 8px; font-size: 1.2rem; color: #102A56;">¿Confirmar acción?</h3>
+      <p id="confirm-desc" style="margin: 0 0 20px; color: #667085; font-size: 0.94rem;">Esta acción no se puede deshacer.</p>
+      <div class="acciones" style="justify-content: flex-end;">
+        <button type="button" class="btn sec" id="confirm-btn-cancelar">Cancelar</button>
+        <button type="button" class="btn danger" id="confirm-btn-accion">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <script src="https://sdk.mercadopago.com/js/v2"></script>

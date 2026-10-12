@@ -31,6 +31,89 @@ async function iniciar() {
 
 var usuarioActual = null;
 var perfilActual = null;
+var seccionActual = "inicio";
+var registrosCargados = [];
+var planCargado = null;
+var filtroMisRnm = "todos";
+var detalleActual = null;
+var salidaManual = false;
+
+var SECCIONES_INFO = {
+  "inicio": { titulo: "Inicio", sub: "Resumen de tus trámites y estado disponible" },
+  "mis-rnm": { titulo: "Mis RNM", sub: "Listado y seguimiento detallado de tus documentos" },
+  "detalle-rnm": { titulo: "Detalle del RNM", sub: "Información detallada, ubicación policial e historial" },
+  "nueva-consulta": { titulo: "Nueva consulta", sub: "Registra un nuevo documento para monitorear" },
+  "historial": { titulo: "Historial de consultas", sub: "Registro de operaciones y consultas realizadas" },
+  "planes": { titulo: "Planes y pagos", sub: "Cobertura mensual para supervisión continua" },
+  "ayuda": { titulo: "Ayuda y soporte", sub: "Orientación sobre tu trámite y canales de contacto" },
+  "perfil": { titulo: "Mi cuenta", sub: "Información de tu perfil y preferencias" }
+};
+
+/* Diálogo de Confirmación Accesible (ConfirmDialog) */
+function mostrarConfirmacion(opts) {
+  return new Promise(function (resolve) {
+    var modal = $("modal-confirmar");
+    if (!modal) {
+      return resolve(window.confirm(opts.desc || opts.titulo || "¿Confirmar?"));
+    }
+    var tit = $("confirm-titulo"), desc = $("confirm-desc");
+    var btnCanc = $("confirm-btn-cancelar"), btnAcc = $("confirm-btn-accion");
+
+    if (tit) tit.textContent = opts.titulo || "¿Confirmar acción?";
+    if (desc) desc.textContent = opts.desc || "Esta acción no se puede deshacer.";
+    if (btnAcc) {
+      btnAcc.textContent = opts.accionTexto || "Confirmar";
+      btnAcc.className = "btn " + (opts.esPeligroso ? "danger" : "");
+    }
+
+    function limpiar() {
+      modal.classList.add("oculto");
+      document.body.style.overflow = "";
+      btnCanc.removeEventListener("click", onCanc);
+      btnAcc.removeEventListener("click", onAcc);
+      document.removeEventListener("keydown", onKey);
+    }
+    function onCanc() { limpiar(); resolve(false); }
+    function onAcc() { limpiar(); resolve(true); }
+    function onKey(e) { if (e.key === "Escape") onCanc(); }
+
+    btnCanc.addEventListener("click", onCanc);
+    btnAcc.addEventListener("click", onAcc);
+    document.addEventListener("keydown", onKey);
+
+    modal.classList.remove("oculto");
+    document.body.style.overflow = "hidden";
+    if (btnAcc) btnAcc.focus();
+  });
+}
+
+function navegarA(id) {
+  if (!SECCIONES_INFO[id]) id = "inicio";
+  seccionActual = id;
+
+  // Actualizar estado en navegación de sidebar y barra móvil
+  document.querySelectorAll("[data-seccion]").forEach(function (btn) {
+    btn.classList.toggle("active", btn.getAttribute("data-seccion") === id);
+  });
+
+  // Alternar visibilidad de las secciones
+  document.querySelectorAll(".seccion-app").forEach(function (sec) {
+    sec.classList.toggle("oculto", sec.id !== "seccion-" + id);
+  });
+
+  // Actualizar títulos de cabecera
+  var info = SECCIONES_INFO[id];
+  var t = $("app-header-titulo"); if (t) t.textContent = info.titulo;
+  var s = $("app-header-sub"); if (s) s.textContent = info.sub;
+
+  // Sincronizar contenidos específicos
+  if (id === "planes") renderizarPlanes(registrosCargados, planCargado);
+  if (id === "historial") {
+    cargarHistorialConsultas();
+  }
+
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
 
 function vista(nombre) { // "login" | "perfil" | "app"
   ["login", "perfil", "app"].forEach(function (v) {
@@ -38,16 +121,36 @@ function vista(nombre) { // "login" | "perfil" | "app"
   });
 }
 
+function actualizarInfoUsuario(user, perfil) {
+  var email = (user && user.email) || "";
+  var meta = (user && user.user_metadata) || {};
+  var nombre = (perfil && perfil.nombre) || meta.full_name || meta.name || email.split("@")[0] || "Usuario";
+  var inicial = (nombre.charAt(0) || "U").toUpperCase();
+
+  var av = $("user-avatar-letter"); if (av) av.textContent = inicial;
+  var q = $("quien"); if (q) q.textContent = email;
+  var nd = $("perfil-nombre-display"); if (nd) nd.textContent = nombre;
+  var ed = $("perfil-email-display"); if (ed) ed.textContent = email;
+  var pt = $("perfil-tel-display"); if (pt) pt.textContent = (perfil && perfil.telefono) || "—";
+  var pc = $("perfil-ciudad-display"); if (pc) pc.textContent = perfil && perfil.ciudad ? perfil.ciudad + (perfil.estado ? " / " + perfil.estado : "") : "—";
+}
+
 async function mostrar(session) {
+  var habiaSesion = !!usuarioActual;
   var cambio = (session && session.user && session.user.id) !== (usuarioActual && usuarioActual.id);
   usuarioActual = session ? session.user : null;
-  if (!session) { perfilActual = null; return vista("login"); }
+  if (!session) {
+    perfilActual = null;
+    if (habiaSesion && !salidaManual) msg("msg-login", "Tu sesión necesita actualizarse. Inicia sesión de nuevo.");
+    salidaManual = false;
+    return vista("login");
+  }
   if (!cambio) return;
-  $("quien").textContent = session.user.email || "";
   var r = await sb.from("rnm_perfiles").select("*").eq("user_id", session.user.id).maybeSingle();
   perfilActual = r.data || null;
+  actualizarInfoUsuario(session.user, perfilActual);
   if (!perfilActual) { abrirPerfil(false); }
-  else { vista("app"); cargarRegistros(); }
+  else { vista("app"); navegarA("inicio"); cargarRegistros(); }
 }
 
 /* ---------- Onboarding / perfil ---------- */
@@ -164,7 +267,20 @@ $("btn-google").addEventListener("click", async function () {
   });
   if (r.error) msg("msg-login", "No pudimos iniciar sesión. Intenta de nuevo.");
 });
-$("btn-salir").addEventListener("click", function () { sb.auth.signOut(); });
+async function confirmarSalir() {
+  var ok = await mostrarConfirmacion({
+    titulo: "¿Cerrar sesión?",
+    desc: "Tendrás que volver a entrar con Google para ver tus RNM.",
+    accionTexto: "Cerrar sesión",
+    esPeligroso: false
+  });
+  if (!ok) return;
+  salidaManual = true;
+  sb.auth.signOut();
+}
+$("btn-salir").addEventListener("click", confirmarSalir);
+var btnSalirPerfil = $("btn-salir-perfil");
+if (btnSalirPerfil) btnSalirPerfil.addEventListener("click", confirmarSalir);
 
 /* ---------- Formulario ---------- */
 $("nac").addEventListener("input", function (e) {
@@ -183,27 +299,139 @@ function fechaISO(txt) {
   return m[3] + "-" + m[2] + "-" + m[1];
 }
 
-$("form-rnm").addEventListener("submit", async function (e) {
+/* ---------- Flujo de Consulta por Pasos (Pantallas 9, 10 y 11) ---------- */
+var consultaPendiente = { rnm: "", iso: "", nacTexto: "" };
+
+function irAPasoConsulta(n) {
+  var p1 = $("paso-consulta-1"), p2 = $("paso-consulta-2"), p3 = $("paso-consulta-3");
+  if (p1) p1.classList.toggle("oculto", n !== 1);
+  if (p2) p2.classList.toggle("oculto", n !== 2);
+  if (p3) p3.classList.toggle("oculto", n !== 3);
+
+  var s1 = $("step-indicador-1"), s2 = $("step-indicador-2"), s3 = $("step-indicador-3");
+  if (s1) {
+    s1.classList.toggle("active", n === 1);
+    s1.classList.toggle("completed", n > 1);
+  }
+  if (s2) {
+    s2.classList.toggle("active", n === 2);
+    s2.classList.toggle("completed", n > 2);
+  }
+  if (s3) {
+    s3.classList.toggle("active", n === 3);
+    s3.classList.toggle("completed", false);
+  }
+  msg("msg-form", "");
+  msg("msg-confirmar", "");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+$("form-rnm").addEventListener("submit", function (e) {
   e.preventDefault();
   msg("msg-form", "");
   var rnm = $("rnm").value.toUpperCase().replace(/[^A-Z0-9]/g, "");
-  var iso = fechaISO($("nac").value.trim());
-  if (!/^[A-Z0-9]{6,12}$/.test(rnm)) return msg("msg-form", "Revisa tu número de RNM.");
+  var nacTxt = $("nac").value.trim();
+  var iso = fechaISO(nacTxt);
+
+  if (!/^[A-Z0-9]{6,12}$/.test(rnm)) return msg("msg-form", "Revisa tu número de RNM (debe tener entre 6 y 12 caracteres).");
   if (!iso) return msg("msg-form", "La fecha debe ser válida, con formato dd/mm/aaaa.");
-  if (!$("consiento").checked) return msg("msg-form", "Debes aceptar la autorización para continuar.");
-  var btn = $("btn-registrar"); btn.disabled = true;
-  var r = await sb.from("rnm_registros").insert({ user_id: usuarioActual.id, rnm: rnm, fecha_nacimiento: iso });
-  btn.disabled = false;
-  if (r.error) {
-    if ((r.error.message || "").indexOf("limite_4_rnm") >= 0) return msg("msg-form", "Llegaste al máximo de 4 RNM por cuenta.");
-    return msg("msg-form", r.error.code === "23505" ? "Ese RNM ya está registrado en una cuenta. Si es tuyo y no lo ves en tu lista, escríbenos a flujoescalaempresas@gmail.com y lo resolvemos." : "No pudimos guardarlo. Intenta de nuevo.");
+  if (!$("consiento").checked) return msg("msg-form", "Debes autorizar el resguardo y consulta de tus datos para continuar.");
+
+  consultaPendiente = { rnm: rnm, iso: iso, nacTexto: nacTxt };
+
+  // Enmascarar RNM para confirmación
+  var enmascarado = rnm.length > 4 ? rnm.slice(0, 2) + "••••••" + rnm.slice(-2) : rnm;
+  var confRnm = $("conf-rnm-val"); if (confRnm) confRnm.textContent = rnm + " (" + enmascarado + ")";
+  var confNac = $("conf-nac-val"); if (confNac) confNac.textContent = nacTxt;
+
+  var confCosto = $("conf-costo-val");
+  if (confCosto) {
+    if (gratisDisponible) {
+      confCosto.textContent = "Primera consulta gratuita incluida";
+      confCosto.style.color = "var(--success)";
+    } else if (planCargado && planCargado.cupos > registrosCargados.length) {
+      confCosto.textContent = "Cubierto por tu plan mensual activo";
+      confCosto.style.color = "var(--brand)";
+    } else {
+      confCosto.textContent = "Documento adicional (requiere plan)";
+      confCosto.style.color = "var(--warning)";
+    }
   }
-  $("form-rnm").reset();
-  msg("msg-form", gratisDisponible
-    ? "Listo. Haremos tu primera consulta gratis y verás aquí el resultado."
-    : "Listo. Este RNM es adicional: elige un plan abajo para que lo consultemos.", true);
-  cargarRegistros();
+
+  irAPasoConsulta(2);
 });
+
+var btnConfEditar = $("btn-confirmar-editar");
+if (btnConfEditar) {
+  btnConfEditar.addEventListener("click", function () {
+    irAPasoConsulta(1);
+  });
+}
+
+var btnConfEnviar = $("btn-confirmar-enviar");
+if (btnConfEnviar) {
+  btnConfEnviar.addEventListener("click", async function () {
+    if (!consultaPendiente.rnm || !consultaPendiente.iso) return irAPasoConsulta(1);
+
+    var btn = this;
+    btn.disabled = true;
+    msg("msg-confirmar", "Registrando documento y preparando consulta…", true);
+
+    var r = await sb.from("rnm_registros").insert({
+      user_id: usuarioActual.id,
+      rnm: consultaPendiente.rnm,
+      fecha_nacimiento: consultaPendiente.iso
+    });
+
+    btn.disabled = false;
+
+    if (r.error) {
+      if ((r.error.message || "").indexOf("limite_4_rnm") >= 0) {
+        return msg("msg-confirmar", "Has alcanzado el límite máximo de 4 RNM por cuenta.");
+      }
+      return msg("msg-confirmar", r.error.code === "23505"
+        ? "Ese RNM ya está registrado en una cuenta. Si es tuyo y no lo ves en tu lista, contáctanos a " + CONTACTO_EMAIL + "."
+        : "No pudimos procesar el registro. Intenta de nuevo.");
+    }
+
+    $("form-rnm").reset();
+    await cargarRegistros();
+
+    // Montar resultado en el Paso 3
+    var nuevo = registrosCargados.find(function (x) { return x.rnm === consultaPendiente.rnm; });
+    var resBox = $("res-consulta-box");
+    if (resBox) {
+      resBox.textContent = "";
+      if (nuevo && nuevo.ultimo_resultado) {
+        resBox.appendChild(cajaResultado(nuevo));
+      } else {
+        var avisoNuevo = el("div", "res ok");
+        avisoNuevo.appendChild(el("h3", "", "¡Documento registrado con éxito!"));
+        avisoNuevo.appendChild(el("p", "", gratisDisponible
+          ? "Tu primera consulta está en curso. Verás aquí la novedad en cuanto la Policía Federal responda."
+          : "Tu documento adicional ha sido registrado. Elige un plan mensual para habilitar la supervisión constante."));
+        resBox.appendChild(avisoNuevo);
+      }
+    }
+
+    irAPasoConsulta(3);
+  });
+}
+
+var btnResIrMisRnm = $("btn-res-ir-mis-rnm");
+if (btnResIrMisRnm) {
+  btnResIrMisRnm.addEventListener("click", function () {
+    irAPasoConsulta(1);
+    navegarA("mis-rnm");
+  });
+}
+
+var btnResOtra = $("btn-res-otra-consulta");
+if (btnResOtra) {
+  btnResOtra.addEventListener("click", function () {
+    irAPasoConsulta(1);
+  });
+}
 
 /* ---------- Lista de RNM ---------- */
 var gratisDisponible = true;
@@ -446,6 +674,27 @@ function actualizarPlanes(regs, plan) {
   if (nuevos.length && cerrada) { marcarVistos(nuevos.map(function (x) { return x.id; })); abrirModalPlanes(); }
 }
 
+function actualizarResumen(regs) {
+  var cont = $("contenedor-resumen-dashboard");
+  if (!cont) return;
+  cont.textContent = "";
+  var resumen = el("section", "tarjeta dashboard-summary");
+  resumen.id = "resumen-rnm";
+  var abierto = regs.filter(function (x) { return !x.cerrado; });
+  var texto = abierto.length
+    ? "Aquí tienes el estado más reciente de tus registros. Selecciona un RNM para ver su información y las acciones disponibles."
+    : "Aún no tienes registros. Añade tu RNM para que podamos mostrarte las actualizaciones disponibles.";
+  var contenido = el("div", "");
+  contenido.appendChild(el("p", "eyebrow", "Seguimiento RNM"));
+  contenido.appendChild(el("h2", "", abierto.length ? "Tu seguimiento, en un solo lugar" : "Comienza tu seguimiento"));
+  contenido.appendChild(el("p", "", texto));
+  resumen.appendChild(contenido);
+  var contador = el("div", "summary-count");
+  contador.appendChild(el("b", "", String(abierto.length)));
+  contador.appendChild(el("span", "", abierto.length === 1 ? "RNM activo" : "RNM activos"));
+  resumen.appendChild(contador);
+  cont.appendChild(resumen);
+}
 async function cargarRegistros() {
   actualizarAvisoRegistro();
   var q = await Promise.all([
@@ -464,14 +713,461 @@ async function cargarRegistros() {
     x.planVence = plan ? plan.vence_at : null;
     x.tuvoPlan = !!plan;
   });
+  registrosCargados = r.data;
+  planCargado = plan;
   var lleno = r.data.length >= 4;
   $("form-rnm").classList.toggle("oculto", lleno);
   $("tope-4").classList.toggle("oculto", !lleno);
+  actualizarResumen(r.data);
+  actualizarDashboard(r.data, plan);
+  renderizarMisRnm(r.data, plan);
   cartelPlanes(r.data, plan);
   actualizarPlanes(r.data, plan);
   var cont = $("lista");
   cont.textContent = "";
   r.data.slice().reverse().forEach(function (x) { cont.appendChild(tarjeta(x)); });
+
+  if (seccionActual === "planes") renderizarPlanes(r.data, plan);
+  if (seccionActual === "detalle-rnm" && detalleActual) construirDetalle(detalleActual);
+}
+
+/* ---------- Planes y pagos (Pantalla 13 y 16) ---------- */
+// Solo muestra el estado real del plan y los precios existentes; el cobro se hace siempre en la ventana de pago (tiene sus propios controles).
+function renderizarPlanes(regs, plan) {
+  var cont = $("planes-contenido");
+  if (!cont) return;
+  cont.textContent = "";
+  var activo = !!plan && new Date(plan.vence_at) > new Date();
+  var abiertos = regs.filter(function (x) { return !x.cerrado; }).length;
+  var necesitan = regs.filter(function (x) { return !x.cerrado && !x.cubierto && (!!x.ultimo_resultado || x.requiere_pago); }).length;
+
+  var estado = el("div", "tarjeta");
+  estado.appendChild(el("p", "hero-eyebrow", "Tu plan actual"));
+  if (activo) {
+    estado.appendChild(el("h3", "", "Plan activo · cubre hasta " + plan.cupos + " RNM"));
+    var filas = el("div", "review-summary-card");
+    [["Precio mensual", reales(plan.precio_centavos)],
+     ["Pagado hasta", fechaCorta(plan.vence_at)],
+     ["RNM incluidos", String(plan.cupos)],
+     ["RNM en seguimiento", abiertos + " de " + plan.cupos + (abiertos > plan.cupos ? " (" + (abiertos - plan.cupos) + " sin cobertura)" : "")]
+    ].forEach(function (par) {
+      var f = el("div", "review-row");
+      f.appendChild(el("span", "", par[0] + ":"));
+      f.appendChild(el("b", "", par[1]));
+      filas.appendChild(f);
+    });
+    estado.appendChild(filas);
+  } else {
+    estado.appendChild(el("h3", "", plan ? "Tu plan venció" : "Todavía no tienes un plan"));
+    estado.appendChild(el("p", "sub", plan
+      ? "La vigilancia de tus RNM se detuvo el " + fechaCorta(plan.vence_at) + ". Puedes renovarlo cuando quieras."
+      : "Tu primera consulta es gratis. Para seguir vigilando tus RNM después de la primera revisión necesitas un plan mensual."));
+  }
+  var acc = el("div", "acciones");
+  var ver = el("button", "btn", activo && !necesitan ? "Ver detalles del plan" : (activo ? "Ampliar mi plan" : "Elegir un plan"));
+  ver.type = "button";
+  if (!abiertos) {
+    ver.disabled = true;
+    estado.appendChild(el("p", "sub", "Cuando tengas un RNM en seguimiento podrás elegir un plan."));
+  }
+  ver.addEventListener("click", abrirModalPlanes);
+  acc.appendChild(ver);
+  estado.appendChild(acc);
+  cont.appendChild(estado);
+
+  var precios = el("div", "tarjeta");
+  precios.appendChild(el("h3", "", "Planes mensuales"));
+  precios.appendChild(el("p", "sub", "Se cobra cada mes a tu tarjeta y puedes cancelar cuando quieras. El precio baja por RNM cuando cubres más documentos."));
+  var tabla = el("div", "review-summary-card");
+  [1, 2, 3, 4].forEach(function (n) {
+    var f = el("div", "review-row");
+    f.appendChild(el("span", "", n + (n === 1 ? " RNM" : " RNM") + (n > 1 ? " · ahorras " + porcentajeAhorro(n) + "%" : "")));
+    f.appendChild(el("b", "", reales(PRECIOS[n]) + " al mes"));
+    tabla.appendChild(f);
+  });
+  precios.appendChild(tabla);
+  cont.appendChild(precios);
+
+  var pagos = el("div", "tarjeta");
+  pagos.appendChild(el("h3", "", "Historial de pagos"));
+  pagos.appendChild(el("p", "sub", "Por ahora el detalle de cada cobro no se muestra dentro de la aplicación. Si necesitas un comprobante o tienes una duda sobre un cobro, escríbenos " + VIA_CONTACTO + "."));
+  cont.appendChild(pagos);
+}
+
+/* ---------- Historial de Consultas (Pantalla 12) ---------- */
+// Estado normalizado que guarda la base -> [clase de la insignia, texto]
+var NORMALIZADO = {
+  listo: ["ok", "Listo"], entregado: ["ok", "Entregado"], proceso: ["vigila", "En proceso"], pendencia: ["", "Falta información"],
+  problema: ["danger", "Requiere atención"], no_encontrado: ["", "No encontrado"], desconocido: ["", "Novedad"]
+};
+var COLUMNAS_CONSULTA = "id, registro_id, resultado_texto, estado_normalizado, unidad_pf, cambio_direccion, created_at";
+
+function fechaHora(iso) {
+  return new Date(iso).toLocaleDateString("es", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+}
+
+function bloqueError(titulo, texto, reintentar) {
+  var b = el("div", "empty-state");
+  b.appendChild(el("h3", "", titulo));
+  b.appendChild(el("p", "", texto));
+  if (reintentar) {
+    var bt = el("button", "btn sec", "Reintentar"); bt.type = "button";
+    bt.addEventListener("click", reintentar);
+    b.appendChild(bt);
+  }
+  return b;
+}
+
+/* ---------- Historial de Consultas (Pantalla 12) ---------- */
+async function cargarHistorialConsultas() {
+  var cont = $("lista-historial-consultas");
+  if (!cont) return;
+  cont.textContent = "";
+
+  var loading = el("p", "sub", "Cargando historial de consultas…");
+  cont.appendChild(loading);
+
+  var r = await sb.from("rnm_consultas").select(COLUMNAS_CONSULTA).order("created_at", { ascending: false }).limit(200);
+  loading.remove();
+
+  if (r.error) { // un fallo de carga no se presenta como "sin consultas"
+    cont.appendChild(bloqueError("No pudimos cargar tu historial", "Revisa tu conexión e inténtalo de nuevo.", cargarHistorialConsultas));
+    return;
+  }
+  if (!r.data.length) {
+    var vacio = el("div", "empty-state");
+    vacio.appendChild(el("h3", "", "Aún no tienes consultas en tu historial"));
+    vacio.appendChild(el("p", "", "Cuando se revise alguno de tus documentos, el resultado de cada revisión aparecerá aquí."));
+    cont.appendChild(vacio);
+    return;
+  }
+
+  r.data.forEach(function (c) {
+    var reg = registrosCargados.find(function (x) { return x.id === c.registro_id; });
+    var n = NORMALIZADO[c.estado_normalizado] || ["", "Novedad"];
+
+    var card = el("div", "history-card");
+    var izq = el("div", "");
+    izq.appendChild(el("span", "history-rnm", reg ? "RNM " + reg.rnm : "Documento"));
+    izq.appendChild(el("div", "history-date", fechaHora(c.created_at)));
+    if (c.resultado_texto) {
+      var pRes = el("p", "", c.resultado_texto.length > 140 ? c.resultado_texto.slice(0, 140) + "…" : c.resultado_texto);
+      pRes.style.fontSize = "0.88rem";
+      pRes.style.margin = "6px 0 0";
+      pRes.style.color = "#344054";
+      izq.appendChild(pRes);
+    }
+    if (c.unidad_pf) {
+      var pUni = el("p", "sub", "Unidad: " + c.unidad_pf);
+      pUni.style.margin = "4px 0 0";
+      izq.appendChild(pUni);
+    }
+    card.appendChild(izq);
+
+    var der = el("div", "");
+    der.appendChild(el("span", "insignia" + (n[0] ? " " + n[0] : ""), n[1]));
+    card.appendChild(der);
+    if (reg) {
+      card.style.cursor = "pointer";
+      card.addEventListener("click", function () { abrirDetalleRnm(reg.id); });
+    }
+    cont.appendChild(card);
+  });
+}
+
+/* ---------- Dashboard (Pantalla 5) ---------- */
+function actualizarDashboard(regs, plan) {
+  // 1. Saludo personalizado
+  var saludoCont = $("dashboard-saludo");
+  if (saludoCont) {
+    saludoCont.textContent = "";
+    var nombre = (perfilActual && perfilActual.nombre) ? perfilActual.nombre.split(" ")[0] : "estimado usuario";
+    var h2 = el("h2", "", "Hola, " + nombre);
+    h2.style.margin = "0 0 4px";
+    h2.style.fontSize = "1.35rem";
+    h2.style.color = "#102A56";
+    var p = el("p", "sub", "Aquí tienes un resumen actualizado de tus trámites y consultas ante la Policía Federal.");
+    p.style.margin = "0";
+    saludoCont.appendChild(h2);
+    saludoCont.appendChild(p);
+  }
+
+  // 2. Tarjeta dominante de estado (Hero)
+  var heroCont = $("dashboard-hero-container");
+  if (heroCont) {
+    heroCont.textContent = "";
+    if (!regs.length) {
+      // Estado vacío (Pantalla 21)
+      var emp = el("div", "empty-state");
+      emp.innerHTML =
+        '<div class="empty-state-icon">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>' +
+        '</div>' +
+        '<h3>Todavía no tienes RNM registrados</h3>' +
+        '<p>Registra tu primer documento para que vigilemos su avance y te mostremos las actualizaciones disponibles.</p>' +
+        '<button type="button" class="btn" id="btn-hero-empty-registrar">+ Registrar mi primer RNM</button>';
+      heroCont.appendChild(emp);
+      var btnReg = $("btn-hero-empty-registrar");
+      if (btnReg) btnReg.addEventListener("click", function () { navegarA("nueva-consulta"); });
+    } else {
+      // Buscar documento más relevante
+      var principal = regs.find(function (x) { return x.estado_pf === "listo"; }) ||
+                      regs.find(function (x) { return !x.cerrado; }) || regs[0];
+
+      var e = estadoPresentacion(principal);
+      var claseTono = e.tono === "ok" ? "status-ok" : (e.tono === "mal" ? "status-mal" : "status-aviso");
+      var hero = el("div", "dashboard-hero " + claseTono);
+
+      var hHeader = el("div", "hero-header");
+      var hText = el("div", "");
+      hText.appendChild(el("p", "hero-eyebrow", "Documento en seguimiento principal"));
+      hText.appendChild(el("h3", "hero-rnm-title", "RNM " + principal.rnm));
+      hHeader.appendChild(hText);
+
+      var etiqueta = principal.cerrado ? "Listo" : (principal.cubierto ? "Vigilando" : (principal.ultimo_resultado ? "Consultado" : "Pendiente"));
+      var insClase = principal.cerrado ? " ok" : (principal.cubierto ? " vigila" : "");
+      hHeader.appendChild(el("span", "insignia" + insClase, etiqueta));
+      hero.appendChild(hHeader);
+
+      var sBox = el("div", "hero-state-box");
+      sBox.appendChild(el("h3", "", e.t));
+      e.p.forEach(function (parr) { sBox.appendChild(el("p", "", parr)); });
+      if (principal.unidad_pf) {
+        var uDesc = "Unidad asignada: " + principal.unidad_pf;
+        var ciu = ciudadDeUnidad(principal.unidad_pf);
+        if (ciu) uDesc += " (" + ciu + ")";
+        sBox.appendChild(el("p", "sub", uDesc));
+      }
+      hero.appendChild(sBox);
+
+      var hFooter = el("div", "hero-footer");
+      var timeTxt = principal.ultima_consulta_at
+        ? "Última revisión: " + new Date(principal.ultima_consulta_at).toLocaleDateString("es", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })
+        : "Revisión programada en breve";
+      hFooter.appendChild(el("span", "hero-timestamp", timeTxt));
+
+      var btnVerDet = el("button", "btn", "Ver detalles completos del trámite");
+      btnVerDet.type = "button";
+      btnVerDet.addEventListener("click", function () { abrirDetalleRnm(principal.id); });
+      hFooter.appendChild(btnVerDet);
+      hero.appendChild(hFooter);
+
+      heroCont.appendChild(hero);
+    }
+  }
+
+  // 3. Siguiente paso recomendado
+  var sigCont = $("dashboard-siguiente-paso");
+  if (sigCont) {
+    sigCont.textContent = "";
+    var nCard = el("div", "next-step-card");
+    var nCont = el("div", "next-step-content");
+    var nTit = el("h3", "", "¿Qué puedes hacer ahora?");
+    nCont.appendChild(nTit);
+
+    var nP = el("p", "");
+    var nBtn = el("button", "btn sec", "");
+    nBtn.style.minHeight = "42px";
+    nBtn.style.fontSize = "0.9rem";
+
+    if (!regs.length) {
+      nP.textContent = "Tu primera consulta es gratis. Añade los datos de tu documento para iniciar el seguimiento.";
+      nBtn.textContent = "Registrar documento";
+      nBtn.addEventListener("click", function () { navegarA("nueva-consulta"); });
+    } else {
+      var hayListo = regs.some(function (x) { return x.estado_pf === "listo"; });
+      var haySinCubrir = regs.some(function (x) { return !x.cerrado && !x.cubierto && (x.requiere_pago || x.ultimo_resultado); });
+
+      if (hayListo) {
+        nP.textContent = "Tienes un documento listo para retirar en la Policía Federal. Agenda tu cita de retiro o solicita cambio si te queda lejos.";
+        nBtn.textContent = "Ver indicaciones";
+        nBtn.addEventListener("click", function () {
+          var l = regs.find(function (x) { return x.estado_pf === "listo"; });
+          if (l) abrirDetalleRnm(l.id);
+        });
+      } else if (haySinCubrir) {
+        nP.textContent = "Para mantener la vigilancia constante de tus documentos, elige un plan mensual que se ajuste a tus necesidades.";
+        nBtn.textContent = "Ver planes";
+        nBtn.addEventListener("click", function () { navegarA("planes"); });
+      } else {
+        nP.textContent = "Tu seguimiento está al día. El sistema monitorea periódicamente la Policía Federal y te avisará ante cualquier novedad.";
+        nBtn.textContent = "Ver mis registros";
+        nBtn.addEventListener("click", function () { navegarA("mis-rnm"); });
+      }
+    }
+    nCont.appendChild(nP);
+    nCard.appendChild(nCont);
+    nCard.appendChild(nBtn);
+    sigCont.appendChild(nCard);
+  }
+}
+
+/* ---------- Mis RNM (Pantalla 6) ---------- */
+function renderizarMisRnm(regs, plan) {
+  var cTodos = $("count-todos"), cProc = $("count-proceso"), cListos = $("count-listos");
+  var listos = regs.filter(function (x) { return x.estado_pf === "listo"; });
+  var proceso = regs.filter(function (x) { return !x.cerrado && x.estado_pf !== "listo"; });
+
+  if (cTodos) cTodos.textContent = String(regs.length);
+  if (cProc) cProc.textContent = String(proceso.length);
+  if (cListos) cListos.textContent = String(listos.length);
+
+  var cont = $("lista-mis-rnm-clon");
+  if (!cont) return;
+  cont.textContent = "";
+
+  var filtrados = regs;
+  if (filtroMisRnm === "proceso") filtrados = proceso;
+  else if (filtroMisRnm === "listos") filtrados = listos;
+
+  if (!filtrados.length) {
+    var vacio = el("div", "empty-state");
+    vacio.innerHTML =
+      '<div class="empty-state-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></div>' +
+      '<h3>No hay documentos en esta sección</h3>' +
+      '<p>' + (filtroMisRnm === "todos" ? "Aún no tienes registros de RNM en tu cuenta." : "No se encontraron trámites con este criterio de filtro.") + '</p>';
+    cont.appendChild(vacio);
+    return;
+  }
+
+  filtrados.slice().reverse().forEach(function (x) {
+    cont.appendChild(tarjeta(x));
+  });
+}
+
+/* ---------- Detalle de RNM e Historial (Pantallas 7 y 8) ---------- */
+function abrirDetalleRnm(id) {
+  construirDetalle(id);
+  navegarA("detalle-rnm");
+}
+
+// Revisiones reales de un RNM (cada vez que el equipo guarda un resultado queda una fila)
+async function cargarConsultasDe(id, box) {
+  box.appendChild(el("p", "sub", "Cargando revisiones…"));
+  var r = await sb.from("rnm_consultas").select(COLUMNAS_CONSULTA).eq("registro_id", id).order("created_at", { ascending: false }).limit(50);
+  box.textContent = "";
+  if (r.error) { box.appendChild(el("p", "sub", "No pudimos cargar las revisiones anteriores. Pulsa Actualizar para reintentar.")); return; }
+  r.data.forEach(function (c) {
+    var n = NORMALIZADO[c.estado_normalizado] || ["", "Novedad"];
+    var item = el("div", "timeline-item");
+    item.appendChild(el("div", "timeline-dot" + (n[0] === "ok" ? " ok" : "")));
+    var cc = el("div", "timeline-content");
+    cc.appendChild(el("div", "timeline-date", fechaHora(c.created_at)));
+    cc.appendChild(el("h4", "timeline-title", "Revisión: " + n[1]));
+    if (c.resultado_texto) cc.appendChild(el("p", "timeline-desc", "Respuesta de la Polícia Federal: " + c.resultado_texto.slice(0, 160)));
+    item.appendChild(cc);
+    box.appendChild(item);
+  });
+}
+
+function construirDetalle(id) {
+  var x = registrosCargados.find(function (r) { return r.id === id; });
+  if (!x) { if (seccionActual === "detalle-rnm") navegarA("mis-rnm"); return; }
+  detalleActual = id;
+
+  var cont = $("contenedor-detalle-rnm");
+  if (!cont) return;
+  cont.textContent = "";
+
+  // 1. Tarjeta principal de cabecera del RNM
+  var cardCab = el("div", "tarjeta");
+  var fila = el("div", "fila");
+  var titBox = el("div", "");
+  titBox.appendChild(el("p", "hero-eyebrow", "Documento en seguimiento"));
+  titBox.appendChild(el("h2", "", "RNM " + x.rnm));
+  fila.appendChild(titBox);
+
+  var consultado = !!x.ultimo_resultado;
+  var etiqueta = x.cerrado ? "Listo" : (x.cubierto ? "Vigilando hasta " + fechaCorta(x.planVence) : (consultado ? "Consulta lista" : (x.requiere_pago ? "Pendiente de plan" : "Consultando")));
+  var clase = x.cerrado ? " ok" : (x.cubierto ? " vigila" : "");
+  fila.appendChild(el("span", "insignia" + clase, etiqueta));
+  cardCab.appendChild(fila);
+
+  if (consultado) cardCab.appendChild(cajaResultado(x));
+  else cardCab.appendChild(el("p", "sub", "Estamos verificando la información disponible ante la Policía Federal."));
+  cont.appendChild(cardCab);
+
+  // 2. Información policial y delegacia
+  if (x.unidad_pf) {
+    cont.appendChild(cajaUnidad(x));
+  } else if (x.estado_pf === "listo" && WHATSAPP) {
+    cont.appendChild(avisoOtraCiudad(x));
+  }
+
+  // 3. Línea de tiempo vertical (RnmTimeline con datos reales)
+  var cardTime = el("div", "tarjeta");
+  cardTime.appendChild(el("h3", "", "Historial del trámite"));
+  cardTime.appendChild(el("p", "sub", "Marcas temporales y eventos registrados ante la Policía Federal"));
+
+  var tl = el("div", "timeline");
+  var hayEventos = false;
+
+  if (x.cambio_direccion) {
+    var lineas = lineasCambio(x.cambio_direccion);
+    lineas.forEach(function (l) {
+      hayEventos = true;
+      var item = el("div", "timeline-item");
+      item.appendChild(el("div", "timeline-dot" + (l.estado === "concluida" ? " ok" : "")));
+      var tCont = el("div", "timeline-content");
+      if (l.fecha) tCont.appendChild(el("div", "timeline-date", l.fecha));
+      tCont.appendChild(el("h4", "timeline-title", "Solicitud de cambio de dirección: " + l.estado));
+      if (l.destino) tCont.appendChild(el("p", "timeline-desc", "Destino solicitado: " + l.destino));
+      item.appendChild(tCont);
+      tl.appendChild(item);
+    });
+  }
+
+  var consultasBox = el("div", "");
+  tl.appendChild(consultasBox);
+  cargarConsultasDe(x.id, consultasBox);
+
+  if (x.created_at) {
+    hayEventos = true;
+    var itemAlta = el("div", "timeline-item");
+    itemAlta.appendChild(el("div", "timeline-dot"));
+    var aCont = el("div", "timeline-content");
+    aCont.appendChild(el("div", "timeline-date", new Date(x.created_at).toLocaleDateString("es")));
+    aCont.appendChild(el("h4", "timeline-title", "Registro en la plataforma"));
+    aCont.appendChild(el("p", "timeline-desc", "Documento añadido para supervisión continua en ¿Dónde está mi RNM?."));
+    itemAlta.appendChild(aCont);
+    tl.appendChild(itemAlta);
+  }
+
+  if (!hayEventos) {
+    tl.appendChild(el("p", "sub", "No hay eventos históricos previos para este documento."));
+  }
+
+  cardTime.appendChild(tl);
+  cont.appendChild(cardTime);
+
+  // 4. Acciones del detalle (Eliminar / Quitar RNM con ConfirmDialog)
+  if (!x.cerrado) {
+    var cardAcc = el("div", "tarjeta");
+    cardAcc.appendChild(el("h3", "", "Acciones del registro"));
+    var q = el("div", "acciones");
+    var avisoBorrar = el("p", "msg", "");
+    var borrar = el("button", "btn danger", "Quitar este RNM");
+    borrar.type = "button";
+    borrar.addEventListener("click", async function () {
+      var ok = await mostrarConfirmacion({
+        titulo: "¿Quitar RNM " + x.rnm + "?",
+        desc: "Se eliminarán los datos de seguimiento de este documento de tu cuenta. Esta acción no se puede deshacer.",
+        accionTexto: "Quitar documento",
+        esPeligroso: true
+      });
+      if (!ok) return;
+      var borrado = await sb.from("rnm_registros").delete().eq("id", x.id);
+      if (borrado.error) { avisoBorrar.textContent = "No pudimos quitar este RNM. Intenta de nuevo."; return; }
+      detalleActual = null;
+      await cargarRegistros();
+      navegarA("mis-rnm");
+    });
+    q.appendChild(borrar);
+    cardAcc.appendChild(q);
+    cardAcc.appendChild(avisoBorrar);
+    cont.appendChild(cardAcc);
+  }
+
 }
 
 /* El estado lo actualiza el equipo de FLUJO: la app se refresca sola cada minuto mientras está visible. */
@@ -658,18 +1354,29 @@ function tarjeta(x) {
   if (!x.cerrado && !x.cubierto && consultado) t.appendChild(el("p", "sub", "Para seguir vigilándolo, elige un plan en el cuadro de arriba."));
   if (!x.cerrado && x.cubierto) t.appendChild(el("p", "sub", "Plan activo hasta el " + fechaCorta(x.planVence) + ". Revisamos tu RNM periódicamente y esta pantalla se actualiza sola."));
 
-  if (!x.cerrado) { // puede quitarlo (por ejemplo si se equivocó de número)
-    var q = el("div", "acciones");
-    var borrar = el("button", "sec", "Quitar este RNM");
+  var q = el("div", "acciones");
+  var ver = el("button", "btn sec", "Ver detalles");
+  ver.type = "button";
+  ver.addEventListener("click", function () { abrirDetalleRnm(x.id); });
+  q.appendChild(ver);
+
+  if (!x.cerrado) {
+    var borrar = el("button", "sec", "Quitar");
     borrar.type = "button";
     borrar.addEventListener("click", async function () {
-      if (!confirm("¿Quitar este RNM? Se borrarán sus datos.")) return;
+      var ok = await mostrarConfirmacion({
+        titulo: "¿Quitar RNM " + x.rnm + "?",
+        desc: "Se eliminarán sus datos de seguimiento de la cuenta.",
+        accionTexto: "Quitar este RNM",
+        esPeligroso: true
+      });
+      if (!ok) return;
       await sb.from("rnm_registros").delete().eq("id", x.id);
       cargarRegistros();
     });
     q.appendChild(borrar);
-    t.appendChild(q);
   }
+  t.appendChild(q);
   return t;
 }
 
@@ -689,10 +1396,67 @@ var ESTADOS = [
   { re: /n[aã]o (foi )?encontrad|nenhum|sin resultados/i, tono: "aviso", t: "No encontramos tu trámite",
     p: ["Revisaremos que tu RNM y tu fecha estén correctos.", "Si algo no coincide con tu documento, te escribiremos."] }
 ];
+// Estado que se muestra para un registro: si todavía no hay resultado, se dice tal cual (nunca "novedad").
+function estadoPresentacion(x) {
+  if (x.ultimo_resultado) return explicar(x.ultimo_resultado);
+  if (x.requiere_pago && !x.cubierto) return { tono: "aviso", t: "Este RNM espera un plan", p: ["Se consulta cuando actives un plan mensual que lo cubra."] };
+  return { tono: "aviso", t: "Estamos haciendo tu primera consulta", p: ["Es gratis. Verás aquí el resultado en cuanto lo tengamos."] };
+}
 function explicar(txt) {
+  txt = txt || "";
   var e = ESTADOS.find(function (x) { return x.re.test(txt); });
   return e || { tono: "aviso", t: "Hay una novedad en tu trámite", p: ["Escríbenos " + VIA_CONTACTO + " y te la explicamos."] };
 }
+
+/* Conexión de navegación entre secciones */
+document.querySelectorAll("[data-seccion]").forEach(function (btn) {
+  btn.addEventListener("click", function () {
+    var sec = this.getAttribute("data-seccion");
+    if (sec) navegarA(sec);
+  });
+});
+
+var btnIrNueva = $("btn-ir-nueva-consulta");
+if (btnIrNueva) {
+  btnIrNueva.addEventListener("click", function () { navegarA("nueva-consulta"); });
+}
+
+var btnNuevaMisRnm = $("btn-nueva-consulta-mis-rnm");
+if (btnNuevaMisRnm) {
+  btnNuevaMisRnm.addEventListener("click", function () { navegarA("nueva-consulta"); });
+}
+
+var btnVolverMisRnm = $("btn-volver-mis-rnm");
+if (btnVolverMisRnm) {
+  btnVolverMisRnm.addEventListener("click", function () { navegarA("mis-rnm"); });
+}
+
+document.querySelectorAll("#mis-rnm-filtros button").forEach(function (btn) {
+  btn.addEventListener("click", function () {
+    document.querySelectorAll("#mis-rnm-filtros button").forEach(function (b) { b.classList.remove("active"); });
+    this.classList.add("active");
+    filtroMisRnm = this.getAttribute("data-filtro") || "todos";
+    renderizarMisRnm(registrosCargados, planCargado);
+  });
+});
+
+var btnActualizarHist = $("btn-actualizar-historial");
+if (btnActualizarHist) {
+  btnActualizarHist.addEventListener("click", function () {
+    cargarHistorialConsultas();
+  });
+}
+
+var btnEditarDirecto = $("btn-editar-perfil-directo");
+if (btnEditarDirecto) {
+  btnEditarDirecto.addEventListener("click", function () { abrirPerfil(true); });
+}
+
+(function () { // el botón de WhatsApp de Ayuda usa el número configurado; sin número no se muestra
+  var w = document.getElementById("ayuda-whatsapp");
+  if (!w) return;
+  if (WHATSAPP) w.href = "https://wa.me/" + WHATSAPP; else w.classList.add("oculto");
+})();
 
 iniciar();
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(function () {});

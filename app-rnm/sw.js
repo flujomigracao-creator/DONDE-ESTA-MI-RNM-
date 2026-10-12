@@ -1,5 +1,5 @@
-var CACHE = "rnm-v15";
-var ARCHIVOS = ["./", "index.html", "app.js", "manifest.json", "icon.svg"];
+var CACHE = "rnm-v20";
+var ARCHIVOS = ["./", "index.html", "app.js", "manifest.json", "icon.svg", "premium.css"];
 
 self.addEventListener("install", function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(ARCHIVOS); }));
