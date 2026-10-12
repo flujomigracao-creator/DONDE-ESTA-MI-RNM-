@@ -1,4 +1,4 @@
-var CACHE = "rnm-v20";
+var CACHE = "rnm-v21";
 var ARCHIVOS = ["./", "index.html", "app.js", "manifest.json", "icon.svg", "premium.css"];
 
 self.addEventListener("install", function (e) {

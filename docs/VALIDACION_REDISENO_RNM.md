@@ -67,3 +67,20 @@ Una segunda revisión del rediseño (Entregas 1–3) encontró y corrigió lo si
 
 **Limitaciones declaradas:** no hay historial de pagos dentro de la app (el cliente no tiene acceso a esa tabla; se explica en pantalla); el acceso es solo con Google, por lo que registro, recuperación y cambio de contraseña propios no aplican; no existen notificaciones push ni bandeja de notificaciones.
 **No ejecutado:** prueba con una sesión real de cliente y un cobro real (depende de un pagador distinto a la cuenta cobradora).
+
+---
+
+## 4. Simplificación de pantallas (2026-10-12)
+
+Objetivo: quitar lo innecesario y resumir cada espacio. Verificado en la vista previa local con datos de prueba (Inicio, Mis RNM, detalle, nueva consulta, Planes, Ayuda; 0 errores de consola).
+
+| Pantalla | Antes | Ahora |
+|---|---|---|
+| Cabecera | Título, subtítulo y 3 botones (Planes, Actualizar, Mis datos) | Título y Actualizar (Planes y Mis datos ya están en el menú y en Mi cuenta) |
+| Inicio | Saludo, estado, siguiente paso, 4 accesos rápidos, tarjeta de resumen y lista completa de documentos | Saludo, estado principal, siguiente paso y, si hay más de un RNM, "Tus otros RNM" en filas |
+| Mis RNM | Tarjeta larga por RNM (resultado, unidad, cambios, botones) | Fila compacta (RNM, estado, ciudad, insignia); todo el detalle está en el detalle del RNM |
+| Nueva consulta | 3 pasos (datos, confirmación, resultado) | 2 pasos; al confirmar se abre el detalle del RNM nuevo. Se corrigió el texto de costo ("cubierto por tu plan") y se quitó el RNM duplicado en la confirmación |
+| Planes y pagos | 3 tarjetas | 2 tarjetas (plan actual y precios); el historial de pagos pasa a una línea |
+| Ayuda | 6 preguntas largas siempre abiertas | 6 preguntas plegables y más cortas |
+| Mi cuenta | Tarjeta de seguridad aparte | Una línea |
+| Navegación | Sin dirección propia (el botón "atrás" salía de la app) | Cada sección tiene su dirección (#inicio, #mis-rnm, …) y "atrás" funciona; al recargar se vuelve a la misma sección |

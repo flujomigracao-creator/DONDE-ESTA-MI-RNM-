@@ -1288,3 +1288,32 @@ button:focus-visible, a:focus-visible, .nav-item:focus-visible, .bottom-nav-item
   outline: 3px solid rgba(21, 94, 239, 0.55);
   outline-offset: 2px;
 }
+
+/* --- Resumen: filas compactas de RNM y preguntas plegables --- */
+.fila-rnm {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.fila-rnm:hover { border-color: var(--brand-line); box-shadow: var(--shadow-md); }
+.fila-rnm:focus-visible { outline: 3px solid rgba(21, 94, 239, 0.55); outline-offset: 2px; }
+.fila-rnm-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.fila-rnm-info b { font-size: 1.02rem; color: var(--navy); letter-spacing: 0.02em; }
+.fila-rnm-info span { font-size: 0.86rem; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fila-rnm-flecha { font-size: 1.4rem; color: var(--text-subtle); line-height: 1; }
+
+.faq details { border-bottom: 1px solid var(--line); padding: 4px 0; }
+.faq details:last-child { border-bottom: none; }
+.faq summary { cursor: pointer; font-weight: 600; color: var(--text-main); padding: 10px 0; list-style: none; display: flex; justify-content: space-between; gap: 12px; }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: "+"; color: var(--brand); font-weight: 700; }
+.faq details[open] summary::after { content: "–"; }
+.faq details p { margin: 0 0 12px; color: var(--text-muted); font-size: 0.92rem; }

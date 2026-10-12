@@ -87,8 +87,24 @@ function mostrarConfirmacion(opts) {
   });
 }
 
+// La dirección (#sección) permite usar el botón "atrás" del navegador.
 function navegarA(id) {
   if (!SECCIONES_INFO[id]) id = "inicio";
+  if (location.hash !== "#" + id) { location.hash = "#" + id; return; }
+  mostrarSeccion(id);
+}
+function seccionInicial() {
+  var id = location.hash.replace("#", "");
+  return SECCIONES_INFO[id] && id !== "detalle-rnm" ? id : "inicio";
+}
+window.addEventListener("hashchange", function () {
+  if ($("vista-app").classList.contains("oculto")) return;
+  var id = location.hash.replace("#", "");
+  if (id === "detalle-rnm" && !detalleActual) id = "mis-rnm";
+  mostrarSeccion(SECCIONES_INFO[id] ? id : "inicio");
+});
+
+function mostrarSeccion(id) {
   seccionActual = id;
 
   // Actualizar estado en navegación de sidebar y barra móvil
@@ -101,10 +117,8 @@ function navegarA(id) {
     sec.classList.toggle("oculto", sec.id !== "seccion-" + id);
   });
 
-  // Actualizar títulos de cabecera
-  var info = SECCIONES_INFO[id];
-  var t = $("app-header-titulo"); if (t) t.textContent = info.titulo;
-  var s = $("app-header-sub"); if (s) s.textContent = info.sub;
+  // Título de la cabecera
+  var t = $("app-header-titulo"); if (t) t.textContent = SECCIONES_INFO[id].titulo;
 
   // Sincronizar contenidos específicos
   if (id === "planes") renderizarPlanes(registrosCargados, planCargado);
@@ -150,7 +164,7 @@ async function mostrar(session) {
   perfilActual = r.data || null;
   actualizarInfoUsuario(session.user, perfilActual);
   if (!perfilActual) { abrirPerfil(false); }
-  else { vista("app"); navegarA("inicio"); cargarRegistros(); }
+  else { vista("app"); navegarA(seccionInicial()); cargarRegistros(); }
 }
 
 /* ---------- Onboarding / perfil ---------- */
@@ -228,7 +242,6 @@ $("p-cep").addEventListener("input", async function (e) {
   }
 });
 
-$("btn-datos").addEventListener("click", function () { abrirPerfil(true); });
 $("btn-perfil-cancelar").addEventListener("click", function () { vista("app"); });
 
 $("form-perfil").addEventListener("submit", async function (e) {
@@ -303,24 +316,16 @@ function fechaISO(txt) {
 var consultaPendiente = { rnm: "", iso: "", nacTexto: "" };
 
 function irAPasoConsulta(n) {
-  var p1 = $("paso-consulta-1"), p2 = $("paso-consulta-2"), p3 = $("paso-consulta-3");
+  var p1 = $("paso-consulta-1"), p2 = $("paso-consulta-2");
   if (p1) p1.classList.toggle("oculto", n !== 1);
   if (p2) p2.classList.toggle("oculto", n !== 2);
-  if (p3) p3.classList.toggle("oculto", n !== 3);
 
-  var s1 = $("step-indicador-1"), s2 = $("step-indicador-2"), s3 = $("step-indicador-3");
+  var s1 = $("step-indicador-1"), s2 = $("step-indicador-2");
   if (s1) {
     s1.classList.toggle("active", n === 1);
     s1.classList.toggle("completed", n > 1);
   }
-  if (s2) {
-    s2.classList.toggle("active", n === 2);
-    s2.classList.toggle("completed", n > 2);
-  }
-  if (s3) {
-    s3.classList.toggle("active", n === 3);
-    s3.classList.toggle("completed", false);
-  }
+  if (s2) s2.classList.toggle("active", n === 2);
   msg("msg-form", "");
   msg("msg-confirmar", "");
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -339,9 +344,7 @@ $("form-rnm").addEventListener("submit", function (e) {
 
   consultaPendiente = { rnm: rnm, iso: iso, nacTexto: nacTxt };
 
-  // Enmascarar RNM para confirmación
-  var enmascarado = rnm.length > 4 ? rnm.slice(0, 2) + "••••••" + rnm.slice(-2) : rnm;
-  var confRnm = $("conf-rnm-val"); if (confRnm) confRnm.textContent = rnm + " (" + enmascarado + ")";
+  var confRnm = $("conf-rnm-val"); if (confRnm) confRnm.textContent = rnm;
   var confNac = $("conf-nac-val"); if (confNac) confNac.textContent = nacTxt;
 
   var confCosto = $("conf-costo-val");
@@ -349,7 +352,7 @@ $("form-rnm").addEventListener("submit", function (e) {
     if (gratisDisponible) {
       confCosto.textContent = "Primera consulta gratuita incluida";
       confCosto.style.color = "var(--success)";
-    } else if (planCargado && planCargado.cupos > registrosCargados.length) {
+    } else if (planCargado && new Date(planCargado.vence_at) > new Date() && registrosCargados.length + 1 <= planCargado.cupos) {
       confCosto.textContent = "Cubierto por tu plan mensual activo";
       confCosto.style.color = "var(--brand)";
     } else {
@@ -396,40 +399,9 @@ if (btnConfEnviar) {
 
     $("form-rnm").reset();
     await cargarRegistros();
-
-    // Montar resultado en el Paso 3
+    irAPasoConsulta(1);
     var nuevo = registrosCargados.find(function (x) { return x.rnm === consultaPendiente.rnm; });
-    var resBox = $("res-consulta-box");
-    if (resBox) {
-      resBox.textContent = "";
-      if (nuevo && nuevo.ultimo_resultado) {
-        resBox.appendChild(cajaResultado(nuevo));
-      } else {
-        var avisoNuevo = el("div", "res ok");
-        avisoNuevo.appendChild(el("h3", "", "¡Documento registrado con éxito!"));
-        avisoNuevo.appendChild(el("p", "", gratisDisponible
-          ? "Tu primera consulta está en curso. Verás aquí la novedad en cuanto la Policía Federal responda."
-          : "Tu documento adicional ha sido registrado. Elige un plan mensual para habilitar la supervisión constante."));
-        resBox.appendChild(avisoNuevo);
-      }
-    }
-
-    irAPasoConsulta(3);
-  });
-}
-
-var btnResIrMisRnm = $("btn-res-ir-mis-rnm");
-if (btnResIrMisRnm) {
-  btnResIrMisRnm.addEventListener("click", function () {
-    irAPasoConsulta(1);
-    navegarA("mis-rnm");
-  });
-}
-
-var btnResOtra = $("btn-res-otra-consulta");
-if (btnResOtra) {
-  btnResOtra.addEventListener("click", function () {
-    irAPasoConsulta(1);
+    if (nuevo) abrirDetalleRnm(nuevo.id); else navegarA("mis-rnm");
   });
 }
 
@@ -662,39 +634,16 @@ function cerrarModalPlanes() {
 $("modal-cerrar").addEventListener("click", cerrarModalPlanes);
 $("modal-planes").addEventListener("click", function (e) { if (e.target === this) cerrarModalPlanes(); });
 document.addEventListener("keydown", function (e) { if (e.key === "Escape") cerrarModalPlanes(); });
-$("btn-planes").addEventListener("click", abrirModalPlanes);
 
 function actualizarPlanes(regs, plan) {
   var necesitan = regs.filter(function (x) { return !x.cerrado && !x.cubierto && (!!x.ultimo_resultado || x.requiere_pago); });
   var espera = !!esperandoPago && Date.now() - esperandoPago < 180000;
-  $("btn-planes").classList.toggle("oculto", !(necesitan.length || espera));
   var nuevos = necesitan.filter(function (x) { return planesVistos.indexOf(x.id) < 0; });
   var cerrada = $("modal-planes").classList.contains("oculto");
   if (espera && !esperaMostrada) { esperaMostrada = true; abrirModalPlanes(); return; }
   if (nuevos.length && cerrada) { marcarVistos(nuevos.map(function (x) { return x.id; })); abrirModalPlanes(); }
 }
 
-function actualizarResumen(regs) {
-  var cont = $("contenedor-resumen-dashboard");
-  if (!cont) return;
-  cont.textContent = "";
-  var resumen = el("section", "tarjeta dashboard-summary");
-  resumen.id = "resumen-rnm";
-  var abierto = regs.filter(function (x) { return !x.cerrado; });
-  var texto = abierto.length
-    ? "Aquí tienes el estado más reciente de tus registros. Selecciona un RNM para ver su información y las acciones disponibles."
-    : "Aún no tienes registros. Añade tu RNM para que podamos mostrarte las actualizaciones disponibles.";
-  var contenido = el("div", "");
-  contenido.appendChild(el("p", "eyebrow", "Seguimiento RNM"));
-  contenido.appendChild(el("h2", "", abierto.length ? "Tu seguimiento, en un solo lugar" : "Comienza tu seguimiento"));
-  contenido.appendChild(el("p", "", texto));
-  resumen.appendChild(contenido);
-  var contador = el("div", "summary-count");
-  contador.appendChild(el("b", "", String(abierto.length)));
-  contador.appendChild(el("span", "", abierto.length === 1 ? "RNM activo" : "RNM activos"));
-  resumen.appendChild(contador);
-  cont.appendChild(resumen);
-}
 async function cargarRegistros() {
   actualizarAvisoRegistro();
   var q = await Promise.all([
@@ -718,14 +667,10 @@ async function cargarRegistros() {
   var lleno = r.data.length >= 4;
   $("form-rnm").classList.toggle("oculto", lleno);
   $("tope-4").classList.toggle("oculto", !lleno);
-  actualizarResumen(r.data);
   actualizarDashboard(r.data, plan);
   renderizarMisRnm(r.data, plan);
   cartelPlanes(r.data, plan);
   actualizarPlanes(r.data, plan);
-  var cont = $("lista");
-  cont.textContent = "";
-  r.data.slice().reverse().forEach(function (x) { cont.appendChild(tarjeta(x)); });
 
   if (seccionActual === "planes") renderizarPlanes(r.data, plan);
   if (seccionActual === "detalle-rnm" && detalleActual) construirDetalle(detalleActual);
@@ -786,12 +731,9 @@ function renderizarPlanes(regs, plan) {
     tabla.appendChild(f);
   });
   precios.appendChild(tabla);
+  precios.appendChild(el("p", "sub", "¿Dudas sobre un cobro o necesitas un comprobante? Escríbenos " + VIA_CONTACTO + "."));
   cont.appendChild(precios);
 
-  var pagos = el("div", "tarjeta");
-  pagos.appendChild(el("h3", "", "Historial de pagos"));
-  pagos.appendChild(el("p", "sub", "Por ahora el detalle de cada cobro no se muestra dentro de la aplicación. Si necesitas un comprobante o tienes una duda sobre un cobro, escríbenos " + VIA_CONTACTO + "."));
-  cont.appendChild(pagos);
 }
 
 /* ---------- Historial de Consultas (Pantalla 12) ---------- */
@@ -886,10 +828,7 @@ function actualizarDashboard(regs, plan) {
     h2.style.margin = "0 0 4px";
     h2.style.fontSize = "1.35rem";
     h2.style.color = "#102A56";
-    var p = el("p", "sub", "Aquí tienes un resumen actualizado de tus trámites y consultas ante la Policía Federal.");
-    p.style.margin = "0";
     saludoCont.appendChild(h2);
-    saludoCont.appendChild(p);
   }
 
   // 2. Tarjeta dominante de estado (Hero)
@@ -1000,6 +939,19 @@ function actualizarDashboard(regs, plan) {
     nCard.appendChild(nBtn);
     sigCont.appendChild(nCard);
   }
+
+  // 4. Otros RNM de la cuenta (solo si hay más de uno), en filas compactas
+  var otros = $("dashboard-otros");
+  if (otros) {
+    otros.textContent = "";
+    var resto = regs.filter(function (x) { return !principal || x.id !== principal.id; });
+    if (regs.length > 1 && resto.length) {
+      var tit = el("h3", "", "Tus otros RNM");
+      tit.style.cssText = "margin: 0 0 12px; font-size: 1.05rem; color: #102A56;";
+      otros.appendChild(tit);
+      resto.slice().reverse().forEach(function (x) { otros.appendChild(tarjeta(x)); });
+    }
+  }
 }
 
 /* ---------- Mis RNM (Pantalla 6) ---------- */
@@ -1097,7 +1049,6 @@ function construirDetalle(id) {
   // 3. Línea de tiempo vertical (RnmTimeline con datos reales)
   var cardTime = el("div", "tarjeta");
   cardTime.appendChild(el("h3", "", "Historial del trámite"));
-  cardTime.appendChild(el("p", "sub", "Marcas temporales y eventos registrados ante la Policía Federal"));
 
   var tl = el("div", "timeline");
   var hayEventos = false;
@@ -1127,8 +1078,7 @@ function construirDetalle(id) {
     itemAlta.appendChild(el("div", "timeline-dot"));
     var aCont = el("div", "timeline-content");
     aCont.appendChild(el("div", "timeline-date", new Date(x.created_at).toLocaleDateString("es")));
-    aCont.appendChild(el("h4", "timeline-title", "Registro en la plataforma"));
-    aCont.appendChild(el("p", "timeline-desc", "Documento añadido para supervisión continua en ¿Dónde está mi RNM?."));
+    aCont.appendChild(el("h4", "timeline-title", "RNM registrado"));
     itemAlta.appendChild(aCont);
     tl.appendChild(itemAlta);
   }
@@ -1327,57 +1277,34 @@ function cajaUnidad(x) {
 
 function fechaCorta(iso) { return new Date(iso).toLocaleDateString("es", { day: "2-digit", month: "2-digit", year: "numeric" }); }
 
+// Etiqueta corta del estado de vigilancia de un RNM -> [texto, clase de la insignia]
+function etiquetaRnm(x) {
+  if (x.cerrado) return ["Listo", " ok"];
+  if (x.cubierto) return ["Vigilando", " vigila"];
+  if (x.ultimo_resultado) return x.tuvoPlan ? ["Sin cobertura", ""] : ["Consultado", " vigila"];
+  if (x.requiere_pago) return ["Pendiente de plan", ""];
+  return ["Consultando", " vigila"];
+}
+
+// Fila compacta de un RNM; el detalle completo está en la pantalla de detalle.
 function tarjeta(x) {
-  var t = el("div", "tarjeta");
-  var fila = el("div", "fila");
-  fila.appendChild(el("span", "rnm", x.rnm));
-  var consultado = !!x.ultimo_resultado;
-  var etiqueta, clase = "";
-  if (x.cerrado) { etiqueta = "Listo"; clase = " ok"; }
-  else if (x.cubierto) { etiqueta = "Vigilando hasta " + fechaCorta(x.planVence); clase = " vigila"; }
-  else if (consultado) { etiqueta = x.tuvoPlan ? "Sin cobertura" : "Primera consulta lista"; clase = x.tuvoPlan ? "" : " vigila"; }
-  else if (x.requiere_pago) { etiqueta = "Pendiente de plan"; }
-  else { etiqueta = "Consultando (gratis)"; }
-  fila.appendChild(el("span", "insignia" + clase, etiqueta));
-  t.appendChild(fila);
-
-  if (consultado) t.appendChild(cajaResultado(x));
-  else if (x.cubierto) t.appendChild(el("p", "sub", "Plan activo. En breve haremos la revisión y verás aquí el resultado."));
-  else if (x.requiere_pago) t.appendChild(el("p", "sub", "Este RNM se consulta cuando actives un plan que lo cubra (mira el cuadro de planes más arriba)."));
-  else t.appendChild(el("p", "sub", "Estamos haciendo tu primera consulta, es gratis. Verás aquí el resultado."));
-
-  if (x.estado_pf === "listo") {
-    if (x.unidad_pf) t.appendChild(cajaUnidad(x));
-    else if (WHATSAPP) t.appendChild(avisoOtraCiudad(x));
-  }
-
-  if (!x.cerrado && !x.cubierto && consultado) t.appendChild(el("p", "sub", "Para seguir vigilándolo, elige un plan en el cuadro de arriba."));
-  if (!x.cerrado && x.cubierto) t.appendChild(el("p", "sub", "Plan activo hasta el " + fechaCorta(x.planVence) + ". Revisamos tu RNM periódicamente y esta pantalla se actualiza sola."));
-
-  var q = el("div", "acciones");
-  var ver = el("button", "btn sec", "Ver detalles");
-  ver.type = "button";
-  ver.addEventListener("click", function () { abrirDetalleRnm(x.id); });
-  q.appendChild(ver);
-
-  if (!x.cerrado) {
-    var borrar = el("button", "sec", "Quitar");
-    borrar.type = "button";
-    borrar.addEventListener("click", async function () {
-      var ok = await mostrarConfirmacion({
-        titulo: "¿Quitar RNM " + x.rnm + "?",
-        desc: "Se eliminarán sus datos de seguimiento de la cuenta.",
-        accionTexto: "Quitar este RNM",
-        esPeligroso: true
-      });
-      if (!ok) return;
-      await sb.from("rnm_registros").delete().eq("id", x.id);
-      cargarRegistros();
-    });
-    q.appendChild(borrar);
-  }
-  t.appendChild(q);
-  return t;
+  var e = estadoPresentacion(x);
+  var fila = el("div", "fila-rnm");
+  fila.tabIndex = 0;
+  fila.setAttribute("role", "button");
+  var izq = el("div", "fila-rnm-info");
+  izq.appendChild(el("b", "", x.rnm));
+  var resumen = e.t;
+  if (x.unidad_pf) resumen += " · " + (ciudadDeUnidad(x.unidad_pf) || x.unidad_pf);
+  izq.appendChild(el("span", "", resumen));
+  fila.appendChild(izq);
+  var et = etiquetaRnm(x);
+  fila.appendChild(el("span", "insignia" + et[1], et[0]));
+  fila.appendChild(el("span", "fila-rnm-flecha", "›"));
+  var abrir = function () { abrirDetalleRnm(x.id); };
+  fila.addEventListener("click", abrir);
+  fila.addEventListener("keydown", function (ev) { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); abrir(); } });
+  return fila;
 }
 
 /* ---------- Guía de estados (explicaciones generales) ---------- */

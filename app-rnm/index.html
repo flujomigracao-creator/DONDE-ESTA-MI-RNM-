@@ -32,9 +32,6 @@
             <h2 style="font-size: 1.45rem; line-height: 1.25; color: #102A56; margin: 0 0 12px; letter-spacing: -0.02em;">
               Tu documento en la Policía Federal, con información clara y a tu alcance.
             </h2>
-            <p style="color: #667085; font-size: 0.95rem; margin: 0 0 24px;">
-              Consulta el estado disponible de tu trámite sin confusiones ni tecnicismos.
-            </p>
 
             <div style="display: flex; flex-direction: column; gap: 16px;">
               <div style="display: flex; gap: 12px; align-items: flex-start;">
@@ -219,15 +216,12 @@
       <header class="app-header">
         <div class="header-title-box">
           <h1 id="app-header-titulo">Inicio</h1>
-          <p id="app-header-sub">Resumen de tus trámites y estado disponible</p>
         </div>
         <div class="header-actions">
-          <button type="button" class="sec" id="btn-planes" style="min-height: 40px; padding: 0 14px; font-size: 0.88rem;">Planes</button>
           <button type="button" class="sec" id="btn-actualizar" style="min-height: 40px; padding: 0 14px; font-size: 0.88rem;">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
             Actualizar
           </button>
-          <button type="button" class="sec" id="btn-datos" style="min-height: 40px; padding: 0 14px; font-size: 0.88rem;">Mis datos</button>
         </div>
       </header>
 
@@ -245,64 +239,8 @@
           <!-- Siguiente Paso Recomendado -->
           <div id="dashboard-siguiente-paso"></div>
 
-          <!-- Accesos Rápidos (4 bloques destacados) -->
-          <div style="margin-bottom: 24px;">
-            <h3 style="font-size: 1.05rem; font-weight: 700; color: #102A56; margin: 0 0 12px;">Accesos rápidos</h3>
-            <div class="quick-actions-grid">
-              <div class="quick-action-card" data-seccion="mis-rnm">
-                <div class="quick-action-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                </div>
-                <div class="quick-action-text">
-                  <b>Mis RNM</b>
-                  <span>Ver todos tus registros</span>
-                </div>
-              </div>
-              <div class="quick-action-card" data-seccion="nueva-consulta">
-                <div class="quick-action-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
-                </div>
-                <div class="quick-action-text">
-                  <b>Nueva consulta</b>
-                  <span>Registrar otro documento</span>
-                </div>
-              </div>
-              <div class="quick-action-card" data-seccion="planes">
-                <div class="quick-action-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
-                </div>
-                <div class="quick-action-text">
-                  <b>Planes y pagos</b>
-                  <span>Gestionar cobertura mensual</span>
-                </div>
-              </div>
-              <div class="quick-action-card" data-seccion="ayuda">
-                <div class="quick-action-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                </div>
-                <div class="quick-action-text">
-                  <b>Ayuda y soporte</b>
-                  <span>Preguntas y WhatsApp</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Resumen de orientación general y lista de documentos -->
-          <div id="contenedor-resumen-dashboard"></div>
-
-          <div style="margin-top: 24px;">
-            <div class="fila" style="margin-bottom: 14px;">
-              <div>
-                <h3 style="margin: 0; font-size: 1.1rem; color: #102A56;">Todos tus documentos</h3>
-                <p class="sub" style="margin: 0;">Lista general en seguimiento activo</p>
-              </div>
-              <button type="button" class="btn sec" id="btn-ir-nueva-consulta" style="min-height: 38px; font-size: 0.86rem;">
-                + Registrar RNM
-              </button>
-            </div>
-            <div id="lista"></div>
-          </div>
+          <!-- Otros RNM de la cuenta -->
+          <div id="dashboard-otros"></div>
         </section>
 
         <!-- SECCIÓN 2: MIS RNM (Pantalla 6) -->
@@ -310,7 +248,6 @@
           <div class="page-header">
             <div class="page-header-text">
               <h2>Mis RNM</h2>
-              <p>Revisa la información disponible, el estado y las delegaciones asignadas.</p>
             </div>
             <button type="button" class="btn" id="btn-nueva-consulta-mis-rnm" style="min-height: 42px; font-size: 0.9rem;">
               + Nueva consulta
@@ -352,11 +289,6 @@
                 <span class="step-num">2</span>
                 <span class="step-label">Confirmación</span>
               </div>
-              <div class="stepper-line"></div>
-              <div class="stepper-step" id="step-indicador-3">
-                <span class="step-num">3</span>
-                <span class="step-label">Resultado</span>
-              </div>
             </div>
 
             <!-- PASO 1: Formulario de Datos (Pantalla 9) -->
@@ -364,9 +296,9 @@
               <div class="page-header" style="margin-bottom: 16px;">
                 <div class="page-header-text">
                   <h2>Nueva consulta</h2>
-                  <p id="reg-gratis" class="sub">Tu <b>primera consulta es gratis</b>. Para continuar vigilando, existen planes mensuales desde R$ 4,99.</p>
+                  <p id="reg-gratis" class="sub">Tu <b>primera consulta es gratis</b>.</p>
                   <p id="reg-adicional" class="sub oculto">Los RNM adicionales requieren un <b>plan mensual</b> (desde R$ 4,99).</p>
-                  <p id="tope-4" class="sub oculto">Has alcanzado el límite máximo de <b>4 RNM</b> por cuenta.</p>
+                  <p id="tope-4" class="sub oculto">Llegaste al máximo de <b>4 RNM</b> por cuenta.</p>
                 </div>
               </div>
 
@@ -374,12 +306,10 @@
                 <div class="form-field">
                   <label for="rnm">Número de RNM</label>
                   <input type="text" id="rnm" autocapitalize="characters" placeholder="Ej: A123456B" maxlength="12" required>
-                  <span style="font-size: 0.8rem; color: #667085; margin-top: 4px;">Tal como figura en tu protocolo o cédula RNM.</span>
                 </div>
                 <div class="form-field">
                   <label for="nac">Fecha de nacimiento</label>
                   <input type="text" id="nac" inputmode="numeric" placeholder="dd/mm/aaaa" maxlength="10" required>
-                  <span style="font-size: 0.8rem; color: #667085; margin-top: 4px;">Formato de dos dígitos para día y mes, cuatro para año.</span>
                 </div>
                 <label class="check">
                   <input type="checkbox" id="consiento" required>
@@ -397,7 +327,7 @@
               <div class="page-header" style="margin-bottom: 16px;">
                 <div class="page-header-text">
                   <h2>Revisa tus datos</h2>
-                  <p class="sub">Confirma que la información sea exacta antes de procesar la consulta.</p>
+                  <p class="sub">Confirma que sea correcta antes de continuar.</p>
                 </div>
               </div>
 
@@ -416,32 +346,11 @@
                 </div>
               </div>
 
-              <p class="sub" style="font-size: 0.85rem; color: #667085;">
-                🔒 Los datos serán enviados de forma cifrada a través de nuestros canales seguros.
-              </p>
-
               <div class="acciones">
                 <button type="button" class="btn sec" id="btn-confirmar-editar">← Corregir datos</button>
                 <button type="button" class="btn" id="btn-confirmar-enviar">Confirmar y registrar</button>
               </div>
               <p class="msg" id="msg-confirmar" role="alert"></p>
-            </div>
-
-            <!-- PASO 3: Resultado de la Consulta (Pantalla 11) -->
-            <div id="paso-consulta-3" class="oculto">
-              <div class="page-header" style="margin-bottom: 16px;">
-                <div class="page-header-text">
-                  <h2>Resultado de la consulta</h2>
-                  <p class="sub">Estado devuelto para tu trámite</p>
-                </div>
-              </div>
-
-              <div id="res-consulta-box"></div>
-
-              <div class="acciones" style="margin-top: 24px;">
-                <button type="button" class="btn" id="btn-res-ir-mis-rnm">Ver en Mis RNM</button>
-                <button type="button" class="btn sec" id="btn-res-otra-consulta">Registrar otro documento</button>
-              </div>
             </div>
 
           </div>
@@ -452,7 +361,6 @@
           <div class="page-header">
             <div class="page-header-text">
               <h2>Historial de consultas</h2>
-              <p>Registro de operaciones y revisiones anteriores de tus documentos.</p>
             </div>
             <button type="button" class="btn sec" id="btn-actualizar-historial" style="min-height: 40px; font-size: 0.88rem;">
               Actualizar lista
@@ -465,8 +373,7 @@
         <section id="seccion-planes" class="seccion-app oculto">
           <div class="page-header">
             <div class="page-header-text">
-              <h2>Planes de seguimiento</h2>
-              <p>Elige la cobertura mensual adecuada para tus documentos.</p>
+              <h2>Planes y pagos</h2>
             </div>
           </div>
           <div id="planes-contenido"></div>
@@ -476,42 +383,29 @@
         <section id="seccion-ayuda" class="seccion-app oculto">
           <div class="page-header">
             <div class="page-header-text">
-              <h2>Centro de ayuda y soporte</h2>
-              <p>Resolvemos tus dudas sobre el seguimiento de tu trámite migratorio.</p>
+              <h2>Ayuda y soporte</h2>
             </div>
           </div>
 
           <div class="tarjeta">
             <h3 style="margin-top: 0; color: #102A56;">Preguntas frecuentes</h3>
-            <div style="display: flex; flex-direction: column; gap: 14px; margin-top: 14px;">
-              <div>
-                <b style="color: #182230;">¿Esta aplicación pertenece a la Policía Federal?</b>
-                <p style="margin: 4px 0 0; color: #667085; font-size: 0.92rem;">No. ¿Dónde está mi RNM? es una plataforma independiente de FLUJO que consulta la información pública de tu documento y te la presenta en un formato claro y comprensible.</p>
-              </div>
-              <div>
-                <b style="color: #182230;">¿Cómo funciona la primera consulta gratis?</b>
-                <p style="margin: 4px 0 0; color: #667085; font-size: 0.92rem;">Tu primer documento registrado recibe su primera verificación sin costo. Para mantener la vigilancia constante hasta que esté listo, puedes activar un plan mensual accesible.</p>
-              </div>
-              <div>
-                <b style="color: #182230;">¿Cada cuánto se actualiza mi estado?</b>
-                <p style="margin: 4px 0 0; color: #667085; font-size: 0.92rem;">El equipo de FLUJO revisa tu RNM en la Polícia Federal y la pantalla se actualiza sola. Mientras tengas un plan activo, la revisión se repite periódicamente hasta que el documento esté listo. No podemos garantizar plazos ni decisiones de la Polícia Federal.</p>
-              </div>
-              <div>
-                <b style="color: #182230;">¿Cómo se paga el plan y cómo veo que se confirmó?</b>
-                <p style="margin: 4px 0 0; color: #667085; font-size: 0.92rem;">Pagas con tarjeta dentro de la aplicación (procesado por Mercado Pago) y el cobro se repite cada mes. Cuando Mercado Pago confirma el cobro, tu plan aparece activo en Planes y pagos. Si no se confirma en unos minutos, escríbenos.</p>
-              </div>
-              <div>
-                <b style="color: #182230;">No veo datos de mi RNM, ¿qué hago?</b>
-                <p style="margin: 4px 0 0; color: #667085; font-size: 0.92rem;">Si acabas de registrarlo, la primera revisión puede tardar. Si aparece “No encontramos tu trámite”, revisaremos que el RNM y la fecha de nacimiento sean correctos; si algo no coincide, te escribiremos.</p>
-              </div>
-              <div>
-                <b style="color: #182230;">¿Mi documento está listo en otra ciudad?</b>
-                <p style="margin: 4px 0 0; color: #667085; font-size: 0.92rem;">Si la delegación asignada no coincide con tu lugar de residencia actual, te orientamos y apoyamos con el trámite de cambio de dirección.</p>
-              </div>
+            <div class="faq">
+              <details><summary>¿Esto es de la Policía Federal?</summary>
+                <p>No. Es un servicio independiente de FLUJO que consulta la información pública de tu documento y te la explica de forma clara. No garantizamos plazos ni decisiones de la Polícia Federal.</p></details>
+              <details><summary>¿Cómo funciona la primera consulta gratis?</summary>
+                <p>El primer RNM de tu cuenta recibe su primera revisión sin costo. Para seguir vigilándolo hasta que esté listo, activas un plan mensual.</p></details>
+              <details><summary>¿Cada cuánto se actualiza mi estado?</summary>
+                <p>Con un plan activo, el equipo de FLUJO repite la revisión periódicamente hasta que el documento esté listo, y esta pantalla se actualiza sola.</p></details>
+              <details><summary>¿Cómo veo que mi pago se confirmó?</summary>
+                <p>Pagas con tarjeta dentro de la app (Mercado Pago). Cuando el cobro se confirma, tu plan aparece activo en Planes y pagos. Si tarda más de unos minutos, escríbenos.</p></details>
+              <details><summary>No veo datos de mi RNM</summary>
+                <p>Si acabas de registrarlo, la primera revisión puede tardar. Si aparece “No encontramos tu trámite”, revisaremos tu RNM y fecha de nacimiento y te escribiremos si algo no coincide.</p></details>
+              <details><summary>Mi documento está listo en otra ciudad</summary>
+                <p>Te orientamos con el cambio de dirección: usa el botón de WhatsApp que aparece en el detalle del RNM.</p></details>
             </div>
 
             <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid #E4E7EC;">
-              <h4 style="margin: 0 0 10px; color: #102A56;">Canales oficiales de atención:</h4>
+              <h4 style="margin: 0 0 10px; color: #102A56;">Escríbenos</h4>
               <div class="acciones">
                 <a href="#" id="ayuda-whatsapp" target="_blank" rel="noopener" class="btn-enlace">
                   Atención por WhatsApp
@@ -529,7 +423,6 @@
           <div class="page-header">
             <div class="page-header-text">
               <h2>Mi cuenta</h2>
-              <p>Administra tu información personal y preferencias.</p>
             </div>
           </div>
           <div class="tarjeta" style="max-width: 600px;">
@@ -550,12 +443,7 @@
               <button type="button" class="btn sec" id="btn-salir-perfil">Cerrar sesión</button>
             </div>
           </div>
-          <div class="tarjeta" style="max-width: 600px;">
-            <h3 style="margin-top: 0; color: #102A56;">Seguridad</h3>
-            <p class="sub" style="margin: 0 0 8px;">Entras con tu cuenta de Google, así que no guardamos ninguna contraseña. Para cambiar tu contraseña o revisar los accesos usa la seguridad de tu cuenta de Google.</p>
-            <a class="btn sec" href="https://myaccount.google.com/security" target="_blank" rel="noopener">Seguridad de mi cuenta de Google</a>
-            <p class="sub" style="margin: 16px 0 0;">Para eliminar tu cuenta y tus datos, escríbenos y lo gestionamos contigo.</p>
-          </div>
+          <p class="sub" style="max-width: 600px;">Entras con Google, por eso no guardamos contraseña. Para cambiarla usa la <a href="https://myaccount.google.com/security" target="_blank" rel="noopener" style="color: #155EEF;">seguridad de tu cuenta de Google</a>. Para eliminar tu cuenta y tus datos, escríbenos.</p>
         </section>
 
         <p class="pie">
