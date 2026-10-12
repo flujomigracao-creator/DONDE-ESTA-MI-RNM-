@@ -199,6 +199,26 @@
           <div id="dashboard-otros"></div>
         </section>
 
+        <!-- SECCIÓN: MIS RNM (Pantalla 6) -->
+        <section id="seccion-mis-rnm" class="seccion-app oculto">
+          <div class="barra-volver">
+            <button type="button" class="btn sec btn-sm" id="btn-volver-inicio-lista">← Volver al inicio</button>
+          </div>
+          <div class="page-header">
+            <div class="page-header-text">
+              <h2>Tus documentos, juntos</h2>
+              <p>Elige un RNM para ver su detalle y el próximo paso.</p>
+            </div>
+            <button type="button" class="btn btn-sm" id="btn-nueva-consulta-mis-rnm">+ Agregar RNM</button>
+          </div>
+          <div class="filter-pills" id="mis-rnm-filtros" role="group" aria-label="Filtrar documentos">
+            <button type="button" class="filter-pill active" data-filtro="todos" aria-pressed="true">Todos <span class="pill-count" id="count-todos">0</span></button>
+            <button type="button" class="filter-pill" data-filtro="proceso" aria-pressed="false">En proceso <span class="pill-count" id="count-proceso">0</span></button>
+            <button type="button" class="filter-pill" data-filtro="listos" aria-pressed="false">Listos <span class="pill-count" id="count-listos">0</span></button>
+          </div>
+          <div id="lista-mis-rnm-clon"></div>
+        </section>
+
         <!-- SECCIÓN: DETALLE DEL RNM (Pantallas 7 y 8) -->
         <section id="seccion-detalle-rnm" class="seccion-app oculto">
           <div class="barra-volver">

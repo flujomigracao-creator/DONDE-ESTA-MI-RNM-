@@ -249,3 +249,31 @@ button, .btn, .btn-enlace, .filter-pill, .nav-item, .bottom-nav-item, summary { 
 #btn-google:hover:not(:disabled) { background: var(--brand-hover); }
 #btn-google:disabled { opacity: .85; cursor: progress; }
 .fig-nota a, .enlace-marca { text-underline-offset: 2px; }
+
+/* ==========================================================================
+   FASE 3 · Inicio y seguimiento (pantallas 05–08)
+   ========================================================================== */
+.pill-count { display: inline-block; min-width: 20px; margin-left: 4px; padding: 0 6px; border-radius: 99px; background: rgba(33, 88, 214, 0.12); font-size: 0.75rem; font-weight: 700; text-align: center; }
+.filter-pill.active .pill-count { background: rgba(255, 255, 255, 0.25); color: #fff; }
+.filter-pills { display: flex; gap: var(--sp-2); overflow-x: auto; padding-bottom: var(--sp-1); scrollbar-width: none; margin-bottom: var(--sp-4); }
+.filter-pills::-webkit-scrollbar { display: none; }
+.filter-pill { flex: none; }
+
+/* Estado oficial vs explicación orientativa */
+.res .aviso-orientativo { font-size: 0.8rem; color: var(--text-muted); font-style: italic; margin-top: var(--sp-2); }
+.res .oficial { margin-top: var(--sp-3); padding-top: var(--sp-3); border-top: 1px dashed var(--line-strong); }
+.res .oficial small { display: block; font-size: 0.76rem; color: var(--text-muted); }
+.res .oficial b { display: block; margin: 2px 0 4px; font-size: 0.9rem; font-weight: 600; color: var(--text-main); word-break: break-word; }
+
+/* Ubicación de retirada */
+.ubicacion .review-summary-card { margin: var(--sp-2) 0 var(--sp-3); }
+.aviso-ubic { padding: var(--sp-3) var(--sp-4); border-radius: 14px; font-size: 0.9rem; background: var(--brand-soft); color: var(--text-main); }
+.aviso-ubic.ok { background: var(--success-soft); }
+.aviso-ubic.warn { background: var(--warning-soft); border: 1px solid var(--warning-line); }
+.ubicacion .titulo-sub { margin-top: var(--sp-4); }
+.ubicacion .timeline { margin: var(--sp-2) 0 0; }
+.ubicacion .btn-enlace { display: flex; justify-content: center; margin-top: var(--sp-4); }
+.nota-legal { margin: var(--sp-3) 0 0; font-size: 0.78rem; color: var(--text-muted); }
+.ubicacion .review-row { gap: var(--sp-3); align-items: flex-start; }
+.ubicacion .review-row span { flex: none; color: var(--text-muted); }
+.ubicacion .review-row b { font-family: inherit; text-align: right; min-width: 0; overflow-wrap: anywhere; font-size: 0.92rem; }

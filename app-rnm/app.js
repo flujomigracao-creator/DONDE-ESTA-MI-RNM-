@@ -40,6 +40,7 @@ var salidaManual = false;
 
 var SECCIONES_INFO = {
   "inicio": { titulo: "Inicio", sub: "Resumen de tus trámites y estado disponible" },
+  "mis-rnm": { titulo: "Mis RNM", sub: "Todos tus documentos y su estado" },
   "detalle-rnm": { titulo: "Detalle del RNM", sub: "Información detallada, ubicación policial e historial" },
   "nueva-consulta": { titulo: "Agregar RNM", sub: "Registra un nuevo documento para monitorear" },
   "historial": { titulo: "Historial de consultas", sub: "Registro de operaciones y consultas realizadas" },
@@ -1107,6 +1108,9 @@ function actualizarDashboard(regs, plan) {
       if (otros.length) {
         var ts = el("div", "titulo-sec");
         ts.appendChild(el("h3", "", "Otros RNM"));
+        var verTodos = el("button", "", "Ver todos (" + regs.length + ")"); verTodos.type = "button";
+        verTodos.addEventListener("click", function () { navegarA("mis-rnm"); });
+        ts.appendChild(verTodos);
         heroCont.appendChild(ts);
         otros.forEach(function (x) { heroCont.appendChild(tarjeta(x)); });
       }
@@ -1315,9 +1319,13 @@ function cajaResultado(x) {
   var caja = el("div", "res " + e.tono);
   caja.appendChild(el("h3", "", e.t));
   e.p.forEach(function (p) { caja.appendChild(el("p", "", p)); });
-  if (x.ultima_consulta_at) {
-    caja.appendChild(el("p", "sub", "Última revisión: " + new Date(x.ultima_consulta_at).toLocaleDateString("es")));
-  }
+  caja.appendChild(el("p", "aviso-orientativo", "Explicación orientativa de FLUJO. No es una decisión oficial ni una promesa de plazo."));
+  var of = el("div", "oficial");
+  of.appendChild(el("small", "", "Estado informado por la Policía Federal"));
+  var txt = (x.ultimo_resultado || "").trim();
+  of.appendChild(el("b", "", "“" + (txt.length > 160 ? txt.slice(0, 160) + "…" : txt) + "”"));
+  if (x.ultima_consulta_at) of.appendChild(el("small", "", "Última revisión: " + fechaHora(x.ultima_consulta_at)));
+  caja.appendChild(of);
   return caja;
 }
 
@@ -1398,41 +1406,69 @@ function lineasCambio(txt) {
   });
 }
 
+function filaDato(etiqueta, valor) {
+  var f = el("div", "review-row");
+  f.appendChild(el("span", "", etiqueta + ":"));
+  f.appendChild(el("b", "", valor));
+  return f;
+}
 function cajaUnidad(x) {
   var uf = ufDeUnidad(x.unidad_pf);
   var ciudadU = ciudadDeUnidad(x.unidad_pf);
-  var donde = ciudadU ? ciudadU + (uf ? "/" + uf : "") : (uf ? ESTADOS_BR[uf] : x.unidad_pf);
   var miUF = perfilActual && perfilActual.estado;
   var miCiudad = perfilActual && perfilActual.ciudad;
   var otra, mismaCiudad = false;
   if (ciudadU && miCiudad) { mismaCiudad = normalizar(ciudadU) === normalizar(miCiudad); otra = !mismaCiudad; }
   else { otra = !!(uf && miUF && uf !== miUF); }
   var sabeDondeVive = !!((ciudadU && miCiudad) || (uf && miUF));
+  var conocida = !!(ciudadU || uf);
 
-  var nota = "";
-  if (ciudadU && miCiudad) nota = mismaCiudad ? "es tu ciudad" : "tu ciudad es " + miCiudad;
-  else if (uf && miUF) nota = otra ? "es otro estado que el tuyo" : "es tu estado";
+  var card = el("div", "tarjeta ubicacion");
+  card.appendChild(el("p", "hero-eyebrow", "Dónde retirar tu documento"));
+  var datos = el("div", "review-summary-card");
+  datos.appendChild(filaDato("Ciudad", ciudadU || "No identificada"));
+  datos.appendChild(filaDato("Estado", uf ? ESTADOS_BR[uf] + " (" + uf + ")" : "No identificado"));
+  datos.appendChild(filaDato("Unidad de la PF", x.unidad_pf || "—"));
+  card.appendChild(datos);
 
-  var caja = el("div", "res " + (otra ? "" : "ok"));
-  caja.appendChild(el("h3", "", "Retiro: Polícia Federal de " + donde));
-  caja.appendChild(el("p", "sub", x.unidad_pf + (nota ? " · " + nota : "")));
+  var av;
+  if (!conocida) av = ["info", "No pudimos identificar la ciudad de esta unidad. Revisa el código de unidad indicado arriba o escríbenos."];
+  else if (!sabeDondeVive) av = ["info", "Revisa que esta unidad te quede cerca. Si no, podemos orientarte sobre el cambio de dirección."];
+  else if (mismaCiudad) av = ["ok", "Coincide con la ciudad donde vives (" + miCiudad + ")."];
+  else if (ciudadU && miCiudad) av = ["warn", "Está en otra ciudad que la tuya (" + miCiudad + "). Puedes pedir orientación sobre el cambio de dirección de entrega."];
+  else av = [otra ? "warn" : "ok", otra ? "Está en otro estado que el tuyo. Puedes pedir orientación sobre el cambio de dirección de entrega." : "Coincide con el estado donde vives."];
+  card.appendChild(el("div", "aviso-ubic " + av[0], av[1]));
 
   var lineas = x.cambio_direccion ? lineasCambio(x.cambio_direccion) : [];
-  lineas.forEach(function (l) {
-    caja.appendChild(el("p", "", "Cambio de dirección" + (l.destino ? " hacia " + l.destino : "") + ": " + l.estado + (l.fecha ? " (" + l.fecha + ")" : "")));
-  });
-  var haciaMiCiudad = miCiudad && lineas.some(function (l) { return l.destino && normalizar(l.destino.split("/")[0]) === normalizar(miCiudad); });
-  if (haciaMiCiudad) caja.appendChild(el("p", "sub", "Ya pediste el cambio hacia tu ciudad: solo falta que la Polícia Federal lo atienda."));
-
-  if (WHATSAPP && (otra || !sabeDondeVive || x.cambio_direccion)) {
-    caja.appendChild(enlaceWhatsapp(x, "Hola, mi RNM " + x.rnm + " está listo en " + x.unidad_pf + (ciudadU ? " (" + ciudadU + ")" : "") + " y quiero cambiar la dirección de entrega."));
-  } else if (!WHATSAPP && (otra || !sabeDondeVive || x.cambio_direccion)) {
-    var correo = el("a", "btn-enlace", "Escribir a FLUJO para cambiar la dirección");
-    correo.style.background = "var(--azul)"; correo.style.color = "#fff";
-    correo.href = "mailto:" + CONTACTO_EMAIL + "?subject=" + encodeURIComponent("Cambio de dirección RNM " + x.rnm) + "&body=" + encodeURIComponent("Hola, mi RNM " + x.rnm + " está listo en " + x.unidad_pf + " y quiero cambiar la dirección de entrega.");
-    caja.appendChild(correo);
+  if (lineas.length) {
+    var tit = el("h4", "titulo-sub", lineas.length > 1 ? "Cambios de dirección registrados" : "Cambio de dirección registrado");
+    card.appendChild(tit);
+    var tl = el("div", "timeline");
+    lineas.forEach(function (l) {
+      var item = el("div", "timeline-item");
+      item.appendChild(el("div", "timeline-dot" + (l.estado === "concluida" ? " ok" : "")));
+      var c = el("div", "timeline-content");
+      if (l.fecha) c.appendChild(el("div", "timeline-date", l.fecha));
+      c.appendChild(el("h4", "timeline-title", (l.destino ? "Hacia " + l.destino : "Destino no indicado") + " · " + l.estado));
+      item.appendChild(c);
+      tl.appendChild(item);
+    });
+    card.appendChild(tl);
+    var haciaMiCiudad = miCiudad && lineas.some(function (l) { return l.destino && normalizar(l.destino.split("/")[0]) === normalizar(miCiudad); });
+    if (haciaMiCiudad) card.appendChild(el("p", "sub", "Ya se pidió el cambio hacia tu ciudad: solo falta que la Polícia Federal lo atienda."));
   }
-  return caja;
+
+  if (otra || !sabeDondeVive || x.cambio_direccion) {
+    var msj = "Hola, mi RNM " + x.rnm + " está listo en " + x.unidad_pf + (ciudadU ? " (" + ciudadU + ")" : "") + " y quiero cambiar la dirección de entrega.";
+    if (WHATSAPP) card.appendChild(enlaceWhatsapp(x, msj));
+    else {
+      var correo = el("a", "btn-enlace", "Escribir a FLUJO para cambiar la dirección");
+      correo.href = "mailto:" + CONTACTO_EMAIL + "?subject=" + encodeURIComponent("Cambio de dirección RNM " + x.rnm) + "&body=" + encodeURIComponent(msj);
+      card.appendChild(correo);
+    }
+  }
+  card.appendChild(el("p", "nota-legal", "FLUJO orienta; la entrega y el cambio de dirección los decide la Policía Federal."));
+  return card;
 }
 
 function fechaCorta(iso) { return new Date(iso).toLocaleDateString("es", { day: "2-digit", month: "2-digit", year: "numeric" }); }
@@ -1523,6 +1559,9 @@ if (btnNuevaMisRnm) {
 var btnVolverAgregar = $("btn-volver-agregar");
 if (btnVolverAgregar) btnVolverAgregar.addEventListener("click", function () { navegarA("inicio"); });
 
+var btnVolverLista = $("btn-volver-inicio-lista");
+if (btnVolverLista) btnVolverLista.addEventListener("click", function () { navegarA("inicio"); });
+
 var btnVolverMisRnm = $("btn-volver-mis-rnm");
 if (btnVolverMisRnm) {
   btnVolverMisRnm.addEventListener("click", function () { navegarA("inicio"); });
@@ -1530,8 +1569,8 @@ if (btnVolverMisRnm) {
 
 document.querySelectorAll("#mis-rnm-filtros button").forEach(function (btn) {
   btn.addEventListener("click", function () {
-    document.querySelectorAll("#mis-rnm-filtros button").forEach(function (b) { b.classList.remove("active"); });
-    this.classList.add("active");
+    document.querySelectorAll("#mis-rnm-filtros button").forEach(function (b) { b.classList.remove("active"); b.setAttribute("aria-pressed", "false"); });
+    this.classList.add("active"); this.setAttribute("aria-pressed", "true");
     filtroMisRnm = this.getAttribute("data-filtro") || "todos";
     renderizarMisRnm(registrosCargados, planCargado);
   });
