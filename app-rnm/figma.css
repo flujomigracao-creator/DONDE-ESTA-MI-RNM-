@@ -165,3 +165,67 @@ body { overscroll-behavior-y: none; }
 #cartel .pay > .msg { margin: 0; padding: 0 0 8px; }
 .modal .cerrar { top: 14px; right: 14px; }
 #modal-planes .pay-top { padding-right: 48px; }
+
+/* ==========================================================================
+   FASE 1 · FUNDAMENTOS: tokens, clases semánticas (sustituyen estilos inline),
+   foco visible y áreas táctiles. Escala de espacio en múltiplos de 4/8.
+   ========================================================================== */
+:root {
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 20px; --sp-6: 24px; --sp-8: 32px;
+  --fs-titulo: 1.85rem; --fs-seccion: 1.25rem; --fs-cuerpo: 0.95rem; --fs-ayuda: 0.82rem;
+  --touch: 44px;
+}
+
+/* Onboarding */
+#vista-perfil { min-height: 100vh; padding: 0; }
+.onboarding-card { width: 100%; max-width: 560px; margin: 0 auto; }
+.progreso { display: flex; gap: 6px; margin-bottom: var(--sp-4); }
+.progreso i { flex: 1; height: 4px; border-radius: 99px; background: var(--line-strong); display: block; }
+.progreso i.on { background: var(--brand); }
+.paso-etiqueta { margin: 0 0 var(--sp-2); font-weight: 600; color: var(--brand); }
+.paso-titulo { margin: 0 0 var(--sp-2); font-size: var(--fs-titulo); font-weight: 800; letter-spacing: -0.02em; line-height: 1.15; }
+.ayuda-campo { margin: var(--sp-1) 0 0; font-size: var(--fs-ayuda); }
+.fila-campos { display: flex; flex-direction: row; gap: var(--sp-3); align-items: flex-start; }
+.campo-ancho { flex: 2; min-width: 0; }
+.campo-corto { flex: 1; min-width: 0; }
+@media (max-width: 640px) { .fila.fila-campos { flex-direction: row; align-items: flex-start; } }
+.acciones-form { margin-top: var(--sp-5); }
+.acciones-fin { justify-content: flex-end; }
+.msg-centro { text-align: center; }
+.fig-doc i.corta { width: 70%; }
+
+/* Botones pequeños y barras de regreso */
+.btn-sm { min-height: var(--touch); padding: 0 var(--sp-4); font-size: 0.88rem; }
+.barra-volver { margin-bottom: var(--sp-5); }
+.barra-volver.estrecha { max-width: 620px; margin: 0 auto var(--sp-3); }
+.nav-item-salir { color: #FDA29B; }
+
+/* Contenedores */
+.bloque-saludo { margin-bottom: var(--sp-5); }
+.tarjeta-estrecha { max-width: 620px; margin: 0 auto; }
+.page-header.page-header-compacto { margin-bottom: var(--sp-4); }
+.costo-ok { font-weight: 600; color: var(--success); }
+
+/* Ayuda, cuenta y confirmación */
+.titulo-bloque { margin: 0 0 var(--sp-3); color: var(--text-main); }
+.titulo-sub { margin: 0 0 10px; color: var(--text-main); }
+.separador-bloque { margin-top: var(--sp-6); padding-top: var(--sp-5); border-top: 1px solid var(--line); }
+.tarjeta-cuenta { max-width: 600px; }
+.cuenta-cabecera { display: flex; gap: var(--sp-4); align-items: center; margin-bottom: var(--sp-5); }
+.avatar-grande { width: 52px; height: 52px; font-size: 1.3rem; }
+.cuenta-nombre { display: block; font-size: 1.1rem; color: var(--text-main); }
+.cuenta-email { font-size: 0.88rem; color: var(--text-muted); }
+.resumen-cuenta { margin-bottom: var(--sp-4); }
+.nota-cuenta { max-width: 600px; }
+.enlace-marca { color: var(--brand); }
+.modal-confirmacion { max-width: 440px; }
+#confirm-titulo { margin: 0 0 var(--sp-2); font-size: 1.2rem; color: var(--text-main); }
+#confirm-desc { margin: 0 0 var(--sp-5); color: var(--text-muted); font-size: 0.94rem; }
+
+/* Foco visible y áreas táctiles (todas las pantallas) */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible { outline: 3px solid rgba(33, 88, 214, 0.55); outline-offset: 2px; }
+:where(input, select):focus-visible { outline-offset: 0; }
+button, .btn, .btn-enlace, .filter-pill, .nav-item, .bottom-nav-item, summary { min-height: var(--touch); }
+.check input[type="checkbox"] { width: 22px; height: 22px; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; } }
+.modal .cerrar { min-height: 0; width: 40px; height: 40px; }

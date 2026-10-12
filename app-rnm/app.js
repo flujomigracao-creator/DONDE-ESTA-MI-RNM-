@@ -191,6 +191,7 @@ function irAPaso(n) {
     d.classList.toggle("oculto", +d.getAttribute("data-paso") !== n);
   });
   document.querySelectorAll(".progreso i").forEach(function (b, i) { b.classList.toggle("on", i < n); });
+  var pg = document.querySelector(".progreso"); if (pg) pg.setAttribute("aria-valuenow", String(n));
   $("perfil-paso").textContent = "Paso " + n + " de 3";
   $("btn-perfil-atras").classList.toggle("oculto", n === 1);
   $("btn-perfil").textContent = n < 3 ? "Siguiente" : "Guardar y continuar";
