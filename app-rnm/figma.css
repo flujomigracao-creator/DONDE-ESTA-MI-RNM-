@@ -277,3 +277,33 @@ button, .btn, .btn-enlace, .filter-pill, .nav-item, .bottom-nav-item, summary { 
 .ubicacion .review-row { gap: var(--sp-3); align-items: flex-start; }
 .ubicacion .review-row span { flex: none; color: var(--text-muted); }
 .ubicacion .review-row b { font-family: inherit; text-align: right; min-width: 0; overflow-wrap: anywhere; font-size: 0.92rem; }
+
+/* ==========================================================================
+   Información de las consultas, en lenguaje claro
+   ========================================================================== */
+.res .pasos-titulo { margin: var(--sp-3) 0 var(--sp-1); font-size: 0.82rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
+.res .pasos-lista { margin: 0; padding-left: 20px; display: grid; gap: var(--sp-1); }
+.res .pasos-lista li { font-size: 0.92rem; color: var(--text-main); }
+.res .texto-original { margin-top: var(--sp-2); }
+.res .texto-original summary { cursor: pointer; font-size: 0.82rem; font-weight: 600; color: var(--brand); list-style: none; }
+.res .texto-original summary::-webkit-details-marker { display: none; }
+.res .texto-original summary::before { content: "▸ "; }
+.res .texto-original[open] summary::before { content: "▾ "; }
+.res .texto-original p { margin: var(--sp-2) 0 0; padding: var(--sp-3); border-radius: 10px; background: rgba(255, 255, 255, 0.7); font-size: 0.82rem; color: var(--text-muted); word-break: break-word; }
+.history-resumen { margin: 6px 0 0; font-size: 0.9rem; color: var(--text-main); }
+.history-unidad { margin: 4px 0 0; font-size: 0.8rem; }
+
+/* Etapas del documento: dónde está de un vistazo */
+.etapas { list-style: none; margin: var(--sp-3) 0 var(--sp-3); padding: 0; display: flex; align-items: flex-start; gap: 0; }
+.etapas li { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; position: relative; text-align: center; }
+.etapas li::before { content: ""; position: absolute; top: 14px; left: -50%; width: 100%; height: 3px; background: var(--line-strong); z-index: 0; }
+.etapas li:first-child::before { display: none; }
+.etapas li.hecha::before, .etapas li.actual::before { background: var(--brand); }
+.punto-etapa { position: relative; z-index: 1; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: #fff; border: 2px solid var(--line-strong); font-size: 0.8rem; font-weight: 700; color: var(--text-muted); }
+.etapas li.hecha .punto-etapa { background: var(--brand); border-color: var(--brand); color: #fff; }
+.etapas li.actual .punto-etapa { border-color: var(--brand); color: var(--brand); box-shadow: 0 0 0 4px rgba(33, 88, 214, 0.18); }
+.res.ok .etapas li.actual .punto-etapa, .res.ok .etapas li.hecha .punto-etapa { border-color: var(--success); }
+.res.ok .etapas li.hecha .punto-etapa { background: var(--success); }
+.res.ok .etapas li.hecha::before, .res.ok .etapas li.actual::before { background: var(--success); }
+.nombre-etapa { font-size: 0.74rem; font-weight: 600; color: var(--text-muted); line-height: 1.2; }
+.etapas li.actual .nombre-etapa { color: var(--text-main); font-weight: 800; }
