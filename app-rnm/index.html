@@ -63,6 +63,7 @@
           <div class="form-field">
             <label for="p-nombre">Nombre completo</label>
             <input type="text" id="p-nombre" autocomplete="name" maxlength="120" placeholder="Nombre y apellidos" required>
+            <p class="sub ayuda-campo">Incluye todos tus nombres y apellidos.</p>
           </div>
         </div>
 
@@ -72,6 +73,7 @@
           <div class="form-field">
             <label for="p-tel">Teléfono / WhatsApp</label>
             <input type="text" id="p-tel" inputmode="tel" autocomplete="tel" maxlength="20" placeholder="Ej: +55 11 91234-5678">
+            <p class="sub ayuda-campo">Incluye el código de ciudad (y el de país si no es de Brasil). Ejemplo: +55 11 91234-5678.</p>
           </div>
         </div>
 
@@ -99,13 +101,13 @@
           </div>
           <label class="check">
             <input type="checkbox" id="p-consiento">
-            <span>Autorizo a FLUJO a resguardar estos datos exclusivamente para informarme sobre mi trámite. Puedo solicitar su eliminación en cualquier momento.</span>
+            <span><b>Autorización necesaria para usar el servicio.</b> Autorizo a FLUJO a resguardar estos datos exclusivamente para informarme sobre mi trámite. Puedo solicitar su eliminación en cualquier momento.</span>
           </label>
         </div>
 
         <div class="acciones acciones-form">
-          <button type="button" class="sec oculto" id="btn-perfil-atras">Atrás</button>
           <button type="submit" id="btn-perfil">Siguiente</button>
+          <button type="button" class="sec oculto" id="btn-perfil-atras">Atrás</button>
           <button type="button" class="sec oculto" id="btn-perfil-cancelar">Cancelar</button>
         </div>
         <p class="msg" id="msg-perfil" role="alert"></p>

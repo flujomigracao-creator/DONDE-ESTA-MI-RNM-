@@ -229,3 +229,23 @@ button, .btn, .btn-enlace, .filter-pill, .nav-item, .bottom-nav-item, summary { 
 .check input[type="checkbox"] { width: 22px; height: 22px; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; } }
 .modal .cerrar { min-height: 0; width: 40px; height: 40px; }
+
+/* ==========================================================================
+   FASE 2 · Acceso y onboarding
+   ========================================================================== */
+.error-campo { margin: var(--sp-2) 0 0; font-size: var(--fs-ayuda); font-weight: 600; color: var(--danger); display: flex; gap: 6px; align-items: flex-start; }
+.error-campo::before { content: "!"; flex: none; width: 16px; height: 16px; margin-top: 1px; border-radius: 50%; background: var(--danger); color: #fff; font-size: 0.7rem; font-weight: 800; display: grid; place-items: center; }
+#vista-perfil [aria-invalid="true"] { border-color: var(--danger); box-shadow: 0 0 0 3px rgba(179, 38, 30, 0.12); }
+.cep-info { color: var(--text-muted); }
+.cep-busca { color: var(--brand); }
+.cep-ok { color: var(--success); font-weight: 600; }
+.cep-fallo { color: var(--warning); font-weight: 600; }
+.cep-busca::before { content: ""; display: inline-block; width: 12px; height: 12px; margin-right: 6px; vertical-align: -2px; border: 2px solid var(--brand-line); border-top-color: var(--brand); border-radius: 50%; animation: giro .7s linear infinite; }
+.spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255, 255, 255, .5); border-top-color: #fff; border-radius: 50%; animation: giro .7s linear infinite; }
+@keyframes giro { to { transform: rotate(360deg); } }
+.check b { color: var(--text-main); }
+.acciones-form { flex-direction: column; }
+.acciones-form button { width: 100%; }
+#btn-google:hover:not(:disabled) { background: var(--brand-hover); }
+#btn-google:disabled { opacity: .85; cursor: progress; }
+.fig-nota a, .enlace-marca { text-underline-offset: 2px; }

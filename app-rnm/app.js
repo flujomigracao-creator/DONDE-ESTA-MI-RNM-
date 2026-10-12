@@ -196,25 +196,55 @@ function irAPaso(n) {
   $("btn-perfil-atras").classList.toggle("oculto", n === 1);
   $("btn-perfil").textContent = n < 3 ? "Siguiente" : "Guardar y continuar";
   msg("msg-perfil", "");
+  limpiarErroresPerfil();
   var foco = { 1: "p-nombre", 2: "p-tel", 3: "p-cep" }[n];
   setTimeout(function () { $(foco).focus(); }, 0);
 }
 
+var campoConError = "";
 function errorPaso(n) {
+  campoConError = "";
+  function fallo(id, txt) { campoConError = id; return txt; }
   if (n === 1) {
-    if ($("p-nombre").value.trim().length < 3) return "Escribe tu nombre completo.";
+    if ($("p-nombre").value.trim().length < 3) return fallo("p-nombre", "Escribe tu nombre completo (mínimo 3 letras).");
   } else if (n === 2) {
-    if (!/^\d{10,15}$/.test($("p-tel").value.replace(/\D/g, ""))) return "Revisa tu teléfono: incluye el código de ciudad (y el de país si es de otro país).";
+    if (!/^\d{10,15}$/.test($("p-tel").value.replace(/\D/g, ""))) return fallo("p-tel", "Revisa tu teléfono: incluye el código de ciudad (y el de país si es de otro país).");
   } else {
     var uf = $("p-uf").value.trim().toUpperCase(), cep = $("p-cep").value.replace(/\D/g, "");
-    if (cep && !/^\d{8}$/.test(cep)) return "El CEP tiene 8 números.";
-    if ($("p-dir").value.trim().length < 5) return "Escribe tu dirección actual.";
-    if ($("p-ciudad").value.trim().length < 2) return "Escribe tu ciudad.";
-    if (uf && !/^[A-Z]{2}$/.test(uf)) return "El estado son 2 letras, por ejemplo SP.";
-    if (!$("p-consiento").checked) return "Debes aceptar la autorización para continuar.";
+    if (cep && !/^\d{8}$/.test(cep)) return fallo("p-cep", "El CEP tiene 8 números.");
+    if ($("p-dir").value.trim().length < 5) return fallo("p-dir", "Escribe tu dirección actual.");
+    if ($("p-ciudad").value.trim().length < 2) return fallo("p-ciudad", "Escribe tu ciudad.");
+    if (uf && !/^[A-Z]{2}$/.test(uf)) return fallo("p-uf", "El estado son 2 letras, por ejemplo SP.");
+    if (!$("p-consiento").checked) return fallo("p-consiento", "Debes aceptar la autorización para continuar.");
   }
   return "";
 }
+
+/* Error pegado al campo (aria-invalid + aria-describedby); se borra al corregir y no se pierde lo escrito */
+function limpiarErroresPerfil() {
+  document.querySelectorAll("#vista-perfil .error-campo").forEach(function (p) { p.remove(); });
+  document.querySelectorAll("#vista-perfil [aria-invalid]").forEach(function (c) { c.removeAttribute("aria-invalid"); c.removeAttribute("aria-describedby"); });
+}
+function marcarCampo(id, texto) {
+  limpiarErroresPerfil();
+  var c = $(id);
+  if (!c || !texto) return msg("msg-perfil", texto);
+  var p = el("p", "error-campo", texto);
+  p.id = "err-" + id; p.setAttribute("role", "alert");
+  var ancla = c.type === "checkbox" ? c.closest("label") : c;
+  ancla.insertAdjacentElement("afterend", p);
+  c.setAttribute("aria-invalid", "true"); c.setAttribute("aria-describedby", p.id);
+  msg("msg-perfil", "");
+  c.focus();
+}
+document.querySelectorAll("#form-perfil input").forEach(function (c) {
+  c.addEventListener("input", function () {
+    var p = $("err-" + c.id); if (p) p.remove();
+    c.removeAttribute("aria-invalid"); c.removeAttribute("aria-describedby");
+  });
+  c.addEventListener("change", function () { var p = $("err-" + c.id); if (p) p.remove(); });
+});
+
 $("btn-perfil-atras").addEventListener("click", function () { irAPaso(pasoActual - 1); });
 /* Autocompletar con el CEP (ViaCEP, servicio público de Brasil: solo recibe el CEP) */
 var ultimoCep = "";
@@ -222,23 +252,24 @@ $("p-cep").addEventListener("input", async function (e) {
   var d = e.target.value.replace(/\D/g, "").slice(0, 8);
   e.target.value = d.length > 5 ? d.slice(0, 5) + "-" + d.slice(5) : d;
   var estado = $("cep-estado");
-  if (d.length < 8) { ultimoCep = ""; estado.textContent = "Escribe tu CEP y completamos calle, ciudad y estado."; return; }
+  function cepEstado(t, tipo) { estado.textContent = t; estado.className = "sub ayuda-campo cep-" + (tipo || "info"); }
+  if (d.length < 8) { ultimoCep = ""; cepEstado("Escribe tu CEP y completamos calle, ciudad y estado."); return; }
   if (d === ultimoCep) return;
   ultimoCep = d;
-  estado.textContent = "Buscando…";
+  cepEstado("Buscando tu dirección…", "busca");
   try {
     var r = await fetch("https://viacep.com.br/ws/" + d + "/json/");
     var j = await r.json();
     if (d !== ultimoCep) return; // el usuario ya cambió el CEP
-    if (!r.ok || j.erro) { estado.textContent = "No encontramos ese CEP. Completa tu dirección a mano."; return; }
+    if (!r.ok || j.erro) { cepEstado("No encontramos ese CEP. Completa tu dirección a mano.", "fallo"); return; }
     var calle = [j.logradouro, j.bairro].filter(Boolean).join(", ");
     if (calle) $("p-dir").value = calle + (j.logradouro ? ", " : "");
     if (j.localidade) $("p-ciudad").value = j.localidade;
     if (j.uf) $("p-uf").value = j.uf;
-    estado.textContent = "Listo. Agrega el número de tu casa o apartamento.";
+    cepEstado("Listo: completamos calle, ciudad y estado. Agrega el número de tu casa o apartamento.", "ok");
     var dir = $("p-dir"); dir.focus(); dir.setSelectionRange(dir.value.length, dir.value.length);
   } catch (_) {
-    estado.textContent = "No pudimos buscar el CEP. Completa tu dirección a mano.";
+    cepEstado("No pudimos buscar el CEP. Completa tu dirección a mano.", "fallo");
   }
 });
 
@@ -247,12 +278,13 @@ $("btn-perfil-cancelar").addEventListener("click", function () { vista("app"); }
 $("form-perfil").addEventListener("submit", async function (e) {
   e.preventDefault();
   msg("msg-perfil", "");
+  limpiarErroresPerfil();
   var err = errorPaso(pasoActual);
-  if (err) return msg("msg-perfil", err);
+  if (err) return marcarCampo(campoConError, err);
   if (pasoActual < 3) return irAPaso(pasoActual + 1);
   for (var n = 1; n < 3; n++) { // por si algo quedó mal en un paso anterior
     var e2 = errorPaso(n);
-    if (e2) { irAPaso(n); return msg("msg-perfil", e2); }
+    if (e2) { irAPaso(n); return marcarCampo(campoConError, e2); }
   }
   var nombre = $("p-nombre").value.trim().replace(/\s+/g, " ");
   var tel = $("p-tel").value.replace(/\D/g, "");
@@ -273,12 +305,18 @@ $("form-perfil").addEventListener("submit", async function (e) {
 });
 
 $("btn-google").addEventListener("click", async function () {
+  var b = this, texto = b.innerHTML;
   msg("msg-login", "");
-  var r = await sb.auth.signInWithOAuth({
-    provider: "google",
-    options: { redirectTo: location.origin + location.pathname }
-  });
-  if (r.error) msg("msg-login", "No pudimos iniciar sesión. Intenta de nuevo.");
+  b.disabled = true; b.setAttribute("aria-busy", "true");
+  b.innerHTML = '<span class="spinner" aria-hidden="true"></span> Conectando con Google…';
+  var r;
+  try {
+    r = await sb.auth.signInWithOAuth({ provider: "google", options: { redirectTo: location.origin + location.pathname } });
+  } catch (e) { r = { error: e }; }
+  if (r.error) {
+    b.disabled = false; b.removeAttribute("aria-busy"); b.innerHTML = texto;
+    msg("msg-login", "No pudimos iniciar sesión. Revisa tu conexión e intenta de nuevo.");
+  }
 });
 async function confirmarSalir() {
   var ok = await mostrarConfirmacion({
