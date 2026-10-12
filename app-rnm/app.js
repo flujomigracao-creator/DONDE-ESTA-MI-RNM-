@@ -530,9 +530,16 @@ async function pedirPagoUnico(cupos, metodo, cpf) {
 }
 
 function copiarTexto(texto, boton) {
-  var listo = function () { var t = boton.textContent; boton.textContent = "¡Copiado!"; setTimeout(function () { boton.textContent = t; }, 1800); };
-  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(texto).then(listo, function () { /* sin permiso */ });
-  else { var tmp = document.createElement("textarea"); tmp.value = texto; document.body.appendChild(tmp); tmp.select(); try { document.execCommand("copy"); listo(); } catch (e) { /* sin copiar */ } tmp.remove(); }
+  var original = boton.textContent;
+  var listo = function () { boton.textContent = "¡Copiado!"; boton.classList.add("copiado"); setTimeout(function () { boton.textContent = original; boton.classList.remove("copiado"); }, 1800); };
+  var sinCopiar = function () {
+    // Respaldo: se selecciona el código para copiarlo a mano
+    var campo = $("px-codigo"); if (campo) { campo.focus(); campo.select(); }
+    boton.textContent = "Copia a mano ↑"; setTimeout(function () { boton.textContent = original; }, 3000);
+    var av = $("msg-pago-codigo"); if (av) av.textContent = "No pudimos copiar automáticamente. El código quedó seleccionado: mantén pulsado y elige Copiar.";
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(texto).then(listo, sinCopiar);
+  else { var tmp = document.createElement("textarea"); tmp.value = texto; document.body.appendChild(tmp); tmp.select(); try { document.execCommand("copy") ? listo() : sinCopiar(); } catch (e) { sinCopiar(); } tmp.remove(); }
 }
 
 var ICONOS_PAGO = {
@@ -604,13 +611,22 @@ function mostrarPago(cupos) {
   function elegir(m) {
     metodoActual = m; aviso("");
     c.querySelectorAll(".metodo").forEach(function (b) {
-      var on = b.getAttribute("data-m") === m; b.classList.toggle("sel", on); b.setAttribute("aria-checked", on ? "true" : "false");
+      var on = b.getAttribute("data-m") === m; b.classList.toggle("sel", on); b.setAttribute("aria-checked", on ? "true" : "false"); b.setAttribute("tabindex", on ? "0" : "-1");
     });
     $("form-pago").classList.toggle("oculto", m !== "tarjeta");
     $("panel-otro").classList.toggle("oculto", m === "tarjeta");
-    if (m !== "tarjeta") { $("px-nota").textContent = NOTAS[m]; $("btn-generar").textContent = TEXTOS_BOTON[m]; }
+    if (m !== "tarjeta") { $("px-nota").textContent = NOTAS[m]; $("btn-generar").textContent = TEXTOS_BOTON[m] + " · " + precio; }
   }
-  c.querySelectorAll(".metodo").forEach(function (b) { b.addEventListener("click", function () { elegir(b.getAttribute("data-m")); }); });
+  var botonesMetodo = Array.prototype.slice.call(c.querySelectorAll(".metodo"));
+  function enfocarMetodo(i) { var b = botonesMetodo[(i + botonesMetodo.length) % botonesMetodo.length]; b.focus(); elegir(b.getAttribute("data-m")); }
+  botonesMetodo.forEach(function (b, i) {
+    b.setAttribute("tabindex", b.classList.contains("sel") ? "0" : "-1");
+    b.addEventListener("click", function () { elegir(b.getAttribute("data-m")); });
+    b.addEventListener("keydown", function (ev) {
+      if (ev.key === "ArrowRight" || ev.key === "ArrowDown") { ev.preventDefault(); enfocarMetodo(i + 1); }
+      else if (ev.key === "ArrowLeft" || ev.key === "ArrowUp") { ev.preventDefault(); enfocarMetodo(i - 1); }
+    });
+  });
   $("px-cpf").addEventListener("input", function (e) {
     var d = e.target.value.replace(/\D/g, "").slice(0, 11), s = d;
     if (d.length > 9) s = d.slice(0, 3) + "." + d.slice(3, 6) + "." + d.slice(6, 9) + "-" + d.slice(9);
@@ -698,7 +714,9 @@ function mostrarCodigoPago(cupos, d) {
   }
   if (codigo) h += '<label>' + (esPix ? "Pix copia y cola" : "Código de barras") + '</label><div class="copiar-fila"><input type="text" id="px-codigo" readonly><button type="button" id="btn-copiar">Copiar</button></div>';
   if (!esPix && d.boleto.url) h += '<a class="btn pay-boton" id="btn-abrir-boleto" target="_blank" rel="noopener">Abrir boleto</a>';
-  h += '<div class="pay-espera" aria-live="polite"><span class="punto"></span><span id="px-estado">Esperando tu pago…</span></div>' +
+  h += '<p class="msg" id="msg-pago-codigo" aria-live="polite"></p>' +
+    '<div class="pay-espera" role="status" aria-live="polite"><span class="punto"></span><span id="px-estado">Pago pendiente: esperando la confirmación…</span></div>' +
+    '<p class="pay-nota">Pendiente no significa pagado: tu plan se activa solo cuando Mercado Pago confirma el pago.</p>' +
     '<p class="pay-seguro">🔒 Pago procesado por Mercado Pago. Este pago cubre 1 mes; te avisaremos cuando toque renovar.</p>';
   c.innerHTML = h;
   cont.appendChild(c);
@@ -723,8 +741,8 @@ function mostrarCodigoPago(cupos, d) {
     var estado = $("px-estado");
     var pintar = function () {
       var s = Math.max(0, Math.round((fin - Date.now()) / 1000));
-      if (!s) { estado.textContent = "El código venció. Vuelve atrás y genera uno nuevo."; if (relojPago) { clearInterval(relojPago); relojPago = null; } return; }
-      estado.textContent = "Esperando tu pago… el código vence en " + Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+      if (!s) { estado.textContent = "El código venció. Vuelve atrás y genera uno nuevo."; var esp = document.querySelector(".pay-espera"); if (esp) esp.classList.add("vencido"); if (relojPago) { clearInterval(relojPago); relojPago = null; } return; }
+      estado.textContent = "Pago pendiente · el código vence en " + Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
     };
     pintar();
     relojPago = setInterval(pintar, 1000);
@@ -938,19 +956,37 @@ function renderizarPlanes(regs, plan) {
   cont.appendChild(notaSemanal());
 
   var precios = el("div", "tarjeta");
-  precios.appendChild(el("h3", "", "Planes mensuales"));
-  precios.appendChild(el("p", "sub", "Paga con tarjeta (se renueva solo), Pix o boleto (un mes por pago). El precio baja por RNM cuando cubres más documentos."));
-  var tabla = el("div", "review-summary-card");
+  precios.appendChild(el("h3", "", "Compara los planes"));
+  precios.appendChild(el("p", "sub", "Todos incluyen revisión semanal (cada 7 días) hasta que tu documento esté listo."));
+  var grid = el("div", "plan-grid");
   [1, 2, 3, 4].forEach(function (n) {
-    var f = el("div", "review-row");
-    f.appendChild(el("span", "", n + (n === 1 ? " RNM" : " RNM") + (n > 1 ? " · ahorras " + porcentajeAhorro(n) + "%" : "")));
-    f.appendChild(el("b", "", reales(PRECIOS[n]) + " al mes"));
-    tabla.appendChild(f);
+    var esActual = activo && plan.cupos === n;
+    var esVencido = !activo && !!plan && plan.cupos === n;
+    var card = el("button", "plan-card" + (esActual ? " actual" : "") + (n === 4 ? " destacado" : ""));
+    card.type = "button";
+    card.setAttribute("aria-label", "Plan de " + n + (n === 1 ? " RNM" : " RNM") + ", " + reales(PRECIOS[n]) + " al mes");
+    if (esActual) card.appendChild(el("span", "plan-sello", "Tu plan"));
+    else if (esVencido) card.appendChild(el("span", "plan-sello vencido", "Vencido"));
+    else if (n === 4) card.appendChild(el("span", "plan-sello", "Mejor precio"));
+    card.appendChild(el("b", "plan-n", n + " RNM"));
+    card.appendChild(el("span", "plan-precio", reales(PRECIOS[n])));
+    card.appendChild(el("small", "", "por mes"));
+    card.appendChild(el("small", "plan-por", reales(Math.round(PRECIOS[n] / n)) + " por RNM"));
+    if (n > 1 && ahorro(n) > 0) card.appendChild(el("small", "plan-ahorro", "Ahorras " + porcentajeAhorro(n) + "%"));
+    card.addEventListener("click", function () {
+      if (!abiertos) return navegarA("nueva-consulta");
+      planElegido = n; cartelPlanes(regs, plan); abrirModalPlanes();
+    });
+    grid.appendChild(card);
   });
-  precios.appendChild(tabla);
+  precios.appendChild(grid);
+  var como = el("div", "como-pagar");
+  como.innerHTML =
+    '<div><b>Tarjeta</b><span>Se renueva sola cada mes. Puedes cancelar cuando quieras.</span></div>' +
+    '<div><b>Pix o boleto</b><span>Pagas un mes cada vez; cuando termine, te avisamos para pagar de nuevo.</span></div>';
+  precios.appendChild(como);
   precios.appendChild(el("p", "sub", "¿Dudas sobre un cobro o necesitas un comprobante? Escríbenos " + VIA_CONTACTO + "."));
   cont.appendChild(precios);
-
 }
 
 /* ---------- Historial de Consultas (Pantalla 12) ---------- */
