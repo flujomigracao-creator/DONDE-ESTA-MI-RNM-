@@ -8,15 +8,15 @@
 | C2 firma obligatoria | **Hecho y desplegado** | Antes se comprobó que el secreto estaba configurado (401 sin firma). Sin secreto, el webhook responde 503. Probado: sin firma y firma falsa dan 401 |
 | C3 rotar token | **Pendiente (propietario)** | |
 | C4 moneda y dueño | **Hecho y desplegado** | `mp-webhook` v7 (no probado contra Mercado Pago real) |
-| C5 reembolsos | **Pendiente (decisión del propietario)** | |
+| C5 reembolsos | **Cerrado por decisión del propietario** | No habrá reembolsos; no se implementa reversión de planes. Ojo: `terminos.html` §5 todavía ofrece reembolso si el fallo es de FLUJO |
 | C6 INSERT mínimo | **Hecho** | Probado: insertar con 3 columnas funciona; con `unidad_pf` o `ultima_consulta_at` da `permission denied` |
 | C7 sin detalle de MP al navegador | **Hecho y desplegado** | `mp-crear-suscripcion` v7 + `app.js` |
-| C8 contacto sin WhatsApp | **Hecho y desplegado** | Correo de contacto cuando `WHATSAPP` está vacío; no se inventó ningún número |
-| C9 esquema versionado / Vercel–GitHub | **Parcial** | Esta migración está en `supabase-migraciones-rnm/`; faltan las 12 anteriores (`supabase db pull`) y decidir conexión Vercel–GitHub |
+| C8 contacto sin WhatsApp | **Hecho y desplegado** | Correo de contacto cuando `WHATSAPP` está vacío. El propietario entregó el número (2026-10-12) y quedó configurado en `app.js` |
+| C9 esquema versionado / Vercel–GitHub | **Parcial; Vercel–GitHub: decisión SÍ, pendiente de conectar** (la API de Vercel responde 403, hay que hacerlo desde el panel) | Esta migración está en `supabase-migraciones-rnm/`; faltan las 12 anteriores (`supabase db pull`) y decidir conexión Vercel–GitHub |
 | C10 auditoría | **Hecho** | Tabla `rnm_auditoria`; probado con activar plan y guardar resultado |
 | C11 funciones `private` | **Hecho** | Probado: el equipo sigue funcionando (pendientes, por cobrar, activar plan, guardar resultado) |
 | C12 columnas de `rnm_planes` | **Hecho** | Probado: leer columnas permitidas funciona; `mp_preapproval_id` da `permission denied` |
-| C13 rotar RNM en un plan | Pendiente (decisión) | |
+| C13 rotar RNM en un plan | **Cerrado por decisión del propietario** | Se permite borrar un RNM y registrar otro dentro del mismo plan; sin cambios |
 | C14 columnas heredadas | No hecho (destructivo) | Requiere respaldo y autorización |
 | C15 otros módulos | No hecho (fuera de alcance) | |
 

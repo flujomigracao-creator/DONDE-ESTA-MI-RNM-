@@ -2,7 +2,7 @@
 var SUPABASE_URL = "https://rumpfqevyspdmhaggxtq.supabase.co";
 var SUPABASE_KEY = "sb_publishable_7znj3ENrTWXDE2dibUzv_A_a7HUoud_";
 // WhatsApp de FLUJO, solo dígitos con código de país (ej: 5511912345678). Vacío = no se muestra el botón.
-var WHATSAPP = "";
+var WHATSAPP = "5548984553309";
 // Clave pública de Mercado Pago (pensada para ir en el navegador; no permite cobrar ni leer nada).
 var MP_PUBLIC_KEY = "APP_USR-d9efd8e3-53cb-4c67-bb1f-585c8fcd5358";
 // Contacto de respaldo mientras no haya WhatsApp configurado (así nunca se muestra un enlace roto ni se pide escribir sin dar un canal).
