@@ -84,3 +84,18 @@ Objetivo: quitar lo innecesario y resumir cada espacio. Verificado en la vista p
 | Ayuda | 6 preguntas largas siempre abiertas | 6 preguntas plegables y más cortas |
 | Mi cuenta | Tarjeta de seguridad aparte | Una línea |
 | Navegación | Sin dirección propia (el botón "atrás" salía de la app) | Cada sección tiene su dirección (#inicio, #mis-rnm, …) y "atrás" funciona; al recargar se vuelve a la misma sección |
+
+---
+
+## 5. Información del RNM resumida (2026-10-12)
+
+| Elemento | Antes | Ahora |
+|---|---|---|
+| Estado | Título + 2 párrafos | Título + 1 frase por estado |
+| Unidad de la PF | Caja con unidad, comparación con tu ciudad, texto de ayuda y "no hay solicitudes de cambio" | "Retiro: Polícia Federal de X" + unidad y si es tu ciudad |
+| Cambio de dirección | Párrafo introductorio + línea por solicitud + aviso | Una línea por solicitud ("hacia Sorocaba/SP: aún no iniciada (fecha)") y, si aplica, una línea de aviso |
+| Historial del trámite | Tarjeta siempre abierta con subtítulo | Plegado ("+"), eventos más cortos |
+| Cabecera y acciones | Etiqueta "Documento en seguimiento", tarjeta "Acciones del registro" | Solo el RNM y su estado; "Quitar este RNM" sin tarjeta |
+| Inicio (estado principal) | "Documento en seguimiento principal" + unidad completa + "Ver detalles completos del trámite" | RNM, estado, 1 frase, "Retiro en: ciudad" y "Ver detalle" |
+
+Verificado en la vista previa con el caso real (Salvador, cambio hacia Sorocaba): el detalle completo cabe en una pantalla móvil y el historial queda plegado.

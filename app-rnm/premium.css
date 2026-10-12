@@ -1317,3 +1317,10 @@ button:focus-visible, a:focus-visible, .nav-item:focus-visible, .bottom-nav-item
 .faq summary::after { content: "+"; color: var(--brand); font-weight: 700; }
 .faq details[open] summary::after { content: "–"; }
 .faq details p { margin: 0 0 12px; color: var(--text-muted); font-size: 0.92rem; }
+
+/* --- Historial plegable en el detalle del RNM --- */
+.historial summary { cursor: pointer; font-weight: 700; color: var(--navy); list-style: none; display: flex; justify-content: space-between; align-items: center; }
+.historial summary::-webkit-details-marker { display: none; }
+.historial summary::after { content: "+"; color: var(--brand); font-weight: 700; font-size: 1.2rem; }
+.historial[open] summary::after { content: "–"; }
+.historial .timeline { margin: 16px 0 0; }

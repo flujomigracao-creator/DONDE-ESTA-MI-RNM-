@@ -843,7 +843,7 @@ function actualizarDashboard(regs, plan) {
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>' +
         '</div>' +
         '<h3>Todavía no tienes RNM registrados</h3>' +
-        '<p>Registra tu primer documento para que vigilemos su avance y te mostremos las actualizaciones disponibles.</p>' +
+        '<p>Registra tu primer RNM y vigilamos su avance.</p>' +
         '<button type="button" class="btn" id="btn-hero-empty-registrar">+ Registrar mi primer RNM</button>';
       heroCont.appendChild(emp);
       var btnReg = $("btn-hero-empty-registrar");
@@ -859,7 +859,6 @@ function actualizarDashboard(regs, plan) {
 
       var hHeader = el("div", "hero-header");
       var hText = el("div", "");
-      hText.appendChild(el("p", "hero-eyebrow", "Documento en seguimiento principal"));
       hText.appendChild(el("h3", "hero-rnm-title", "RNM " + principal.rnm));
       hHeader.appendChild(hText);
 
@@ -871,12 +870,7 @@ function actualizarDashboard(regs, plan) {
       var sBox = el("div", "hero-state-box");
       sBox.appendChild(el("h3", "", e.t));
       e.p.forEach(function (parr) { sBox.appendChild(el("p", "", parr)); });
-      if (principal.unidad_pf) {
-        var uDesc = "Unidad asignada: " + principal.unidad_pf;
-        var ciu = ciudadDeUnidad(principal.unidad_pf);
-        if (ciu) uDesc += " (" + ciu + ")";
-        sBox.appendChild(el("p", "sub", uDesc));
-      }
+      if (principal.unidad_pf) sBox.appendChild(el("p", "sub", "Retiro en: " + (ciudadDeUnidad(principal.unidad_pf) || principal.unidad_pf)));
       hero.appendChild(sBox);
 
       var hFooter = el("div", "hero-footer");
@@ -885,7 +879,7 @@ function actualizarDashboard(regs, plan) {
         : "Revisión programada en breve";
       hFooter.appendChild(el("span", "hero-timestamp", timeTxt));
 
-      var btnVerDet = el("button", "btn", "Ver detalles completos del trámite");
+      var btnVerDet = el("button", "btn", "Ver detalle");
       btnVerDet.type = "button";
       btnVerDet.addEventListener("click", function () { abrirDetalleRnm(principal.id); });
       hFooter.appendChild(btnVerDet);
@@ -910,7 +904,7 @@ function actualizarDashboard(regs, plan) {
     nBtn.style.fontSize = "0.9rem";
 
     if (!regs.length) {
-      nP.textContent = "Tu primera consulta es gratis. Añade los datos de tu documento para iniciar el seguimiento.";
+      nP.textContent = "Tu primera consulta es gratis.";
       nBtn.textContent = "Registrar documento";
       nBtn.addEventListener("click", function () { navegarA("nueva-consulta"); });
     } else {
@@ -918,18 +912,18 @@ function actualizarDashboard(regs, plan) {
       var haySinCubrir = regs.some(function (x) { return !x.cerrado && !x.cubierto && (x.requiere_pago || x.ultimo_resultado); });
 
       if (hayListo) {
-        nP.textContent = "Tienes un documento listo para retirar en la Policía Federal. Agenda tu cita de retiro o solicita cambio si te queda lejos.";
-        nBtn.textContent = "Ver indicaciones";
+        nP.textContent = "Tienes un documento listo para retirar.";
+        nBtn.textContent = "Ver cómo retirarlo";
         nBtn.addEventListener("click", function () {
           var l = regs.find(function (x) { return x.estado_pf === "listo"; });
           if (l) abrirDetalleRnm(l.id);
         });
       } else if (haySinCubrir) {
-        nP.textContent = "Para mantener la vigilancia constante de tus documentos, elige un plan mensual que se ajuste a tus necesidades.";
+        nP.textContent = "Elige un plan para seguir vigilando tus RNM.";
         nBtn.textContent = "Ver planes";
         nBtn.addEventListener("click", function () { navegarA("planes"); });
       } else {
-        nP.textContent = "Tu seguimiento está al día. El sistema monitorea periódicamente la Policía Federal y te avisará ante cualquier novedad.";
+        nP.textContent = "Todo al día. Aquí verás cualquier novedad.";
         nBtn.textContent = "Ver mis registros";
         nBtn.addEventListener("click", function () { navegarA("mis-rnm"); });
       }
@@ -1006,7 +1000,7 @@ async function cargarConsultasDe(id, box) {
     var cc = el("div", "timeline-content");
     cc.appendChild(el("div", "timeline-date", fechaHora(c.created_at)));
     cc.appendChild(el("h4", "timeline-title", "Revisión: " + n[1]));
-    if (c.resultado_texto) cc.appendChild(el("p", "timeline-desc", "Respuesta de la Polícia Federal: " + c.resultado_texto.slice(0, 160)));
+    if (c.resultado_texto) cc.appendChild(el("p", "timeline-desc", c.resultado_texto.slice(0, 110)));
     item.appendChild(cc);
     box.appendChild(item);
   });
@@ -1025,7 +1019,6 @@ function construirDetalle(id) {
   var cardCab = el("div", "tarjeta");
   var fila = el("div", "fila");
   var titBox = el("div", "");
-  titBox.appendChild(el("p", "hero-eyebrow", "Documento en seguimiento"));
   titBox.appendChild(el("h2", "", "RNM " + x.rnm));
   fila.appendChild(titBox);
 
@@ -1047,8 +1040,8 @@ function construirDetalle(id) {
   }
 
   // 3. Línea de tiempo vertical (RnmTimeline con datos reales)
-  var cardTime = el("div", "tarjeta");
-  cardTime.appendChild(el("h3", "", "Historial del trámite"));
+  var cardTime = el("details", "tarjeta historial");
+  cardTime.appendChild(el("summary", "", "Historial del trámite"));
 
   var tl = el("div", "timeline");
   var hayEventos = false;
@@ -1061,8 +1054,8 @@ function construirDetalle(id) {
       item.appendChild(el("div", "timeline-dot" + (l.estado === "concluida" ? " ok" : "")));
       var tCont = el("div", "timeline-content");
       if (l.fecha) tCont.appendChild(el("div", "timeline-date", l.fecha));
-      tCont.appendChild(el("h4", "timeline-title", "Solicitud de cambio de dirección: " + l.estado));
-      if (l.destino) tCont.appendChild(el("p", "timeline-desc", "Destino solicitado: " + l.destino));
+      tCont.appendChild(el("h4", "timeline-title", "Cambio de dirección: " + l.estado));
+      if (l.destino) tCont.appendChild(el("p", "timeline-desc", "Hacia " + l.destino));
       item.appendChild(tCont);
       tl.appendChild(item);
     });
@@ -1092,8 +1085,7 @@ function construirDetalle(id) {
 
   // 4. Acciones del detalle (Eliminar / Quitar RNM con ConfirmDialog)
   if (!x.cerrado) {
-    var cardAcc = el("div", "tarjeta");
-    cardAcc.appendChild(el("h3", "", "Acciones del registro"));
+    var cardAcc = el("div", "");
     var q = el("div", "acciones");
     var avisoBorrar = el("p", "msg", "");
     var borrar = el("button", "btn danger", "Quitar este RNM");
@@ -1237,33 +1229,22 @@ function cajaUnidad(x) {
   if (ciudadU && miCiudad) { mismaCiudad = normalizar(ciudadU) === normalizar(miCiudad); otra = !mismaCiudad; }
   else { otra = !!(uf && miUF && uf !== miUF); }
   var sabeDondeVive = !!((ciudadU && miCiudad) || (uf && miUF));
+
+  var nota = "";
+  if (ciudadU && miCiudad) nota = mismaCiudad ? "es tu ciudad" : "tu ciudad es " + miCiudad;
+  else if (uf && miUF) nota = otra ? "es otro estado que el tuyo" : "es tu estado";
+
   var caja = el("div", "res " + (otra ? "" : "ok"));
-  caja.appendChild(el("h3", "", "Tu documento está en la Polícia Federal de " + donde));
-  caja.appendChild(el("p", "", "Unidad: " + x.unidad_pf));
-  if (ciudadU && miCiudad) {
-    caja.appendChild(el("p", "", mismaCiudad
-      ? "Coincide con la ciudad donde vives (" + miCiudad + ")."
-      : "Tu ciudad registrada es " + miCiudad + ". Si esta unidad no te queda cerca, podemos ayudarte con el cambio de dirección."));
-  } else if (uf && miUF) {
-    caja.appendChild(el("p", "", otra
-      ? "Es distinta al estado donde vives (" + ESTADOS_BR[miUF] + "). Si no puedes ir hasta allá, podemos ayudarte con el cambio de dirección."
-      : "Coincide con el estado donde vives (" + ESTADOS_BR[miUF] + ")."));
-  } else {
-    caja.appendChild(el("p", "", "Revisa que esté en tu ciudad. Si no, escríbenos " + VIA_CONTACTO + " y te ayudamos con el cambio de dirección."));
-  }
-  if (x.cambio_direccion) {
-    var lineas = lineasCambio(x.cambio_direccion);
-    caja.appendChild(el("p", "", lineas.length > 1
-      ? "La Polícia Federal registra " + lineas.length + " solicitudes de cambio de dirección en tu trámite:"
-      : "La Polícia Federal registra una solicitud de cambio de dirección en tu trámite:"));
-    lineas.forEach(function (l) {
-      caja.appendChild(el("p", "sub", (l.fecha ? l.fecha + " · " : "") + (l.destino ? "para retirar en " + l.destino + " · " : "") + l.estado));
-    });
-    var haciaMiCiudad = miCiudad && lineas.some(function (l) { return l.destino && normalizar(l.destino.split("/")[0]) === normalizar(miCiudad); });
-    if (haciaMiCiudad) caja.appendChild(el("p", "", "Pediste el cambio hacia tu ciudad (" + miCiudad + "): solo falta que la Polícia Federal lo atienda."));
-  } else {
-    caja.appendChild(el("p", "sub", "No hay solicitudes de cambio de dirección en tu trámite."));
-  }
+  caja.appendChild(el("h3", "", "Retiro: Polícia Federal de " + donde));
+  caja.appendChild(el("p", "sub", x.unidad_pf + (nota ? " · " + nota : "")));
+
+  var lineas = x.cambio_direccion ? lineasCambio(x.cambio_direccion) : [];
+  lineas.forEach(function (l) {
+    caja.appendChild(el("p", "", "Cambio de dirección" + (l.destino ? " hacia " + l.destino : "") + ": " + l.estado + (l.fecha ? " (" + l.fecha + ")" : "")));
+  });
+  var haciaMiCiudad = miCiudad && lineas.some(function (l) { return l.destino && normalizar(l.destino.split("/")[0]) === normalizar(miCiudad); });
+  if (haciaMiCiudad) caja.appendChild(el("p", "sub", "Ya pediste el cambio hacia tu ciudad: solo falta que la Polícia Federal lo atienda."));
+
   if (WHATSAPP && (otra || !sabeDondeVive || x.cambio_direccion)) {
     caja.appendChild(enlaceWhatsapp(x, "Hola, mi RNM " + x.rnm + " está listo en " + x.unidad_pf + (ciudadU ? " (" + ciudadU + ")" : "") + " y quiero cambiar la dirección de entrega."));
   } else if (!WHATSAPP && (otra || !sabeDondeVive || x.cambio_direccion)) {
@@ -1310,18 +1291,17 @@ function tarjeta(x) {
 /* ---------- Guía de estados (explicaciones generales) ---------- */
 var ESTADOS = [
   { re: /pronto para ser retirado|confeccionado/i, tono: "ok", t: "¡Tu documento está listo!",
-    p: ["Ya puedes retirar tu carné (CRNM) en la unidad de la Policía Federal.",
-        "Agenda la entrega en el sitio de la Policía Federal (sección “Entrega de CRNM”) y lleva tu protocolo y un documento con foto."] },
+    p: ["Retíralo en la unidad indicada con tu protocolo y un documento con foto."] },
   { re: /entregue|retirado em/i, tono: "ok", t: "Tu documento ya fue entregado",
-    p: ["El sistema indica que el carné ya fue entregado. Si no lo tienes, contáctanos cuanto antes."] },
+    p: ["Figura como entregado. Si no lo tienes, escríbenos " + VIA_CONTACTO + "."] },
   { re: /indeferid|negad|rejeitad|arquivad/i, tono: "mal", t: "Tu solicitud tiene un problema",
-    p: ["El sistema indica que no fue aprobada o fue archivada.", "Escríbenos " + VIA_CONTACTO + " para revisar tu caso."] },
+    p: ["No fue aprobada o fue archivada. Escríbenos " + VIA_CONTACTO + " para revisar tu caso."] },
   { re: /pend[eê]ncia|exig[eê]ncia|complement|inconsist/i, tono: "aviso", t: "Falta algo en tu trámite",
-    p: ["La Policía Federal pide información o documentos adicionales.", "Escríbenos " + VIA_CONTACTO + " y te ayudamos a responder a tiempo."] },
+    p: ["La Polícia Federal pide información o documentos. Escríbenos " + VIA_CONTACTO + " y te ayudamos."] },
   { re: /an[aá]lise|em andamento|processamento|aguard|confec[cç][aã]o|produ[cç][aã]o/i, tono: "aviso", t: "Tu trámite sigue en proceso",
-    p: ["Tu solicitud está siendo analizada o el carné está en fabricación.", "No tienes que hacer nada por ahora; seguimos vigilando."] },
+    p: ["Está en análisis o fabricación. No tienes que hacer nada por ahora."] },
   { re: /n[aã]o (foi )?encontrad|nenhum|sin resultados/i, tono: "aviso", t: "No encontramos tu trámite",
-    p: ["Revisaremos que tu RNM y tu fecha estén correctos.", "Si algo no coincide con tu documento, te escribiremos."] }
+    p: ["Revisaremos tu RNM y fecha de nacimiento; si algo no coincide, te escribiremos."] }
 ];
 // Estado que se muestra para un registro: si todavía no hay resultado, se dice tal cual (nunca "novedad").
 function estadoPresentacion(x) {
