@@ -984,106 +984,110 @@ async function cargarHistorialConsultas() {
   });
 }
 
-/* ---------- Dashboard (Pantalla 5) ---------- */
+/* ---------- Dashboard (Pantalla 5, diseño Figma) ---------- */
+function enmascarar(r) { r = r || ""; return r.length > 2 ? r.charAt(0) + "••••••" + r.charAt(r.length - 1) : r; }
+var ESTADO_CORTO = {
+  "¡Tu documento está listo!": "Listo", "Tu documento ya fue entregado": "Entregado", "Tu solicitud tiene un problema": "Con problema",
+  "Falta algo en tu trámite": "Falta algo", "Tu trámite sigue en proceso": "En trámite", "No encontramos tu trámite": "No encontrado"
+};
+function estadoCorto(x) {
+  if (!x.ultimo_resultado) return x.requiere_pago && !x.cubierto ? "Espera un plan" : "Revisión en curso";
+  var e = explicar(x.ultimo_resultado);
+  return ESTADO_CORTO[e.t] || e.t;
+}
+
 function actualizarDashboard(regs, plan) {
-  // 1. Saludo personalizado
+  // 1. Saludo
   var saludoCont = $("dashboard-saludo");
   if (saludoCont) {
     saludoCont.textContent = "";
-    var nombre = (perfilActual && perfilActual.nombre) ? perfilActual.nombre.split(" ")[0] : "estimado usuario";
-    var h2 = el("h2", "", "Hola, " + nombre);
-    h2.style.margin = "0";
-    h2.style.fontSize = "1.35rem";
-    h2.style.color = "#102A56";
-    var filaSaludo = el("div", "saludo-fila");
-    filaSaludo.appendChild(h2);
-    if (regs.length && regs.length < 4) {
-      var btnAgregar = el("button", "btn", "+ Agregar RNM");
-      btnAgregar.type = "button";
-      btnAgregar.style.minHeight = "40px";
-      btnAgregar.addEventListener("click", function () { navegarA("nueva-consulta"); });
-      filaSaludo.appendChild(btnAgregar);
-    }
-    saludoCont.appendChild(filaSaludo);
+    var nombre = (perfilActual && perfilActual.nombre) ? perfilActual.nombre.split(" ")[0] : "";
+    var cab = el("div", "saludo-fig");
+    cab.appendChild(el("p", "eyebrow-fig", "Tu seguimiento"));
+    cab.appendChild(el("h2", "", nombre ? "Hola, " + nombre : "Hola"));
+    cab.appendChild(el("p", "", regs.length ? "Aquí está lo último sobre tu documento." : "Tu perfil está listo. Ahora podemos empezar con tu documento."));
+    saludoCont.appendChild(cab);
   }
 
-  // 2. Tarjeta dominante de estado (Hero)
+  // 2. Contenido principal
   var heroCont = $("dashboard-hero-container");
   if (heroCont) {
     heroCont.textContent = "";
     if (!regs.length) {
-      // Estado vacío (Pantalla 21)
       var emp = el("div", "empty-state");
       emp.innerHTML =
         '<div class="empty-state-icon">' +
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8l-5-5zM14 3v5h5M12 12v6M9 15h6"/></svg>' +
         '</div>' +
-        '<h3>Todavía no tienes RNM registrados</h3>' +
-        '<p>Registra tu primer RNM y vigilamos su avance.</p>' +
-        '<button type="button" class="btn" id="btn-hero-empty-registrar">+ Registrar mi primer RNM</button>';
+        '<h3>Todavía no tienes RNM</h3>' +
+        '<p>Añade el número de tu documento y tu fecha de nacimiento para solicitar la primera consulta.</p>' +
+        '<button type="button" class="btn" id="btn-hero-empty-registrar">+ Agregar mi primer RNM</button>';
       heroCont.appendChild(emp);
-      var btnReg = $("btn-hero-empty-registrar");
-      if (btnReg) btnReg.addEventListener("click", function () { navegarA("nueva-consulta"); });
+      $("btn-hero-empty-registrar").addEventListener("click", function () { navegarA("nueva-consulta"); });
+      var gratis = el("div", "tarjeta");
+      gratis.appendChild(el("p", "eyebrow-fig", "Tu primera consulta es gratis"));
+      gratis.appendChild(el("p", "", "Para el primer RNM de tu cuenta. Los RNM adicionales requieren un plan mensual desde R$ 4,99."));
+      gratis.appendChild(el("p", "nota-fig", "Máximo 4 RNM por cuenta."));
+      heroCont.appendChild(gratis);
     } else {
-      // Todos los RNM con su estado: primero los listos, luego los que siguen en trámite
-      var rango = function (x) { return x.estado_pf === "listo" ? 0 : (!x.cerrado ? 1 : 2); };
-      var orden = regs.slice().sort(function (p, q) { return rango(p) - rango(q); });
+      var p = regs.find(function (x) { return x.estado_pf === "listo"; }) || regs.find(function (x) { return !x.cerrado; }) || regs[0];
+      var e = estadoPresentacion(p);
+
+      var hero = el("div", "hero-fig");
+      var top = el("div", "hero-fig-top");
+      top.appendChild(el("span", "", "RNM " + enmascarar(p.rnm)));
+      var ico = el("span", "");
+      ico.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h4M14 3l5 5v3"/><circle cx="17" cy="17" r="4"/><path d="M17 15v2l1 1"/></svg>';
+      top.appendChild(ico);
+      hero.appendChild(top);
+      hero.appendChild(el("h3", "", estadoCorto(p)));
+      hero.appendChild(el("p", "", e.p[0] || e.t));
+      hero.appendChild(el("small", "", p.ultima_consulta_at ? "Consultado el " + fechaHora(p.ultima_consulta_at) : "Aún sin resultado"));
+      var bv = el("button", "", "Ver detalle de mi RNM"); bv.type = "button";
+      bv.addEventListener("click", function () { abrirDetalleRnm(p.id); });
+      hero.appendChild(bv);
+      heroCont.appendChild(hero);
+
+      // Plan: aviso insistente si ya hubo primera consulta sin plan; si no, estado del plan
       var av = avisoPlan(regs);
       if (av) heroCont.appendChild(av);
-      var titLista = el("h3", "", "Tus RNM");
-      titLista.style.cssText = "margin: 0 0 10px; font-size: 1.05rem; color: #102A56;";
-      heroCont.appendChild(titLista);
-      orden.forEach(function (x) { heroCont.appendChild(tarjeta(x)); });
-    }
-  }
-
-  // 3. Siguiente paso recomendado
-  var sigCont = $("dashboard-siguiente-paso");
-  if (sigCont) {
-    sigCont.textContent = "";
-    var nCard = el("div", "next-step-card");
-    var nCont = el("div", "next-step-content");
-    var nTit = el("h3", "", "¿Qué puedes hacer ahora?");
-    nCont.appendChild(nTit);
-
-    var nP = el("p", "");
-    var nBtn = el("button", "btn sec", "");
-    nBtn.style.minHeight = "42px";
-    nBtn.style.fontSize = "0.9rem";
-
-    if (!regs.length) {
-      nP.textContent = "Tu primera consulta es gratis.";
-      nBtn.textContent = "Registrar documento";
-      nBtn.addEventListener("click", function () { navegarA("nueva-consulta"); });
-    } else {
-      var hayListo = regs.some(function (x) { return x.estado_pf === "listo"; });
-      var haySinCubrir = regs.some(function (x) { return !x.cerrado && !x.cubierto && (x.requiere_pago || x.ultimo_resultado); });
-
-      if (hayListo) {
-        nP.textContent = "Tienes un documento listo para retirar.";
-        nBtn.textContent = "Ver cómo retirarlo";
-        nBtn.addEventListener("click", function () {
-          var l = regs.find(function (x) { return x.estado_pf === "listo"; });
-          if (l) abrirDetalleRnm(l.id);
-        });
-      } else if (haySinCubrir) {
-        nP.textContent = "Elige un plan: revisamos tus RNM cada semana.";
-        nBtn.textContent = "Ver planes";
-        nBtn.addEventListener("click", function () { navegarA("planes"); });
-      } else {
-        nP.textContent = "Todo al día. Revisamos tus RNM cada semana.";
-        nBtn.textContent = regs.length < 4 ? "Agregar RNM" : "Ver planes";
-        nBtn.addEventListener("click", function () { navegarA(regs.length < 4 ? "nueva-consulta" : "planes"); });
+      else {
+        var activo = !!plan && new Date(plan.vence_at) > new Date();
+        var cp = el("div", "tarjeta plan-fig");
+        cp.appendChild(el("span", "insignia" + (activo ? "" : " "), activo ? "Plan activo" : "Sin plan activo"));
+        cp.appendChild(el("h3", "", activo ? "Activo hasta el " + fechaCorta(plan.vence_at) : "Tu primera consulta es gratis"));
+        cp.appendChild(el("p", "", activo
+          ? "Mientras el plan esté activo, revisamos cada 7 días hasta que el documento esté listo."
+          : "Para seguir revisando cada 7 días, elige un plan."));
+        if (!activo) {
+          var bp = el("button", "sec btn-ancho", "Ver planes"); bp.type = "button"; bp.style.marginTop = "12px";
+          bp.addEventListener("click", function () { navegarA("planes"); });
+          cp.appendChild(bp);
+        }
+        heroCont.appendChild(cp);
       }
+
+      var otros = regs.filter(function (x) { return x !== p; });
+      if (otros.length) {
+        var ts = el("div", "titulo-sec");
+        ts.appendChild(el("h3", "", "Otros RNM"));
+        heroCont.appendChild(ts);
+        otros.forEach(function (x) { heroCont.appendChild(tarjeta(x)); });
+      }
+      if (regs.length < 4) {
+        var ba = el("button", "sec btn-ancho", "+ Agregar RNM"); ba.type = "button";
+        ba.addEventListener("click", function () { navegarA("nueva-consulta"); });
+        heroCont.appendChild(ba);
+      }
+      heroCont.appendChild(el("p", "nota-fig", "Actualiza lo que ves; no inicia una nueva consulta ante la PF. El seguimiento no es en tiempo real."));
     }
-    nCont.appendChild(nP);
-    nCard.appendChild(nCont);
-    nCard.appendChild(nBtn);
-    sigCont.appendChild(nCard);
   }
 
-  var otros = $("dashboard-otros");
-  if (otros) otros.textContent = "";
+  // 3. El bloque "siguiente paso" ya no se usa (el hero y la tarjeta del plan lo reemplazan)
+  var sigCont = $("dashboard-siguiente-paso");
+  if (sigCont) sigCont.textContent = "";
+  var otrosCont = $("dashboard-otros");
+  if (otrosCont) otrosCont.textContent = "";
 }
 
 /* ---------- Mis RNM (Pantalla 6) ---------- */

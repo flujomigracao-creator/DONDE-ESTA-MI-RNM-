@@ -3,11 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#102A56">
+<meta name="theme-color" content="#F5F7FB">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <title>¿Dónde está mi RNM? — Seguimiento Migratorio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
 <link rel="stylesheet" href="premium.css">
+<link rel="stylesheet" href="figma.css">
 </head>
 <body>
 
@@ -15,72 +19,30 @@
 
   <!-- ==================== VISTA NO AUTENTICADA (BIENVENIDA / LOGIN) ==================== -->
   <div id="vista-login" class="oculto">
-    <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; background: linear-gradient(135deg, #102A56 0%, #155EEF 100%);">
-      <div style="width: 100%; max-width: 940px; background: #FFFFFF; border-radius: 20px; overflow: hidden; box-shadow: 0 24px 64px rgba(16,42,86,0.25); display: flex; flex-direction: row; flex-wrap: wrap;">
+    <div class="fig-login">
+      <div class="fig-barra"><div class="fig-logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="8" cy="8" r="2.5"/><circle cx="16" cy="16" r="2.5"/><path d="M10.5 8H19M5 16h8.5"/></svg></div>FLUJO · Cerca de ti</div>
 
-        <!-- Columna Izquierda: Identidad y Beneficios -->
-        <div style="flex: 1 1 360px; padding: 40px 36px; background: #F8FAFC; border-right: 1px solid #E4E7EC; display: flex; flex-direction: column; justify-content: space-between;">
-          <div>
-            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 28px;">
-              <div class="brand-icon">R</div>
-              <div>
-                <h1 style="margin: 0; font-size: 1.25rem; font-weight: 800; color: #102A56; letter-spacing: -0.02em;">¿Dónde está mi RNM?</h1>
-                <span class="brand-badge" style="color: #155EEF;">Seguimiento Migratorio</span>
-              </div>
-            </div>
-
-            <h2 style="font-size: 1.45rem; line-height: 1.25; color: #102A56; margin: 0 0 12px; letter-spacing: -0.02em;">
-              Tu documento en la Policía Federal, con información clara y a tu alcance.
-            </h2>
-
-            <div style="display: flex; flex-direction: column; gap: 16px;">
-              <div style="display: flex; gap: 12px; align-items: flex-start;">
-                <div style="width: 28px; height: 28px; border-radius: 8px; background: #EFF6FF; color: #155EEF; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: 700;">✓</div>
-                <div>
-                  <b style="display: block; font-size: 0.92rem; color: #182230;">Monitoreo centralizado</b>
-                  <span style="font-size: 0.85rem; color: #667085;">Supervisión continua de tu trámite oficial en Brasil.</span>
-                </div>
-              </div>
-              <div style="display: flex; gap: 12px; align-items: flex-start;">
-                <div style="width: 28px; height: 28px; border-radius: 8px; background: #EFF6FF; color: #155EEF; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: 700;">✓</div>
-                <div>
-                  <b style="display: block; font-size: 0.92rem; color: #182230;">Explicación comprensible</b>
-                  <span style="font-size: 0.85rem; color: #667085;">Te decimos qué significa cada novedad y tu siguiente paso.</span>
-                </div>
-              </div>
-              <div style="display: flex; gap: 12px; align-items: flex-start;">
-                <div style="width: 28px; height: 28px; border-radius: 8px; background: #EFF6FF; color: #155EEF; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: 700;">✓</div>
-                <div>
-                  <b style="display: block; font-size: 0.92rem; color: #182230;">Acceso seguro y protegido</b>
-                  <span style="font-size: 0.85rem; color: #667085;">Tus datos confidenciales bajo estrictos estándares de seguridad.</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div style="margin-top: 32px; font-size: 0.8rem; color: #98A2B3;">
-            Servicio independiente desarrollado por FLUJO. No es un canal oficial de la PF.
-          </div>
-        </div>
-
-        <!-- Columna Derecha: Acceso -->
-        <div style="flex: 1 1 340px; padding: 48px 36px; display: flex; flex-direction: column; justify-content: center;">
-          <h2 style="font-size: 1.35rem; font-weight: 700; color: #102A56; margin: 0 0 6px;">Comienza aquí</h2>
-          <p style="font-size: 0.92rem; color: #667085; margin: 0 0 24px;">Accede para consultar tus registros y actualizaciones disponibles.</p>
-
-          <button class="google" id="btn-google" type="button" style="height: 52px; font-size: 0.96rem;">
-            <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true" style="margin-right: 4px;"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.5 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.2 5.5-4.7 7.2l7.6 5.9c4.4-4.1 6.9-10.1 6.9-17.6z"/><path fill="#FBBC05" d="M10.5 28.7A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.2.9-4.7l-7.9-6.1A24 24 0 0 0 0 24c0 3.9.9 7.5 2.6 10.8l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/></svg>
-            Continuar con Google
-          </button>
-
-          <p class="msg" id="msg-login" role="alert" style="text-align: center;"></p>
-
-          <div style="margin-top: 36px; padding-top: 20px; border-top: 1px solid #E4E7EC; font-size: 0.82rem; color: #667085; text-align: center;">
-            Al ingresar aceptas nuestros <a href="terminos.html" target="_blank" style="color: #155EEF; font-weight: 500;">Términos</a> y <a href="privacidad.html" target="_blank" style="color: #155EEF; font-weight: 500;">Política de Privacidad</a>.
-          </div>
-        </div>
-
+      <div class="fig-ilustra" aria-hidden="true">
+        <div class="fig-doc"><b>RNM</b><i></i><i style="width:70%"></i><em>A • • • • • • B</em></div>
+        <div class="fig-escudo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg></div>
       </div>
+
+      <p class="eyebrow-fig">Seguimiento migratorio</p>
+      <h1>¿Dónde está mi RNM?</h1>
+      <p class="sub">Tu documento, con información más clara. Te acompañamos a entender el próximo paso.</p>
+
+      <ul class="fig-bene">
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M12 8v13M3 12h18M12 8c-2 0-4-1-4-3 0-1.5 2-2 4 3 2-5 4-4.5 4-3 0 2-2 3-4 3z"/></svg><div><b>Primera consulta gratis</b><span>Para el primer RNM de tu cuenta.</span></div></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg><div><b>Seguimiento cada 7 días</b><span>Mientras tu plan esté activo, hasta que esté listo.</span></div></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg><div><b>Tus datos, con cuidado</b><span>Solo para informarte sobre tu documento.</span></div></li>
+      </ul>
+
+      <button class="google btn-fig" id="btn-google" type="button">
+        <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.5 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.2 5.5-4.7 7.2l7.6 5.9c4.4-4.1 6.9-10.1 6.9-17.6z"/><path fill="#FBBC05" d="M10.5 28.7A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.2.9-4.7l-7.9-6.1A24 24 0 0 0 0 24c0 3.9.9 7.5 2.6 10.8l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/></svg>
+        Comenzar con Google
+      </button>
+      <p class="msg" id="msg-login" role="alert" style="text-align:center"></p>
+      <p class="fig-nota">Servicio independiente desarrollado por FLUJO. No es un canal oficial de la PF.<br>Al ingresar aceptas los <a href="terminos.html" target="_blank">Términos</a> y la <a href="privacidad.html" target="_blank">Política de Privacidad</a>.</p>
     </div>
   </div>
 
