@@ -1422,3 +1422,39 @@ a.pay-boton { text-decoration: none; }
   .pay-titulo { font-size: 1.2rem; }
 }
 @media (max-width: 640px) { .pay-panel .fila { flex-direction: row; align-items: flex-start; } }
+
+/* ==========================================================================
+   TARJETAS MÁS COMPACTAS + estado por color en las filas de RNM
+   ========================================================================== */
+.tarjeta, .panel-card { padding: 16px 18px; margin-bottom: 12px; border-radius: var(--radius-md); }
+.tarjeta h2 { font-size: 1.2rem; margin: 0 0 4px; }
+.tarjeta h3 { font-size: 1.02rem; }
+.res { margin-top: 10px; padding: 12px 14px; }
+.res h3 { font-size: 0.98rem; margin-bottom: 4px; }
+.res p { margin: 3px 0; font-size: 0.88rem; }
+.page-header { margin-bottom: 14px; }
+.page-header-text h2 { font-size: 1.25rem; }
+.app-content { padding-top: 20px; }
+.app-header { height: 60px; }
+.next-step-card { padding: 12px 16px; margin-bottom: 16px; gap: 14px; }
+.next-step-content h3 { font-size: 0.98rem; }
+.review-summary-card { padding: 12px 16px; margin: 10px 0; }
+.review-row { padding: 8px 0; }
+.empty-state { padding: 28px 20px; margin: 12px 0; }
+.empty-state-icon { width: 48px; height: 48px; margin-bottom: 10px; }
+.history-card { padding: 12px 16px; margin-bottom: 8px; }
+.fila-rnm { padding: 11px 14px; margin-bottom: 8px; border-left: 4px solid var(--warning); }
+.fila-rnm.tono-ok { border-left-color: var(--success); }
+.fila-rnm.tono-mal { border-left-color: var(--danger); }
+.fila-rnm.tono-aviso { border-left-color: var(--warning); }
+.fila-rnm-info span { font-size: 0.84rem; }
+.insignia { padding: 3px 10px; font-size: 0.74rem; }
+.filter-pills { margin-bottom: 12px; }
+.timeline-content { padding: 9px 12px; }
+.timeline-item { margin-bottom: 12px; }
+@media (max-width: 640px) {
+  .tarjeta, .panel-card { padding: 14px; }
+  .app-content { padding: 14px 14px calc(var(--bottom-nav-h) + 28px); }
+  .fila-rnm-info span { white-space: normal; }
+}
+.saludo-fila { display: flex; justify-content: space-between; align-items: center; gap: 12px; }

@@ -169,14 +169,6 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
           Inicio
         </button>
-        <button type="button" class="nav-item" data-seccion="mis-rnm" id="nav-mis-rnm">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-          Mis RNM
-        </button>
-        <button type="button" class="nav-item" data-seccion="nueva-consulta" id="nav-nueva-consulta">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          Nueva consulta
-        </button>
         <button type="button" class="nav-item" data-seccion="historial" id="nav-historial">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
           Historial de consultas
@@ -243,32 +235,11 @@
           <div id="dashboard-otros"></div>
         </section>
 
-        <!-- SECCIÓN 2: MIS RNM (Pantalla 6) -->
-        <section id="seccion-mis-rnm" class="seccion-app oculto">
-          <div class="page-header">
-            <div class="page-header-text">
-              <h2>Mis RNM</h2>
-            </div>
-            <button type="button" class="btn" id="btn-nueva-consulta-mis-rnm" style="min-height: 42px; font-size: 0.9rem;">
-              + Nueva consulta
-            </button>
-          </div>
-
-          <!-- Filtros de estado -->
-          <div class="filter-pills" id="mis-rnm-filtros">
-            <button type="button" class="filter-pill active" data-filtro="todos">Todos (<span id="count-todos">0</span>)</button>
-            <button type="button" class="filter-pill" data-filtro="proceso">En trámite (<span id="count-proceso">0</span>)</button>
-            <button type="button" class="filter-pill" data-filtro="listos">Listos para retirar (<span id="count-listos">0</span>)</button>
-          </div>
-
-          <div id="lista-mis-rnm-clon"></div>
-        </section>
-
         <!-- SECCIÓN: DETALLE DEL RNM (Pantallas 7 y 8) -->
         <section id="seccion-detalle-rnm" class="seccion-app oculto">
           <div style="margin-bottom: 20px;">
             <button type="button" class="btn sec" id="btn-volver-mis-rnm" style="min-height: 38px; padding: 0 14px; font-size: 0.88rem;">
-              ← Volver a Mis RNM
+              ← Volver al inicio
             </button>
           </div>
           <div id="contenedor-detalle-rnm"></div>
@@ -276,6 +247,9 @@
 
         <!-- SECCIÓN 3: NUEVA CONSULTA (Pantallas 9, 10 y 11) -->
         <section id="seccion-nueva-consulta" class="seccion-app oculto">
+          <div style="max-width: 620px; margin: 0 auto 12px;">
+            <button type="button" class="btn sec" id="btn-volver-agregar" style="min-height: 38px; padding: 0 14px; font-size: 0.88rem;">← Volver al inicio</button>
+          </div>
           <div class="tarjeta" style="max-width: 620px; margin: 0 auto;">
 
             <!-- Barra de pasos (Stepper) -->
@@ -295,7 +269,7 @@
             <div id="paso-consulta-1">
               <div class="page-header" style="margin-bottom: 16px;">
                 <div class="page-header-text">
-                  <h2>Nueva consulta</h2>
+                  <h2>Agregar RNM</h2>
                   <p id="reg-gratis" class="sub">Tu <b>primera consulta es gratis</b>.</p>
                   <p id="reg-adicional" class="sub oculto">Los RNM adicionales requieren un <b>plan mensual</b> (desde R$ 4,99).</p>
                   <p id="tope-4" class="sub oculto">Llegaste al máximo de <b>4 RNM</b> por cuenta.</p>
@@ -395,7 +369,7 @@
               <details><summary>¿Cómo funciona la primera consulta gratis?</summary>
                 <p>El primer RNM de tu cuenta recibe su primera revisión sin costo. Para seguir vigilándolo hasta que esté listo, activas un plan mensual.</p></details>
               <details><summary>¿Cada cuánto se actualiza mi estado?</summary>
-                <p>Con un plan activo, el equipo de FLUJO repite la revisión periódicamente hasta que el documento esté listo, y esta pantalla se actualiza sola.</p></details>
+                <p>Con un plan activo, el equipo de FLUJO revisa tu RNM una vez por semana hasta que el documento esté listo, y esta pantalla se actualiza sola.</p></details>
               <details><summary>¿Cómo veo que mi pago se confirmó?</summary>
                 <p>Pagas dentro de la app con tarjeta, Pix o boleto (Mercado Pago). La tarjeta se renueva sola cada mes; Pix y boleto pagan un mes cada vez. Cuando el pago se confirma, tu plan aparece activo en Planes y pagos. Si tarda más de unos minutos, escríbenos.</p></details>
               <details><summary>No veo datos de mi RNM</summary>
@@ -460,13 +434,9 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
         Inicio
       </button>
-      <button type="button" class="bottom-nav-item" data-seccion="mis-rnm">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-        Mis RNM
-      </button>
-      <button type="button" class="bottom-nav-item" data-seccion="nueva-consulta">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-        Consulta
+      <button type="button" class="bottom-nav-item" data-seccion="historial">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        Historial
       </button>
       <button type="button" class="bottom-nav-item" data-seccion="planes">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
