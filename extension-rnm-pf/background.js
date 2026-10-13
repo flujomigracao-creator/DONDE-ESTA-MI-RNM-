@@ -171,6 +171,22 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         return siguiente(sender.tab?.id, msg.excluir);
       case 'empezar':
         return siguiente(null, null);
+      case 'cfLog': {
+        const { cfLog = [] } = await chrome.storage.local.get('cfLog');
+        cfLog.push({ t: Date.now(), seg: msg.seg, solo: !!msg.solo, timeout: !!msg.timeout });
+        await chrome.storage.local.set({ cfLog: cfLog.slice(-50) });
+        return true;
+      }
+      case 'cfStats': {
+        const { cfLog = [] } = await chrome.storage.local.get('cfLog');
+        const validos = cfLog.filter((x) => !x.timeout);
+        const solos = validos.filter((x) => x.solo);
+        const med = solos.length ? solos.map((x) => x.seg).sort((a, b) => a - b)[Math.floor(solos.length / 2)] : null;
+        return { total: cfLog.length, verificados: validos.length, solos: solos.length, tiempoOut: cfLog.length - validos.length, medianaSolo: med };
+      }
+      case 'cfReset':
+        await chrome.storage.local.remove('cfLog');
+        return true;
       case 'automatico':
         await chrome.storage.local.set({ automatico: msg.valor });
         return msg.valor;

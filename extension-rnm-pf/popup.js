@@ -41,6 +41,17 @@ async function cargar() {
   }
 }
 
+async function cargarCf() {
+  const s = await msg({ type: 'cfStats' }).catch(() => null);
+  if (!s || !s.total) return;
+  const pct = s.verificados ? Math.round((s.solos / s.verificados) * 100) : 0;
+  $('cf-resumen').textContent = 'Pasó solo ' + s.solos + ' de ' + s.verificados + ' veces (' + pct + ' %)' +
+    (s.medianaSolo != null ? ' · tarda ~' + s.medianaSolo + ' s' : '') +
+    (s.tiempoOut ? ' · ' + s.tiempoOut + ' sin resolver tras 3 min' : '') + '.';
+}
+$('cf-reset').onclick = async () => { await msg({ type: 'cfReset' }); $('cf-resumen').textContent = 'Prueba reiniciada.'; };
+cargarCf();
+
 $('entrar').onclick = async () => {
   $('msg-login').textContent = '';
   try { await msg({ type: 'login', email: $('email').value.trim(), password: $('pass').value }); $('pass').value = ''; cargar(); }

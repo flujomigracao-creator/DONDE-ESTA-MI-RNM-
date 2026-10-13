@@ -139,6 +139,28 @@ function vigilar() {
   };
 }
 
+// ---------- Prueba de Cloudflare (solo observa; NO marca ni resuelve nada) ----------
+// Mide cuánto tarda en aparecer el token de Cloudflare Turnstile y si hubo un clic de la persona en el widget.
+// Sirve para saber, con datos reales, cuántas veces la verificación pasa sola en el Chrome del operador.
+function medirCloudflare() {
+  const t0 = Date.now();
+  let hizoClic = false, hecho = false;
+  window.addEventListener('blur', () => { if (document.activeElement && document.activeElement.tagName === 'IFRAME') hizoClic = true; });
+  const iv = setInterval(() => {
+    const token = document.querySelector('[name="cf-turnstile-response"]')?.value;
+    const seg = Math.round((Date.now() - t0) / 100) / 10;
+    if (token && !hecho) {
+      hecho = true; clearInterval(iv);
+      const solo = !hizoClic;
+      msg({ type: 'cfLog', seg, solo }).catch(() => {});
+      if (!guardado) estado(`FLUJO · ${caso.rnm} — Cloudflare ${solo ? 'pasó solo en ' + seg + ' s' : 'verificado con tu clic'}. Pulsa Pesquisar.`, '#0f9d58');
+    } else if (!hecho && Date.now() - t0 > 180000) {
+      hecho = true; clearInterval(iv);
+      msg({ type: 'cfLog', seg: null, solo: false, timeout: true }).catch(() => {});
+    }
+  }, 500);
+}
+
 // ---------- Inicio ----------
 (async () => {
   const hash = new URLSearchParams(location.hash.replace(/^#/, '')).get('flujo');
@@ -153,4 +175,5 @@ function vigilar() {
   if (!llenar()) return estado('FLUJO: no encontré los campos de la consulta (¿la PF cambió la página?).', '#d93025');
   estado(`FLUJO · ${caso.primera ? '1.ª consulta (gratis) · ' : ''}RNM ${caso.rnm} · ${caso.nacimiento} — Marca "Verifique que es un ser humano" y pulsa Pesquisar.`);
   vigilar();
+  medirCloudflare();
 })();
