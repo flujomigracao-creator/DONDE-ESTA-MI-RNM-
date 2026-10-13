@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
   "name": "FLUJO – Consulta RNM (Polícia Federal)",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Toma la cola de RNM pagados de FLUJO, llena la consulta de la Polícia Federal y guarda el resultado para que el cliente lo vea en su app.",
-  "permissions": ["storage", "alarms"],
+  "permissions": ["storage", "alarms", "notifications"],
   "host_permissions": [
     "https://rumpfqevyspdmhaggxtq.supabase.co/*",
     "https://servicos.pf.gov.br/*"

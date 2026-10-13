@@ -10,6 +10,8 @@ async function cargar() {
   $('quien').textContent = s.email;
   const { automatico = true } = await chrome.storage.local.get('automatico');
   $('auto').checked = automatico;
+  const { autoTotal = false } = await chrome.storage.local.get('autoTotal');
+  $('autoTotal').checked = autoTotal;
   try {
     const p = await msg({ type: 'pendientes' });
     $('n-pend').textContent = p.length;
@@ -58,6 +60,7 @@ $('entrar').onclick = async () => {
   catch (e) { $('msg-login').textContent = e.message; }
 };
 $('salir').onclick = async () => { await msg({ type: 'logout' }); cargar(); };
+$('autoTotal').onchange = (e) => msg({ type: 'autoTotal', valor: e.target.checked }).then(() => { if (e.target.checked) $('auto').checked = true; });
 $('auto').onchange = (e) => msg({ type: 'automatico', valor: e.target.checked });
 $('empezar').onclick = async () => {
   try { const r = await msg({ type: 'empezar' }); if (!r.hayMas) $('msg-app').textContent = 'No hay RNM por consultar ahora.'; else window.close(); }

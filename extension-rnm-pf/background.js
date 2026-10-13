@@ -90,8 +90,13 @@ async function abrir(id, tabId) {
   abiertos[id] = Date.now();
   await chrome.storage.local.set({ abiertos, casoActivo: id });
   const url = `${PF_URL}#flujo=${id}`;
+  const { autoTotal = false } = await chrome.storage.local.get('autoTotal');
   if (tabId) await chrome.tabs.update(tabId, { url });
-  else await chrome.tabs.create({ url, active: true });
+  else if (autoTotal) {
+    // Modo automático: ventana aparte que no le quita el foco a quien esté trabajando.
+    const w = await chrome.windows.create({ url, focused: false, width: 1100, height: 800 });
+    await chrome.storage.local.set({ ventanaAuto: w.id });
+  } else await chrome.tabs.create({ url, active: true });
 }
 
 async function siguiente(tabId, excluir) {
@@ -171,6 +176,18 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         return siguiente(sender.tab?.id, msg.excluir);
       case 'empezar':
         return siguiente(null, null);
+      case 'avisar':
+        await chrome.notifications.create({ type: 'basic', iconUrl: chrome.runtime.getURL('icono.png'), title: msg.titulo, message: msg.texto, priority: 2 });
+        return true;
+      case 'cerrarAuto': {
+        const { ventanaAuto } = await chrome.storage.local.get('ventanaAuto');
+        if (ventanaAuto && sender.tab?.windowId === ventanaAuto) { await chrome.storage.local.remove('ventanaAuto'); await chrome.windows.remove(ventanaAuto); }
+        return true;
+      }
+      case 'autoTotal':
+        await chrome.storage.local.set({ autoTotal: msg.valor });
+        if (msg.valor) await chrome.storage.local.set({ automatico: true });
+        return msg.valor;
       case 'cfLog': {
         const { cfLog = [] } = await chrome.storage.local.get('cfLog');
         cfLog.push({ t: Date.now(), seg: msg.seg, solo: !!msg.solo, timeout: !!msg.timeout });

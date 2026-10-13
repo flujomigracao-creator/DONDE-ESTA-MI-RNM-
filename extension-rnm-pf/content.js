@@ -10,6 +10,7 @@ const msg = (m) => new Promise((resolve, reject) =>
 
 let caso = null;
 let guardado = false;
+let modoAuto = false;
 
 // ---------- Barra de estado ----------
 const barra = document.createElement('div');
@@ -113,9 +114,12 @@ async function guardar(res) {
       problema: "Problema en la solicitud", no_encontrado: "No encontrado", desconocido: "Resultado guardado" }[r.estado] || r.estado;
     const extra = (res.unidad ? " · " + res.unidad : "") + (res.cambio ? " · con cambio de dirección" : "");
     estado("✓ " + caso.rnm + ": " + etiqueta + extra + ". Pasando al siguiente…", r.estado === "problema" || r.estado === "pendencia" ? "#d93025" : "#0f9d58");
-    await new Promise((res2) => setTimeout(res2, 2500));
+    await new Promise((res2) => setTimeout(res2, modoAuto ? 8000 + Math.random() * 12000 : 2500));
     const sig = await msg({ type: "siguiente", excluir: caso.id });
-    if (!sig.hayMas) estado("✓ Listo. No quedan más RNM por consultar ahora.", "#0f9d58");
+    if (!sig.hayMas) {
+      estado("✓ Listo. No quedan más RNM por consultar ahora.", "#0f9d58");
+      if (modoAuto) { await new Promise((res2) => setTimeout(res2, 3000)); msg({ type: "cerrarAuto" }).catch(() => {}); }
+    }
   } catch (e) {
     guardado = false;
     estado("No se pudo guardar: " + e.message, "#d93025");
@@ -137,6 +141,46 @@ function vigilar() {
     if (!r) return estado("Aún no hay resultado visible. Pulsa Pesquisar.", "#e8a200");
     guardar(r);
   };
+}
+
+// ---------- Modo automático total ----------
+// Si el operador lo activó: espera a que Cloudflare valide SOLO (nunca marca ni resuelve la verificación),
+// pulsa "Pesquisar", y el resto sigue como siempre (leer, guardar, pasar al siguiente).
+// Si Cloudflare no valida solo, o la PF no responde, se detiene y avisa a una persona.
+const dormir = (ms) => new Promise((r) => setTimeout(r, ms));
+function botonPesquisar() {
+  const raiz = document.getElementById('formulario-pesquisar') || document;
+  return [...raiz.querySelectorAll('input[type=submit],input[type=button],button,a')]
+    .find((b) => /^\s*pesquisar\s*$/i.test(b.value || b.textContent || ''));
+}
+function avisar(texto) { msg({ type: 'avisar', titulo: 'FLUJO · Consulta RNM', texto }).catch(() => {}); }
+
+async function autoPesquisar() {
+  estado(`FLUJO · automático · RNM ${caso.rnm} — esperando a que Cloudflare verifique…`);
+  const t0 = Date.now();
+  let token = '';
+  while (Date.now() - t0 < 45000) {
+    token = document.querySelector('[name="cf-turnstile-response"]')?.value || '';
+    if (token) break;
+    await dormir(500);
+  }
+  if (!token) {
+    estado('FLUJO: Cloudflare no verificó solo. Marca la casilla y pulsa Pesquisar (el modo automático se detuvo en este RNM).', '#d93025');
+    return avisar(`Cloudflare pide verificación manual para el RNM ${caso.rnm}. Marca la casilla en la ventana de la PF.`);
+  }
+  await dormir(1500 + Math.random() * 2000);
+  const b = botonPesquisar();
+  if (!b) {
+    estado('FLUJO: no encontré el botón Pesquisar (¿la PF cambió la página?). Pulsa Pesquisar a mano.', '#d93025');
+    return avisar('No encontré el botón Pesquisar en la PF. Revisa la ventana.');
+  }
+  estado(`FLUJO · automático · RNM ${caso.rnm} — Cloudflare verificó solo. Consultando…`, '#0f9d58');
+  b.click();
+  await dormir(40000);
+  if (!guardado) {
+    estado('FLUJO: la PF no devolvió resultado a tiempo. Revisa la ventana y pulsa Pesquisar o "Guardar lo que veo".', '#d93025');
+    avisar(`La PF no respondió para el RNM ${caso.rnm}. Revisa la ventana.`);
+  }
 }
 
 // ---------- Prueba de Cloudflare (solo observa; NO marca ni resuelve nada) ----------
@@ -176,4 +220,6 @@ function medirCloudflare() {
   estado(`FLUJO · ${caso.primera ? '1.ª consulta (gratis) · ' : ''}RNM ${caso.rnm} · ${caso.nacimiento} — Marca "Verifique que es un ser humano" y pulsa Pesquisar.`);
   vigilar();
   medirCloudflare();
+  modoAuto = (await chrome.storage.local.get('autoTotal')).autoTotal === true;
+  if (modoAuto) autoPesquisar();
 })();

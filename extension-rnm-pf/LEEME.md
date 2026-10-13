@@ -24,3 +24,15 @@ En el menú de la extensión, **Cuentas por cobrar**: elige el plan que pagó el
 ## Seguridad
 La extensión usa la sesión del operador (nunca una clave de servicio) y la base la protege con RLS:
 solo cuentas del equipo pueden ver la cola o guardar resultados.
+
+## Modo automático total (v1.2.0)
+Casilla **Modo automático total** en el menú de la extensión. Con ella activa:
+1. Cada 2 min, si hay RNM por consultar, abre la PF en una **ventana aparte** que no te quita el foco.
+2. Llena RNM y fecha, **espera a que Cloudflare verifique solo** (hasta 45 s) y pulsa *Pesquisar*.
+3. Lee el resultado, lo guarda y, tras una pausa de 8–20 s, abre el siguiente. Al terminar la cola cierra su ventana.
+
+**Nunca marca ni resuelve la verificación de Cloudflare.** Si no valida sola, o la PF no devuelve resultado en 40 s, el bot se **detiene en ese RNM, deja la ventana abierta y manda una notificación** para que una persona la revise. Sin la casilla activa, todo funciona como antes.
+
+La **Prueba de Cloudflare** (v1.1.0) sigue midiendo cuántas veces pasa sola; se ve en el menú.
+
+Probado con una página que imita la PF (token a los 3 s → llenó, pulsó y guardó con la unidad; sin token → no pulsó y avisó). **No probado** contra la PF real, ni la ventana sin foco ni las notificaciones en Chrome real.
