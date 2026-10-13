@@ -43,6 +43,16 @@ async function cargar() {
   }
 }
 
+async function cargarEstadoBot() {
+  const e = await msg({ type: 'estadoBot' }).catch(() => null);
+  if (!e) return;
+  const partes = [];
+  if (e.pausaGlobalMin) partes.push('⏸ Descansando ' + e.pausaGlobalMin + ' min tras varios fallos seguidos.');
+  if (e.enEspera) partes.push(e.enEspera + (e.enEspera === 1 ? ' RNM espera' : ' RNM esperan') + ' su reintento.');
+  if (e.ultimoFallo) partes.push('Último fallo: ' + e.ultimoFallo.motivo + ' (' + new Date(e.ultimoFallo.t).toLocaleTimeString() + ').');
+  $('estado-bot').textContent = partes.join(' ');
+}
+cargarEstadoBot();
 async function cargarCf() {
   const s = await msg({ type: 'cfStats' }).catch(() => null);
   if (!s || !s.total) return;

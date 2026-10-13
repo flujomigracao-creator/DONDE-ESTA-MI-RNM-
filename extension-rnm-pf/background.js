@@ -99,9 +99,75 @@ async function abrir(id, tabId) {
   } else await chrome.tabs.create({ url, active: true });
 }
 
+// Reintentos inteligentes: si Cloudflare o la PF no dejan consultar un RNM, se reintenta con espera creciente
+// (2, 5, 15 y 30 min); tras 4 fallos ese RNM descansa 3 h. Con 3 fallos seguidos (de cualquier RNM) todo el bot descansa 30 min.
+const ESPERAS_MIN = [2, 5, 15, 30];
+const PAUSA_RNM_MS = 3 * 3600_000;
+const PAUSA_GLOBAL_MS = 30 * 60_000;
+const FALLOS_PARA_DESCANSAR = 3;
+
+async function estadoReintentos() {
+  const st = await chrome.storage.local.get(['intentos', 'pausaGlobal']);
+  return { intentos: st.intentos || {}, pausaGlobal: st.pausaGlobal || 0 };
+}
+// Lo que se puede consultar ahora: sin descanso global y sin RNM en espera de su reintento.
+async function disponibles(pendientes) {
+  const { intentos, pausaGlobal } = await estadoReintentos();
+  const ahora = Date.now();
+  if (pausaGlobal > ahora) return [];
+  return (pendientes || []).filter((c) => !(intentos[c.id]?.proximo > ahora));
+}
+// ¿hay algo cuyo reintento ya venció? (se abre aunque se haya abierto hace poco)
+async function reintentoVencido(id) {
+  const { intentos } = await estadoReintentos();
+  const p = intentos[id]?.proximo;
+  return !!p && p <= Date.now();
+}
+async function registrarFallo(id, motivo, ventanaId) {
+  const st = await chrome.storage.local.get(['intentos', 'fallosSeguidos']);
+  const intentos = st.intentos || {};
+  const it = intentos[id] || { n: 0 };
+  it.n += 1;
+  let mensaje, notificar = false;
+  if (it.n <= ESPERAS_MIN.length) {
+    it.proximo = Date.now() + ESPERAS_MIN[it.n - 1] * 60_000;
+    mensaje = 'Reintento automático ' + it.n + '/' + ESPERAS_MIN.length + ' en ' + ESPERAS_MIN[it.n - 1] + ' min.';
+  } else {
+    it.proximo = Date.now() + PAUSA_RNM_MS;
+    it.n = 0;
+    mensaje = 'Este RNM descansa 3 h tras ' + (ESPERAS_MIN.length + 1) + ' fallos.';
+    notificar = true;
+  }
+  intentos[id] = it;
+  const upd = { intentos, fallosSeguidos: (st.fallosSeguidos || 0) + 1, ultimoFallo: { id, motivo, t: Date.now() } };
+  if (upd.fallosSeguidos >= FALLOS_PARA_DESCANSAR) {
+    upd.pausaGlobal = Date.now() + PAUSA_GLOBAL_MS;
+    upd.fallosSeguidos = 0;
+    mensaje += ' ' + FALLOS_PARA_DESCANSAR + ' fallos seguidos: el bot descansa 30 min.';
+    notificar = true;
+  }
+  await chrome.storage.local.set(upd);
+  if (notificar) await avisar('FLUJO · Consulta RNM', 'La PF no dejó consultar (' + motivo + '). ' + mensaje);
+  // En modo automático la ventana se cierra; el reintento la vuelve a abrir cuando toque.
+  const { ventanaAuto } = await chrome.storage.local.get('ventanaAuto');
+  if (ventanaAuto && ventanaAuto === ventanaId) {
+    await chrome.storage.local.remove('ventanaAuto');
+    setTimeout(() => chrome.windows.remove(ventanaAuto).catch(() => {}), 5000);
+  }
+  return { mensaje };
+}
+async function registrarExito(id) {
+  const { intentos = {} } = await chrome.storage.local.get('intentos');
+  delete intentos[id];
+  await chrome.storage.local.set({ intentos, fallosSeguidos: 0 });
+}
+async function avisar(titulo, texto) {
+  await chrome.notifications.create({ type: 'basic', iconUrl: chrome.runtime.getURL('icono.png'), title: titulo, message: texto, priority: 2 });
+}
+
 async function siguiente(tabId, excluir) {
   const pendientes = await rpc('rnm_pendientes');
-  const sig = (pendientes || []).find((c) => c.id !== excluir);
+  const sig = (await disponibles(pendientes)).find((c) => c.id !== excluir);
   await actualizarBadge(pendientes);
   if (!sig) {
     await chrome.storage.local.remove('casoActivo');
@@ -126,7 +192,11 @@ async function revisarPendientes() {
   if (!automatico || !pendientes?.length) return;
   if ((await chrome.tabs.query({ url: PF_TABS })).length) return;
   const ahora = Date.now();
-  const sig = pendientes.find((c) => !abiertos[c.id] || ahora - abiertos[c.id] > REABRIR_MS);
+  const libres = await disponibles(pendientes);
+  let sig = null;
+  for (const c of libres) {
+    if ((await reintentoVencido(c.id)) || !abiertos[c.id] || ahora - abiertos[c.id] > REABRIR_MS) { sig = c; break; }
+  }
   if (sig) await abrir(sig.id);
 }
 
@@ -177,8 +247,19 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       case 'empezar':
         return siguiente(null, null);
       case 'avisar':
-        await chrome.notifications.create({ type: 'basic', iconUrl: chrome.runtime.getURL('icono.png'), title: msg.titulo, message: msg.texto, priority: 2 });
+        await avisar(msg.titulo, msg.texto);
         return true;
+      case 'fallo':
+        return registrarFallo(msg.id, msg.motivo, sender.tab?.windowId);
+      case 'exito':
+        await registrarExito(msg.id);
+        return true;
+      case 'estadoBot': {
+        const st = await chrome.storage.local.get(['intentos', 'pausaGlobal', 'ultimoFallo']);
+        const ahora = Date.now();
+        const enEspera = Object.values(st.intentos || {}).filter((x) => x.proximo > ahora).length;
+        return { pausaGlobalMin: st.pausaGlobal > ahora ? Math.ceil((st.pausaGlobal - ahora) / 60000) : 0, enEspera, ultimoFallo: st.ultimoFallo || null };
+      }
       case 'cerrarAuto': {
         const { ventanaAuto } = await chrome.storage.local.get('ventanaAuto');
         if (ventanaAuto && sender.tab?.windowId === ventanaAuto) { await chrome.storage.local.remove('ventanaAuto'); await chrome.windows.remove(ventanaAuto); }

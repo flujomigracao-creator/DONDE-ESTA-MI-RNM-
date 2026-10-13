@@ -110,6 +110,7 @@ async function guardar(res) {
   estado("Guardando resultado…");
   try {
     const r = await msg({ type: "guardar", id: caso.id, texto: res.texto, unidad: res.unidad, cambio: res.cambio });
+    msg({ type: "exito", id: caso.id }).catch(() => {});
     const etiqueta = { listo: "¡Documento LISTO!", entregado: "Documento entregado", proceso: "En proceso", pendencia: "Con pendencia",
       problema: "Problema en la solicitud", no_encontrado: "No encontrado", desconocido: "Resultado guardado" }[r.estado] || r.estado;
     const extra = (res.unidad ? " · " + res.unidad : "") + (res.cambio ? " · con cambio de dirección" : "");
@@ -164,22 +165,24 @@ async function autoPesquisar() {
     if (token) break;
     await dormir(500);
   }
-  if (!token) {
-    estado('FLUJO: Cloudflare no verificó solo. Marca la casilla y pulsa Pesquisar (el modo automático se detuvo en este RNM).', '#d93025');
-    return avisar(`Cloudflare pide verificación manual para el RNM ${caso.rnm}. Marca la casilla en la ventana de la PF.`);
-  }
+  if (!token) return fallarAuto('Cloudflare no verificó solo', 'Cloudflare no verificó solo.');
   await dormir(1500 + Math.random() * 2000);
   const b = botonPesquisar();
-  if (!b) {
-    estado('FLUJO: no encontré el botón Pesquisar (¿la PF cambió la página?). Pulsa Pesquisar a mano.', '#d93025');
-    return avisar('No encontré el botón Pesquisar en la PF. Revisa la ventana.');
-  }
+  if (!b) return fallarAuto('no encontré el botón Pesquisar', 'No encontré el botón Pesquisar (¿la PF cambió la página?).');
   estado(`FLUJO · automático · RNM ${caso.rnm} — Cloudflare verificó solo. Consultando…`, '#0f9d58');
   b.click();
   await dormir(40000);
-  if (!guardado) {
-    estado('FLUJO: la PF no devolvió resultado a tiempo. Revisa la ventana y pulsa Pesquisar o "Guardar lo que veo".', '#d93025');
-    avisar(`La PF no respondió para el RNM ${caso.rnm}. Revisa la ventana.`);
+  if (!guardado) return fallarAuto('la PF no respondió a tiempo', 'La PF no devolvió resultado a tiempo.');
+}
+
+// Fallo en modo automático: se registra, se calcula el reintento (2, 5, 15, 30 min; luego 3 h) y la ventana se cierra sola.
+async function fallarAuto(motivo, texto) {
+  estado('FLUJO: ' + texto + ' Registrando para reintentar…', '#d93025');
+  try {
+    const r = await msg({ type: 'fallo', id: caso.id, motivo });
+    estado('FLUJO: ' + texto + ' ' + r.mensaje + ' (esta ventana se cierra sola; si quieres, marca la casilla y pulsa Pesquisar ahora).', '#d93025');
+  } catch (e) {
+    estado('FLUJO: ' + texto + ' (' + e.message + ')', '#d93025');
   }
 }
 

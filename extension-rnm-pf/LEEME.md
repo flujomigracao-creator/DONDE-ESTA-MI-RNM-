@@ -36,3 +36,15 @@ Casilla **Modo automático total** en el menú de la extensión. Con ella activa
 La **Prueba de Cloudflare** (v1.1.0) sigue midiendo cuántas veces pasa sola; se ve en el menú.
 
 Probado con una página que imita la PF (token a los 3 s → llenó, pulsó y guardó con la unidad; sin token → no pulsó y avisó). **No probado** contra la PF real, ni la ventana sin foco ni las notificaciones en Chrome real.
+
+## Reintentos inteligentes (v1.3.0)
+Si Cloudflare no verifica solo, no aparece el botón o la PF no responde (modo automático):
+- El fallo se registra y ese RNM se **reintenta con espera creciente: 2 → 5 → 15 → 30 min**. Tras el 5.º fallo **descansa 3 h** y llega una notificación.
+- Con **3 fallos seguidos** (de cualquier RNM) **todo el bot descansa 30 min** y avisa (evita insistir mientras Cloudflare está exigente).
+- Mientras un RNM espera, el bot sigue con los demás; un éxito reinicia los contadores. La ventana del intento fallido se cierra sola.
+- El menú muestra el estado: descanso activo, cuántos RNM esperan reintento y el último fallo.
+
+Probado con una simulación del servicio de fondo (escalera de esperas, descanso global, regreso a la cola, reinicio tras éxito). **No probado** en Chrome real contra la PF.
+
+## Límite importante: necesita un Chrome real encendido
+El bot corre dentro de **un Chrome real con la extensión**, así que solo trabaja mientras ese equipo esté encendido, con sesión abierta y Chrome abierto. No funciona en un servidor sin pantalla: Cloudflare detecta esos navegadores, y esta extensión nunca intenta engañarlo.
