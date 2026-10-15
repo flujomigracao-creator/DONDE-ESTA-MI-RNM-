@@ -422,3 +422,51 @@ button, .btn, .btn-enlace, .filter-pill, .nav-item, .bottom-nav-item, summary { 
 /* Fase 7 · QA: áreas táctiles de 44 px en enlaces-botón */
 .titulo-sec button { min-height: 44px; padding: 0 4px; }
 .pay-top button { min-height: 44px; }
+
+/* ==========================================================================
+   IDENTIDAD FLUJO MIGRAÇÃO: paleta de la marca (azul marino + verde/amarillo de Brasil),
+   logo real en lugar del icono genérico, y señales de confianza.
+   ========================================================================== */
+:root {
+  --brand: #0E3F8E;
+  --brand-hover: #0A2A5E;
+  --brand-soft: #E8EEF8;
+  --brand-line: #C3D1EA;
+  --navy: #0A2A5E;
+  --verde-marca: #13803D;
+  --amarillo-marca: #F7C600;
+  --text-main: #0F1E3D;
+}
+.btn, button:not(.sec):not(.danger):not(.google):not(.plan):not(.metodo):not(.filter-pill):not(.cerrar):not(.nav-item):not(.bottom-nav-item):not(.btn-quitar):not(.btn-texto) { background-color: var(--brand); }
+.fig-login .btn-fig, .hero-fig, .plan-card.actual { --brand: #0E3F8E; }
+.hero-fig, .plan-card.actual { background-color: var(--navy); }
+.hero-fig { position: relative; overflow: hidden; }
+.hero-fig::after { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 5px; background: linear-gradient(90deg, var(--verde-marca) 0 55%, var(--amarillo-marca) 55% 100%); }
+.insignia.ok, .aviso-coste.gratis, .estado.ok { --success: #13803D; }
+
+/* Barra superior con el logo real y la franja de la marca */
+.app-header { position: sticky; }
+.app-header::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 3px; background: linear-gradient(90deg, var(--verde-marca) 0 60%, var(--amarillo-marca) 60% 100%); }
+.header-title-box::before { width: 46px; height: 30px; border-radius: 0; background-color: transparent; background-image: url("logo-marca.png"); background-size: contain; background-repeat: no-repeat; background-position: left center; }
+
+/* Bienvenida: la marca de FLUJO como protagonista (sin ilustración genérica) */
+.fig-barra { padding: 12px 20px; }
+.fig-barra span { font-weight: 800; letter-spacing: 0.01em; color: var(--navy); }
+.fig-barra b { color: var(--verde-marca); font-weight: 800; }
+.fig-marca { height: 29px; width: auto; flex: none; }
+.fig-hero-marca { margin: 6px 0 22px; padding: 26px 20px 20px; border-radius: 24px; background: #fff; border: 1px solid var(--line); display: grid; place-items: center; position: relative; overflow: hidden; box-shadow: 0 8px 28px rgba(10, 42, 94, 0.08); }
+.fig-hero-marca::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 5px; background: linear-gradient(90deg, var(--verde-marca) 0 60%, var(--amarillo-marca) 60% 100%); }
+.fig-hero-marca img { width: min(210px, 62%); height: auto; }
+.fig-confianza { list-style: none; margin: 18px 0 0; padding: var(--sp-4); border-radius: 16px; background: #fff; border: 1px solid var(--line); display: grid; gap: var(--sp-3); }
+.fig-confianza li { display: flex; gap: var(--sp-3); align-items: flex-start; font-size: 0.86rem; line-height: 1.4; color: var(--text-muted); }
+.fig-confianza svg { width: 22px; height: 22px; color: var(--verde-marca); flex: none; margin-top: 1px; }
+.fig-confianza b { color: var(--text-main); }
+
+/* Pie y "quiénes somos" */
+.pie { line-height: 1.6; }
+.pie-marca { height: 26px; width: auto; margin-bottom: 4px; }
+.pie b { color: var(--navy); }
+.quienes-somos { display: flex; gap: var(--sp-4); align-items: center; border-left: 4px solid var(--verde-marca); }
+.quienes-somos img { flex: none; width: 64px; height: auto; }
+.quienes-somos b { display: block; font-size: 1.05rem; color: var(--navy); }
+.quienes-somos span { font-size: 0.88rem; color: var(--text-muted); line-height: 1.45; }
