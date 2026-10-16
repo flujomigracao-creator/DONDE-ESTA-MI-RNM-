@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Cifras del aliado</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<style>
+  :root { --fondo: #F5F7FB; --tarjeta: #fff; --texto: #0F1B33; --suave: #5B6B86; --linea: #E1E7F2; --azul: #0E3F8E; --verde: #13803D; --ambar: #B26A00; }
+  @media (prefers-color-scheme: dark) { :root { --fondo: #0B1220; --tarjeta: #121B2E; --texto: #E8EEFA; --suave: #9AA9C4; --linea: #223152; --azul: #6FA3FF; --verde: #4CD08A; --ambar: #F2B24D; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--fondo); color: var(--texto); font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 980px; margin: 0 auto; padding: 20px 16px 48px; }
+  h1 { margin: 6px 0 2px; font-size: 1.5rem; letter-spacing: -0.02em; }
+  .sub { color: var(--suave); margin: 0 0 18px; font-size: 0.92rem; }
+  .enlace { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 12px 14px; border-radius: 14px; background: var(--tarjeta); border: 1px solid var(--linea); margin-bottom: 16px; }
+  .enlace code { flex: 1; min-width: 200px; word-break: break-all; font-size: 0.88rem; color: var(--azul); }
+  button { min-height: 44px; padding: 0 16px; border: 0; border-radius: 12px; background: var(--azul); color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+  @media (prefers-color-scheme: dark) { button { color: #0B1220; } }
+  .cifras { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-bottom: 18px; }
+  .cifra { padding: 14px; border-radius: 16px; background: var(--tarjeta); border: 1px solid var(--linea); }
+  .cifra small { display: block; color: var(--suave); font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+  .cifra b { display: block; margin-top: 4px; font-size: 1.45rem; letter-spacing: -0.02em; }
+  .cifra.destacada b { color: var(--verde); }
+  .cifra.pendiente b { color: var(--ambar); }
+  .tabla { overflow-x: auto; border-radius: 16px; background: var(--tarjeta); border: 1px solid var(--linea); }
+  table { width: 100%; border-collapse: collapse; min-width: 640px; font-size: 0.9rem; }
+  th, td { padding: 11px 12px; text-align: right; border-bottom: 1px solid var(--linea); white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; }
+  th { color: var(--suave); font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  tr:last-child td { border-bottom: 0; }
+  .nota { margin-top: 16px; padding: 12px 14px; border-radius: 14px; background: var(--tarjeta); border: 1px solid var(--linea); color: var(--suave); font-size: 0.85rem; }
+  .nota p { margin: 0 0 6px; } .nota p:last-child { margin: 0; }
+  .error { padding: 24px; text-align: center; color: var(--suave); }
+</style>
+</head>
+<body>
+<main id="app"><p class="error">Cargando cifras…</p></main>
+<script>
+(function () {
+  var FUNCION = "https://rumpfqevyspdmhaggxtq.supabase.co/functions/v1/aliado-metricas";
+  var app = document.getElementById("app");
+  var token = new URLSearchParams(location.search).get("t") || "";
+  var reales = function (c) { return "R$ " + (Number(c || 0) / 100).toLocaleString("es", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
+  var MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+  var nombreMes = function (iso) { var p = String(iso).split("-"); return MESES[Number(p[1]) - 1] + " " + p[0]; };
+  function e(t, c, h) { var n = document.createElement(t); if (c) n.className = c; if (h !== undefined) n.textContent = h; return n; }
+
+  function error(t) { app.textContent = ""; app.appendChild(e("p", "error", t)); }
+  if (!/^[a-f0-9]{48}$/.test(token)) return error("Este enlace no es válido. Pide el enlace correcto a quien te lo dio.");
+
+  fetch(FUNCION + "?t=" + encodeURIComponent(token)).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); }).then(function (x) {
+    if (!x.ok || !x.d.ok) return error("Este enlace no es válido o fue desactivado.");
+    var d = x.d, t = d.totales;
+    document.title = "Cifras · " + d.aliado.nombre;
+    app.textContent = "";
+    app.appendChild(e("h1", "", "Cifras de " + d.aliado.nombre));
+    app.appendChild(e("p", "sub", "Tu parte es el " + d.aliado.porcentaje + " % de lo que entra de cada pago de tus clientes, después de la comisión de Mercado Pago."));
+
+    var env = e("div", "enlace");
+    env.appendChild(e("span", "", "Enlace para tus clientes:"));
+    var code = e("code", "", d.enlace_para_clientes); env.appendChild(code);
+    var copiar = e("button", "", "Copiar"); copiar.type = "button";
+    copiar.addEventListener("click", function () {
+      var ok = function () { copiar.textContent = "¡Copiado!"; setTimeout(function () { copiar.textContent = "Copiar"; }, 1600); };
+      if (navigator.clipboard) navigator.clipboard.writeText(d.enlace_para_clientes).then(ok, ok); else ok();
+    });
+    env.appendChild(copiar);
+    app.appendChild(env);
+
+    var cifras = e("div", "cifras");
+    [["Clientes que llegaron", String(t.clientes), ""], ["Con plan activo ahora", String(t.con_plan_activo), ""],
+     ["Entró (bruto)", reales(t.bruto_centavos), ""], ["Neto tras comisiones", reales(t.neto_centavos), ""],
+     ["Tu parte", reales(t.parte_aliado_centavos), "destacada"], ["Ya pagado", reales(t.pagado_centavos), ""],
+     ["Pendiente de pago", reales(t.pendiente_centavos), "pendiente"]].forEach(function (c) {
+      var b = e("div", "cifra " + c[2]); b.appendChild(e("small", "", c[0])); b.appendChild(e("b", "", c[1])); cifras.appendChild(b);
+    });
+    app.appendChild(cifras);
+
+    var wrap = e("div", "tabla"), tabla = e("table"), cab = e("tr");
+    ["Mes", "Llegaron", "Con RNM", "Pagaron", "Bruto", "Comisión MP", "Neto", "Tu parte", "Pagado"].forEach(function (h) { cab.appendChild(e("th", "", h)); });
+    var thead = e("thead"); thead.appendChild(cab); tabla.appendChild(thead);
+    var tbody = e("tbody");
+    if (!d.meses.length) { var vacio = e("tr"); var td = e("td", "", "Todavía no hay clientes. Cuando alguien entre con tu enlace, aparecerá aquí."); td.colSpan = 9; td.style.textAlign = "center"; vacio.appendChild(td); tbody.appendChild(vacio); }
+    d.meses.forEach(function (m) {
+      var tr = e("tr");
+      [nombreMes(m.mes), m.llegaron, m.con_rnm, m.clientes_que_pagaron, reales(m.bruto_centavos),
+       m.pagos_sin_neto ? reales(m.comision_centavos) + " *" : reales(m.comision_centavos), reales(m.neto_centavos),
+       reales(m.parte_aliado_centavos), m.liquidado_centavos ? reales(m.liquidado_centavos) : "—"].forEach(function (v) { tr.appendChild(e("td", "", String(v))); });
+      tbody.appendChild(tr);
+    });
+    tabla.appendChild(tbody); wrap.appendChild(tabla); app.appendChild(wrap);
+
+    var nota = e("div", "nota");
+    nota.appendChild(e("p", "", "Las cifras son solo totales: aquí no aparecen nombres, teléfonos ni documentos de los clientes."));
+    nota.appendChild(e("p", "", "Un cliente es tuyo para siempre mientras mantenga un plan activo: cada pago suyo cuenta para el reparto."));
+    nota.appendChild(e("p", "", "El pago se liquida una vez al mes."));
+    if (t.pagos_sin_neto) nota.appendChild(e("p", "", "* " + t.pagos_sin_neto + " pago(s) todavía sin la comisión confirmada por Mercado Pago; se completa solo."));
+    app.appendChild(nota);
+  }).catch(function () { error("No pudimos cargar las cifras ahora. Intenta de nuevo en un momento."); });
+})();
+</script>
+</body>
+</html>

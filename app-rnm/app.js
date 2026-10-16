@@ -16,12 +16,25 @@ var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 (function () {
   try {
     var q = new URLSearchParams(location.search), cupos = Number(q.get("plan")), metodo = q.get("pago");
+    var ref = String(q.get("ref") || "").toLowerCase();
+    if (/^[a-z0-9_-]{3,40}$/.test(ref)) {
+      localStorage.setItem("rnm_ref", ref);
+      history.replaceState(null, "", location.pathname + location.hash);
+    }
     if (cupos >= 1 && cupos <= 4) {
       localStorage.setItem("rnm_ir_pago", JSON.stringify({ cupos: cupos, metodo: metodo === "boleto" ? "boleto" : "pix", t: Date.now() }));
       history.replaceState(null, "", location.pathname + location.hash);
     }
   } catch (e) { /* sin almacenamiento: simplemente no se abre el pago solo */ }
 })();
+function asignarAliado() {
+  var ref;
+  try { ref = localStorage.getItem("rnm_ref"); } catch (e) { return; }
+  if (!ref || !usuarioActual) return;
+  sb.rpc("rnm_asignar_aliado", { p_codigo: ref }).then(function (r) {
+    if (!r.error) { try { localStorage.removeItem("rnm_ref"); } catch (e) { /* sin almacenamiento */ } }
+  });
+}
 function consumirIrAPago() {
   var d;
   try { d = JSON.parse(localStorage.getItem("rnm_ir_pago") || "null"); localStorage.removeItem("rnm_ir_pago"); } catch (e) { return; }
@@ -197,6 +210,7 @@ async function mostrar(session) {
     salidaManual = false;
     return vista("login");
   }
+  asignarAliado();
   if (!cambio) return;
   var r = await sb.from("rnm_perfiles").select("*").eq("user_id", session.user.id).maybeSingle();
   perfilActual = r.data || null;
