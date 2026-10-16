@@ -996,8 +996,10 @@ button.sec:hover:not(:disabled) { border-color: var(--brand-line); background: v
 .btn-cancelar-plan:hover { color: #b3261e; border-color: #b3261e; }
 
 /* ---------- Ajustes para celulares (pantallas y scrolls) ---------- */
-html { overflow-x: hidden; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; scroll-padding-top: 76px; scroll-padding-bottom: 100px; }
-body { overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; scroll-padding-top: 76px; scroll-padding-bottom: 100px; }
+body { -webkit-tap-highlight-color: transparent; }
+/* Sin barra lateral: lo que sobresalga se recorta sin crear una caja de scroll (overflow:hidden en html y body rompe el scroll en celulares). */
+.app-main { overflow-x: clip; }
 button, a, input, select, textarea, label, summary { touch-action: manipulation; }
 /* Con 16 px o más el iPhone no hace zoom al tocar un campo (con menos, la pantalla queda ampliada y desplazada). */
 input, select, textarea, input[type="text"], input[type="email"], input[type="password"], input[type="tel"], input[type="number"] { font-size: 16px; }
@@ -1023,3 +1025,4 @@ body.escribiendo .app-content { padding-bottom: 24px; }
 @media (max-width: 360px) { .perfil-stats .stat { padding: 14px 12px; } .plan-op { padding: 16px 14px 14px; } .plan-op-precio strong { font-size: 1.5rem; } }
 .plan-op-puntos, .plan-op-puntos li { min-width: 0; max-width: 100%; }
 .plan-op-puntos li { overflow-wrap: anywhere; }
+/* v72 */
