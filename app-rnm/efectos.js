@@ -120,4 +120,15 @@
     var copiar = window.copiarTexto;
     window.copiarTexto = function (t, b) { copiar(t, b); window.toast("Código copiado", "ok"); vibrar(10); };
   }
+
+  /* ---------- Teclado abierto: se esconde la barra inferior y el campo queda a la vista ---------- */
+  var esCampo = function (e) { return e && /^(INPUT|TEXTAREA|SELECT)$/.test(e.tagName) && !/^(checkbox|radio|button|submit|file|hidden)$/.test(e.type || ""); };
+  document.addEventListener("focusin", function (e) {
+    if (!esCampo(e.target)) return;
+    document.body.classList.add("escribiendo");
+    setTimeout(function () { try { e.target.scrollIntoView({ block: "center", behavior: "smooth" }); } catch (x) { /* sin scroll */ } }, 300);
+  });
+  document.addEventListener("focusout", function () {
+    setTimeout(function () { if (!esCampo(document.activeElement)) document.body.classList.remove("escribiendo"); }, 120);
+  });
 })();

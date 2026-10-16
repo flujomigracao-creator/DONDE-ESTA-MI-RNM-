@@ -994,3 +994,32 @@ button.sec:hover:not(:disabled) { border-color: var(--brand-line); background: v
 
 .btn-cancelar-plan { color: var(--text-muted); }
 .btn-cancelar-plan:hover { color: #b3261e; border-color: #b3261e; }
+
+/* ---------- Ajustes para celulares (pantallas y scrolls) ---------- */
+html { overflow-x: hidden; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; scroll-padding-top: 76px; scroll-padding-bottom: 100px; }
+body { overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
+button, a, input, select, textarea, label, summary { touch-action: manipulation; }
+/* Con 16 px o más el iPhone no hace zoom al tocar un campo (con menos, la pantalla queda ampliada y desplazada). */
+input, select, textarea, input[type="text"], input[type="email"], input[type="password"], input[type="tel"], input[type="number"] { font-size: 16px; }
+/* La altura de pantalla del celular cambia con la barra del navegador: 100dvh la sigue, 100vh no. */
+@supports (height: 100dvh) {
+  #vista-login, #vista-perfil, #vista-perfil:not(.oculto), .app-shell { min-height: 100dvh; }
+  .app-main, .app-shell > div { min-height: 100dvh; }
+  #modal-planes .modal-caja { max-height: 92dvh; }
+  .modal-caja { max-height: 94dvh; }
+}
+/* El scroll de una ventana no arrastra la pantalla de atrás, y la pantalla de atrás queda quieta mientras hay una ventana abierta. */
+.modal-caja, #cartel { overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+body:has(.modal:not(.oculto)), body:has(.camara:not(.oculto)) { overflow: hidden; }
+/* Con el teclado abierto la barra inferior tapa el campo: se esconde mientras se escribe. */
+body.escribiendo .app-bottom-nav { display: none; }
+body.escribiendo .app-content { padding-bottom: 24px; }
+/* Celulares angostos (320 px): las columnas pueden encogerse en vez de empujar la pantalla hacia los lados. */
+.perfil-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.perfil-stats .stat, .perfil-stats .stat b, .perfil-stats .stat span { min-width: 0; overflow-wrap: anywhere; }
+.planes-op { grid-template-columns: minmax(0, 1fr); }
+.plan-op { min-width: 0; max-width: 100%; }
+.plan-op-cab { flex-wrap: wrap; }
+@media (max-width: 360px) { .perfil-stats .stat { padding: 14px 12px; } .plan-op { padding: 16px 14px 14px; } .plan-op-precio strong { font-size: 1.5rem; } }
+.plan-op-puntos, .plan-op-puntos li { min-width: 0; max-width: 100%; }
+.plan-op-puntos li { overflow-wrap: anywhere; }
