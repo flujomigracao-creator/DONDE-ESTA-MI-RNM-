@@ -592,7 +592,7 @@ async function abrirCamara(modo) {
   $("camara-disparo").classList.toggle("oculto", modo !== "frente");
   $("camara-pasos").classList.toggle("oculto", modo !== "auto");
   $("camara-listo").classList.toggle("oculto", modo !== "auto");
-  $("camara-texto").textContent = modo === "qr" ? "Apunta al código QR del verso del carné. Se leerá solo." : (modo === "auto" ? "Muestra el frente de tu carné dentro del marco, con buena luz y sin reflejos." : "Pon el frente del carné dentro del marco, con buena luz y sin reflejos.");
+  $("camara-texto").textContent = modo === "qr" ? "Apunta al código QR del verso del carné. Se leerá solo." : (modo === "auto" ? "Paso 1: muestra el FRENTE de tu carné dentro del marco, con buena luz y sin reflejos." : "Pon el frente del carné dentro del marco, con buena luz y sin reflejos.");
   try { await video.play(); } catch (e) { /* algunos navegadores ya lo reproducen */ }
   $("camara-cancelar").focus();
   if (modo === "frente") {
@@ -619,21 +619,23 @@ async function abrirCamara(modo) {
     })();
   } else {
     // Modo automático: reconoce solo el frente (IA, cuando la imagen está nítida y quieta) y el QR del verso (local, en cada fotograma).
-    var hechoFrente = false, hechoQR = false, envios = 0, ultimoEnvio = Date.now() - 2000, leyendo = false, prev = null, ini = Date.now();
+    var hechoFrente = false, hechoQR = false, envios = 0, ultimoEnvio = Date.now() - 2000, leyendo = false, prev = null, ini = Date.now(), frenteListoEn = 0;
     $("cp-frente").className = ""; $("cp-qr").className = "";
     $("camara-listo").onclick = cerrarCamara;
     var actualizarTexto = function () {
-      $("cp-frente").className = hechoFrente ? "ok" : ""; $("cp-qr").className = hechoQR ? "ok" : "";
+      $("cp-frente").className = hechoFrente ? "ok" : "actual";
+      $("cp-qr").className = hechoQR ? "ok" : (hechoFrente ? "actual" : "");
+      $("camara").setAttribute("data-modo", hechoFrente ? "qr" : "auto"); // el marco pasa a cuadrado para el QR
       $("camara-texto").textContent = hechoFrente && hechoQR ? "¡Listo! Leímos tu carné."
-        : hechoFrente ? "Frente leído. Ahora gira el carné y muestra el QR del verso."
-        : hechoQR ? "QR leído. Ahora muestra el frente del carné dentro del marco."
-        : "Muestra el frente de tu carné dentro del marco, con buena luz y sin reflejos.";
+        : hechoFrente ? "Frente leído ✓ Paso 2: gira el carné y muestra el VERSO, con el código QR."
+        : "Paso 1: muestra el FRENTE de tu carné dentro del marco, con buena luz y sin reflejos.";
     };
+    actualizarTexto();
     (async function bucleAuto() {
       while (!cam.parar) {
         if (video.videoWidth) {
           var chico = capturarFotograma(video, 900);
-          if (!hechoQR) {
+          if (hechoFrente && !hechoQR && Date.now() - frenteListoEn > 1800) {
             try {
               var tx = await leerQR(chico);
               if (tx && !cam.parar) { hechoQR = true; if (navigator.vibrate) navigator.vibrate(60); validarQR(tx); actualizarTexto(); }
@@ -642,14 +644,14 @@ async function abrirCamara(modo) {
           var ahora = Date.now(), hue = huellaImagen(chico);
           var quieta = prev && diferenciaHuella(prev, hue) < 14;
           prev = hue;
-          // Se manda a la IA solo si la imagen está quieta y con detalle; si pasan 9 s sin poder, se manda igual (máx. 5 envíos)
-          if (!hechoFrente && !leyendo && envios < 5 && ahora - ultimoEnvio > 3000 && ((quieta && detalleHuella(hue) > 6) || ahora - ultimoEnvio > 9000)) {
+          // Se manda a la IA solo si la imagen está quieta y con detalle; si pasan 6 s sin poder, se manda igual (máx. 5 envíos)
+          if (!hechoFrente && !leyendo && envios < 5 && ahora - ultimoEnvio > 3000 && ((quieta && detalleHuella(hue) > 6) || ahora - ultimoEnvio > 6000)) {
             leyendo = true; envios++; ultimoEnvio = ahora;
             $("camara-texto").textContent = "Leyendo el frente…";
             var grande = capturarFotograma(video, 1600);
             grande.toBlob(function (b) {
               if (!b) { leyendo = false; return; }
-              leerFrente({ blob: b, canvas: grande }).then(function (ok) { if (ok) hechoFrente = true; }).finally(function () { leyendo = false; if (!cam.parar) actualizarTexto(); });
+              leerFrente({ blob: b, canvas: grande }).then(function (ok) { if (ok) { hechoFrente = true; frenteListoEn = Date.now(); if (navigator.vibrate) navigator.vibrate(40); } }).finally(function () { leyendo = false; if (!cam.parar) actualizarTexto(); });
             }, "image/jpeg", 0.85);
           }
         }
