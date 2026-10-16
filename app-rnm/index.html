@@ -273,6 +273,11 @@
                 <h2 class="wiz-titulo" id="wiz-titulo">¿Cuál es tu número de RNM?</h2>
                 <div class="escaner" id="escaner">
                   <p class="escaner-titulo"><b>Más rápido:</b> escanea tu carné</p>
+                  <button type="button" class="escaner-auto" id="btn-escanear-auto">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8V6a2 2 0 012-2h2M16 4h2a2 2 0 012 2v2M20 16v2a2 2 0 01-2 2h-2M8 20H6a2 2 0 01-2-2v-2"/><path d="M8 9h8M8 12h8M8 15h5"/></svg>
+                    <span><b>Escanear todo automáticamente</b><small>Muestra el frente y luego el QR del verso</small></span>
+                  </button>
+                  <p class="escaner-o">o por separado</p>
                   <div class="escaner-botones">
                     <button type="button" class="escaner-btn" id="btn-escanear-frente">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8a2 2 0 012-2h1.5l1-1.5h7L16.5 6H18a2 2 0 012 2v9a2 2 0 01-2 2H6a2 2 0 01-2-2z"/><circle cx="12" cy="12.5" r="3.2"/></svg>
@@ -511,10 +516,11 @@
     <video id="camara-video" playsinline muted autoplay></video>
     <div class="camara-guia" id="camara-guia" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
     <p class="camara-texto" id="camara-texto" role="status" aria-live="polite"></p>
+    <ul class="camara-pasos oculto" id="camara-pasos" aria-label="Qué falta leer"><li id="cp-frente">Frente</li><li id="cp-qr">QR del verso</li></ul>
     <div class="camara-barra">
       <button type="button" class="camara-cancelar" id="camara-cancelar">Cancelar</button>
       <button type="button" class="camara-disparo" id="camara-disparo" aria-label="Tomar foto"><span></span></button>
-      <span class="camara-relleno"></span>
+      <button type="button" class="camara-listo oculto" id="camara-listo">Listo</button>
     </div>
   </div>
   <div id="modal-confirmar" class="modal oculto" role="dialog" aria-modal="true" aria-labelledby="confirm-titulo" aria-describedby="confirm-desc">

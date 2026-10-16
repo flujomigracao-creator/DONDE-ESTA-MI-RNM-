@@ -541,7 +541,8 @@ async function leerFrente(im) {
     carneEscaneado.foto = im.blob;
     if (!carneEscaneado.validezISO) estadoEscaner("Leímos tu " + leidos.join(" y ") + ". Revisa que estén bien. Falta el verso (QR) para confirmar la validez.", "ok");
     if (window.toast) toast("Carné leído. Revisa los datos.", "ok");
-  } catch (e) { estadoEscaner(textoErrorEscaner(e), "mal"); }
+    return true;
+  } catch (e) { estadoEscaner(textoErrorEscaner(e), "mal"); return false; }
 }
 async function validarQR(url) {
   carneEscaneado.qr = url;
@@ -563,6 +564,15 @@ function cerrarCamara() {
   $("camara").classList.add("oculto"); document.body.style.overflow = "";
   if (cam && cam.devolverFoco && document.contains(cam.devolverFoco)) { try { cam.devolverFoco.focus(); } catch (e) { /* sin foco */ } }
 }
+function huellaImagen(cv) {
+  var p = document.createElement("canvas"); p.width = 32; p.height = 18;
+  var g = p.getContext("2d", { willReadFrequently: true }); g.drawImage(cv, 0, 0, 32, 18);
+  var d = g.getImageData(0, 0, 32, 18).data, o = new Array(32 * 18);
+  for (var i = 0; i < o.length; i++) o[i] = (d[i * 4] + d[i * 4 + 1] + d[i * 4 + 2]) / 3;
+  return o;
+}
+function diferenciaHuella(a, b) { var t = 0; for (var i = 0; i < a.length; i++) t += Math.abs(a[i] - b[i]); return t / a.length; }
+function detalleHuella(a) { var t = 0; for (var i = 1; i < a.length; i++) t += Math.abs(a[i] - a[i - 1]); return t / a.length; }
 function capturarFotograma(video, maxLado) {
   var k = Math.min(1, maxLado / Math.max(video.videoWidth, video.videoHeight)), cv = document.createElement("canvas");
   cv.width = Math.round(video.videoWidth * k); cv.height = Math.round(video.videoHeight * k);
@@ -579,8 +589,10 @@ async function abrirCamara(modo) {
   camaraAbierta = cam;
   var video = $("camara-video"); video.srcObject = stream;
   $("camara").classList.remove("oculto"); $("camara").setAttribute("data-modo", modo); document.body.style.overflow = "hidden";
-  $("camara-disparo").classList.toggle("oculto", modo === "qr");
-  $("camara-texto").textContent = modo === "qr" ? "Apunta al código QR del verso del carné. Se leerá solo." : "Pon el frente del carné dentro del marco, con buena luz y sin reflejos.";
+  $("camara-disparo").classList.toggle("oculto", modo !== "frente");
+  $("camara-pasos").classList.toggle("oculto", modo !== "auto");
+  $("camara-listo").classList.toggle("oculto", modo !== "auto");
+  $("camara-texto").textContent = modo === "qr" ? "Apunta al código QR del verso del carné. Se leerá solo." : (modo === "auto" ? "Muestra el frente de tu carné dentro del marco, con buena luz y sin reflejos." : "Pon el frente del carné dentro del marco, con buena luz y sin reflejos.");
   try { await video.play(); } catch (e) { /* algunos navegadores ya lo reproducen */ }
   $("camara-cancelar").focus();
   if (modo === "frente") {
@@ -591,7 +603,7 @@ async function abrirCamara(modo) {
       var blob = await new Promise(function (ok) { cv.toBlob(ok, "image/jpeg", 0.85); });
       if (blob) leerFrente({ blob: blob, canvas: cv });
     };
-  } else {
+  } else if (modo === "qr") {
     var inicio = Date.now(), aviso = false;
     (async function bucle() {
       while (!cam.parar) {
@@ -605,12 +617,56 @@ async function abrirCamara(modo) {
         await new Promise(function (ok) { setTimeout(ok, 220); });
       }
     })();
+  } else {
+    // Modo automático: reconoce solo el frente (IA, cuando la imagen está nítida y quieta) y el QR del verso (local, en cada fotograma).
+    var hechoFrente = false, hechoQR = false, envios = 0, ultimoEnvio = Date.now() - 2000, leyendo = false, prev = null, ini = Date.now();
+    $("cp-frente").className = ""; $("cp-qr").className = "";
+    $("camara-listo").onclick = cerrarCamara;
+    var actualizarTexto = function () {
+      $("cp-frente").className = hechoFrente ? "ok" : ""; $("cp-qr").className = hechoQR ? "ok" : "";
+      $("camara-texto").textContent = hechoFrente && hechoQR ? "¡Listo! Leímos tu carné."
+        : hechoFrente ? "Frente leído. Ahora gira el carné y muestra el QR del verso."
+        : hechoQR ? "QR leído. Ahora muestra el frente del carné dentro del marco."
+        : "Muestra el frente de tu carné dentro del marco, con buena luz y sin reflejos.";
+    };
+    (async function bucleAuto() {
+      while (!cam.parar) {
+        if (video.videoWidth) {
+          var chico = capturarFotograma(video, 900);
+          if (!hechoQR) {
+            try {
+              var tx = await leerQR(chico);
+              if (tx && !cam.parar) { hechoQR = true; if (navigator.vibrate) navigator.vibrate(60); validarQR(tx); actualizarTexto(); }
+            } catch (e) { /* se sigue intentando */ }
+          }
+          var ahora = Date.now(), hue = huellaImagen(chico);
+          var quieta = prev && diferenciaHuella(prev, hue) < 14;
+          prev = hue;
+          // Se manda a la IA solo si la imagen está quieta y con detalle; si pasan 9 s sin poder, se manda igual (máx. 5 envíos)
+          if (!hechoFrente && !leyendo && envios < 5 && ahora - ultimoEnvio > 3000 && ((quieta && detalleHuella(hue) > 6) || ahora - ultimoEnvio > 9000)) {
+            leyendo = true; envios++; ultimoEnvio = ahora;
+            $("camara-texto").textContent = "Leyendo el frente…";
+            var grande = capturarFotograma(video, 1600);
+            grande.toBlob(function (b) {
+              if (!b) { leyendo = false; return; }
+              leerFrente({ blob: b, canvas: grande }).then(function (ok) { if (ok) hechoFrente = true; }).finally(function () { leyendo = false; if (!cam.parar) actualizarTexto(); });
+            }, "image/jpeg", 0.85);
+          }
+        }
+        if (hechoFrente && hechoQR && !cam.parar) { actualizarTexto(); await new Promise(function (ok) { setTimeout(ok, 900); }); if (!cam.parar) cerrarCamara(); return; }
+        if (envios >= 5 && !hechoFrente && !leyendo && !cam.parar) { $("camara-texto").textContent = "No pudimos leer el frente. Toca Listo y escribe tus datos a mano."; }
+        await new Promise(function (ok) { setTimeout(ok, 250); });
+      }
+    })();
   }
   return true;
 }
 $("camara-cancelar").addEventListener("click", cerrarCamara);
 document.addEventListener("keydown", function (e) { if (e.key === "Escape" && camaraAbierta) cerrarCamara(); });
 
+$("btn-escanear-auto").addEventListener("click", async function () {
+  if (!(await abrirCamara("auto"))) { estadoEscaner("No pudimos abrir la cámara. Elige una foto del frente de tu carné.", "carga"); $("file-frente").click(); }
+});
 $("btn-escanear-frente").addEventListener("click", async function () {
   if (!(await abrirCamara("frente"))) { estadoEscaner("No pudimos abrir la cámara. Elige una foto de tu carné.", "carga"); $("file-frente").click(); }
 });

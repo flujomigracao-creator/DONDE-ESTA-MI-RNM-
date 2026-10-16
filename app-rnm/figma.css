@@ -932,3 +932,19 @@ button.sec:hover:not(:disabled) { border-color: var(--brand-line); background: v
 .camara-disparo span { width: 54px; height: 54px; border-radius: 50%; background: #fff; transition: transform .1s ease; }
 .camara-disparo:active span { transform: scale(.88); }
 .camara-disparo.oculto { display: none; }
+
+/* Escaneo automático */
+.escaner-auto { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 62px; padding: 12px 14px; border-radius: 14px; text-align: left; background: var(--brand) !important; color: #fff !important; box-shadow: 0 6px 16px rgba(14, 63, 142, 0.28) !important; }
+.escaner-auto svg { width: 28px; height: 28px; flex: none; }
+.escaner-auto span { display: flex; flex-direction: column; gap: 1px; }
+.escaner-auto b { font-size: 1rem; }
+.escaner-auto small { font-size: 0.78rem; font-weight: 600; opacity: 0.9; }
+.escaner-o { margin: 10px 0 8px; text-align: center; font-size: 0.78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.camara-pasos { position: absolute; left: 16px; right: 16px; top: calc(78px + env(safe-area-inset-top, 0px)); margin: 0; padding: 0; list-style: none; display: flex; justify-content: center; gap: 8px; }
+.camara-pasos.oculto { display: none; }
+.camara-pasos li { padding: 6px 12px 6px 28px; border-radius: 99px; background: rgba(255, 255, 255, 0.18); color: #fff; font-size: 0.82rem; font-weight: 700; position: relative; }
+.camara-pasos li::before { content: ""; position: absolute; left: 9px; top: 50%; width: 12px; height: 12px; margin-top: -6px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.7); }
+.camara-pasos li.ok { background: #13803D; }
+.camara-pasos li.ok::before { background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2313803D' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E") center / 9px no-repeat; border-color: #fff; }
+.camara-listo { justify-self: end; min-height: 48px; padding: 0 20px; border-radius: 99px; background: #fff !important; background-image: none !important; color: var(--navy) !important; box-shadow: none !important; font-weight: 800; }
+.camara-listo.oculto { display: none; }
