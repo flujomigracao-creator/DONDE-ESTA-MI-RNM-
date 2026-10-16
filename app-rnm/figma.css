@@ -913,3 +913,22 @@ button.sec:hover:not(:disabled) { border-color: var(--brand-line); background: v
 .rt-validez.aviso { background: var(--warning-soft); color: var(--warning); }
 .rt-validez.mal { background: var(--danger-soft, #FDECEC); color: var(--danger); }
 .btn-borrar-foto { margin: 8px 0 0; min-height: 44px; }
+
+/* Visor de cámara */
+.camara { position: fixed; inset: 0; z-index: 700; background: #000; display: flex; flex-direction: column; }
+.camara.oculto { display: none; }
+.camara video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.camara-guia { position: absolute; left: 50%; top: 46%; width: min(86vw, 520px); aspect-ratio: 1.586; transform: translate(-50%, -50%); border-radius: 18px; box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.55); border: 2px solid rgba(255, 255, 255, 0.85); }
+.camara[data-modo="qr"] .camara-guia { width: min(66vw, 340px); aspect-ratio: 1; }
+.camara-guia i { position: absolute; width: 26px; height: 26px; border: 4px solid #FFC83D; }
+.camara-guia i:nth-child(1) { left: -3px; top: -3px; border-right: 0; border-bottom: 0; border-top-left-radius: 18px; }
+.camara-guia i:nth-child(2) { right: -3px; top: -3px; border-left: 0; border-bottom: 0; border-top-right-radius: 18px; }
+.camara-guia i:nth-child(3) { left: -3px; bottom: -3px; border-right: 0; border-top: 0; border-bottom-left-radius: 18px; }
+.camara-guia i:nth-child(4) { right: -3px; bottom: -3px; border-left: 0; border-top: 0; border-bottom-right-radius: 18px; }
+.camara-texto { position: absolute; left: 16px; right: 16px; top: calc(14px + env(safe-area-inset-top, 0px)); margin: 0; padding: 10px 14px; border-radius: 14px; background: rgba(10, 42, 94, 0.88); color: #fff; font-size: 0.92rem; font-weight: 600; text-align: center; }
+.camara-barra { position: absolute; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 18px 20px calc(22px + env(safe-area-inset-bottom, 0px)); background: linear-gradient(to top, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0)); }
+.camara-cancelar { justify-self: start; min-height: 48px; padding: 0 18px; border-radius: 99px; background: rgba(255, 255, 255, 0.16) !important; background-image: none !important; color: #fff !important; box-shadow: none !important; font-weight: 700; }
+.camara-disparo { width: 72px; height: 72px; padding: 0; border-radius: 50%; background: transparent !important; background-image: none !important; box-shadow: none !important; border: 4px solid #fff; display: grid; place-items: center; }
+.camara-disparo span { width: 54px; height: 54px; border-radius: 50%; background: #fff; transition: transform .1s ease; }
+.camara-disparo:active span { transform: scale(.88); }
+.camara-disparo.oculto { display: none; }

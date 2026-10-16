@@ -283,8 +283,8 @@
                       <span><b>2 · Verso (QR)</b><small>Confirma la validez en la página oficial</small></span>
                     </button>
                   </div>
-                  <input type="file" id="file-frente" accept="image/*" capture="environment" hidden>
-                  <input type="file" id="file-qr" accept="image/*" capture="environment" hidden>
+                  <input type="file" id="file-frente" accept="image/*" hidden>
+                  <input type="file" id="file-qr" accept="image/*" hidden>
                   <p class="sub escaner-estado" id="escaner-estado" aria-live="polite"></p>
                   <p class="sub escaner-aviso">Al escanear, la foto se envía a nuestro servidor para leerla y se guarda en privado, solo para tu cuenta. Puedes borrarla cuando quieras. Siempre puedes escribir los datos a mano.</p>
                 </div>
@@ -507,6 +507,16 @@
   </div>
 
   <!-- MODAL DE CONFIRMACIÓN ACCESIBLE (ConfirmDialog) -->
+  <div id="camara" class="camara oculto" role="dialog" aria-modal="true" aria-label="Cámara para escanear tu carné">
+    <video id="camara-video" playsinline muted autoplay></video>
+    <div class="camara-guia" id="camara-guia" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+    <p class="camara-texto" id="camara-texto" role="status" aria-live="polite"></p>
+    <div class="camara-barra">
+      <button type="button" class="camara-cancelar" id="camara-cancelar">Cancelar</button>
+      <button type="button" class="camara-disparo" id="camara-disparo" aria-label="Tomar foto"><span></span></button>
+      <span class="camara-relleno"></span>
+    </div>
+  </div>
   <div id="modal-confirmar" class="modal oculto" role="dialog" aria-modal="true" aria-labelledby="confirm-titulo" aria-describedby="confirm-desc">
     <div class="modal-caja modal-confirmacion" tabindex="-1">
       <h3 id="confirm-titulo">¿Confirmar acción?</h3>
