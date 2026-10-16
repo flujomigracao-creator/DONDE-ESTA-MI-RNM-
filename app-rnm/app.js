@@ -1869,6 +1869,7 @@ function construirDetalle(id) {
   if (x.unidad_pf) filas.push(["Unidad de la PF", etiquetaUnidad(x.unidad_pf)]);
   if (x.validez) { var vf = x.validez.split("-"); filas.push(["Validez del carné", vf[2] + "/" + vf[1] + "/" + vf[0] + (x.carne_validacion === "autentico" ? " ✓ verificada en la PF" : "")]); }
   if (x.carne_validacion === "no_valido") filas.push(["Carné", "La PF no lo reconoce: revisa tus datos o escríbenos"]);
+  else if (x.carne_validacion === "no_coincide") filas.push(["Carné", "El QR no corresponde al RNM registrado: revisa tus datos o escríbenos"]);
   (e.detalles || []).forEach(function (d) { filas.push(d); });
   filas.forEach(function (d) { var f = el("div", "review-row"); f.appendChild(el("span", "", d[0] + ":")); f.appendChild(el("b", "", d[1])); datos.appendChild(f); });
   cuerpo.appendChild(datos);
