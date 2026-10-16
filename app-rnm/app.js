@@ -193,6 +193,7 @@ function abrirPerfil(editando) {
   $("p-uf").value = p && p.estado ? p.estado : "";
   $("p-cep").value = p && p.cep ? p.cep.slice(0, 5) + "-" + p.cep.slice(5) : "";
   $("p-consiento").checked = !!p;
+  $("p-avisos").checked = !!(p && p.avisos_whatsapp);
   $("btn-perfil-cancelar").classList.toggle("oculto", !editando);
   msg("msg-perfil", "");
   irAPaso(1);
@@ -312,6 +313,9 @@ $("form-perfil").addEventListener("submit", async function (e) {
   var uf = $("p-uf").value.trim().toUpperCase();
   var cep = $("p-cep").value.replace(/\D/g, "");
   var datos = { nombre: nombre, telefono: tel, direccion: dir, ciudad: ciudad, estado: uf || null, cep: cep || null };
+  var quiereAvisos = $("p-avisos").checked;
+  datos.avisos_whatsapp = quiereAvisos;
+  if (quiereAvisos && !(perfilActual && perfilActual.avisos_whatsapp)) datos.avisos_whatsapp_at = new Date().toISOString();
   var btn = $("btn-perfil"); btn.disabled = true;
   var r = perfilActual
     ? await sb.from("rnm_perfiles").update(datos).eq("user_id", usuarioActual.id).select().single()
