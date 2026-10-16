@@ -271,6 +271,23 @@
               <form id="form-rnm" autocomplete="off" novalidate>
                 <div class="wiz-puntos" id="wiz-puntos" role="progressbar" aria-label="Pasos para registrar tu RNM" aria-valuemin="1" aria-valuemax="3" aria-valuenow="1"><i class="on"></i><i></i><i></i></div>
                 <h2 class="wiz-titulo" id="wiz-titulo">¿Cuál es tu número de RNM?</h2>
+                <div class="escaner" id="escaner">
+                  <p class="escaner-titulo"><b>Más rápido:</b> escanea tu carné</p>
+                  <div class="escaner-botones">
+                    <button type="button" class="escaner-btn" id="btn-escanear-frente">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8a2 2 0 012-2h1.5l1-1.5h7L16.5 6H18a2 2 0 012 2v9a2 2 0 01-2 2H6a2 2 0 01-2-2z"/><circle cx="12" cy="12.5" r="3.2"/></svg>
+                      <span><b>1 · Frente</b><small>Lee tu RNM y fecha de nacimiento</small></span>
+                    </button>
+                    <button type="button" class="escaner-btn" id="btn-escanear-qr">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8V6a2 2 0 012-2h2M16 4h2a2 2 0 012 2v2M20 16v2a2 2 0 01-2 2h-2M8 20H6a2 2 0 01-2-2v-2"/><path d="M8 11h3V8H8zM13 8h3v3h-3zM8 16h3v-3H8zM13 13h1.5M16 16v-1M13 16h.01"/></svg>
+                      <span><b>2 · Verso (QR)</b><small>Confirma la validez en la página oficial</small></span>
+                    </button>
+                  </div>
+                  <input type="file" id="file-frente" accept="image/*" capture="environment" hidden>
+                  <input type="file" id="file-qr" accept="image/*" capture="environment" hidden>
+                  <p class="sub escaner-estado" id="escaner-estado" aria-live="polite"></p>
+                  <p class="sub escaner-aviso">Al escanear, la foto se envía a nuestro servidor para leerla y se guarda en privado, solo para tu cuenta. Puedes borrarla cuando quieras. Siempre puedes escribir los datos a mano.</p>
+                </div>
                 <div class="form-field">
                   <label for="rnm">Número de RNM</label>
                   <input type="text" id="rnm" autocapitalize="characters" placeholder="Ej: A123456B" maxlength="12" required>
@@ -310,6 +327,10 @@
                 <div class="review-row">
                   <span>Fecha de nacimiento:</span>
                   <b id="conf-nac-val">--/--/----</b>
+                </div>
+                <div class="review-row oculto" id="conf-validez-fila">
+                  <span>Validez del carné:</span>
+                  <b id="conf-validez-val">--/--/----</b>
                 </div>
                 <div class="review-row">
                   <span>Costo de consulta:</span>

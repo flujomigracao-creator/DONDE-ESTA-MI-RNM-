@@ -421,6 +421,7 @@ var subPaso = 1;
 var SUB_TITULOS = { 1: "¿Cuál es tu número de RNM?", 2: "¿Cuál es tu fecha de nacimiento?", 3: "Última cosa: tu autorización" };
 function irSubPaso(n, dir) {
   subPaso = n;
+  var esc = $("escaner"); if (esc) esc.classList.toggle("oculto", n !== 1);
   var campos = document.querySelectorAll("#form-rnm .form-field, #form-rnm label.check");
   campos.forEach(function (c, i) {
     var mostrar = i + 1 === n;
@@ -456,6 +457,112 @@ $("rnm").addEventListener("input", function (e) {
   e.target.parentNode.classList.toggle("valido", /^[A-Z0-9]{6,12}$/.test(e.target.value));
 });
 $("nac").addEventListener("input", function (e) { e.target.parentNode.classList.toggle("valido", !!fechaISO(e.target.value.trim())); });
+/* ---------- Escáner del carné RNM: frente (lee RNM y nacimiento) y verso (QR → validez oficial) ---------- */
+var carneEscaneado = { foto: null, qr: null, validezISO: null };
+function reducirImagen(archivo, maxLado) {
+  return new Promise(function (ok, fallo) {
+    var url = URL.createObjectURL(archivo), img = new Image();
+    img.onload = function () {
+      var k = Math.min(1, maxLado / Math.max(img.width, img.height)), cv = document.createElement("canvas");
+      cv.width = Math.round(img.width * k); cv.height = Math.round(img.height * k);
+      cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height);
+      URL.revokeObjectURL(url);
+      cv.toBlob(function (b) { if (b) ok({ blob: b, canvas: cv }); else fallo(new Error("sin_imagen")); }, "image/jpeg", 0.82);
+    };
+    img.onerror = function () { URL.revokeObjectURL(url); fallo(new Error("sin_imagen")); };
+    img.src = url;
+  });
+}
+function blobABase64(blob) {
+  return new Promise(function (ok, fallo) { var fr = new FileReader(); fr.onload = function () { ok(String(fr.result).split(",")[1]); }; fr.onerror = fallo; fr.readAsDataURL(blob); });
+}
+async function llamarFuncion(nombre, cuerpo) {
+  var ses = (await sb.auth.getSession()).data.session;
+  var res = await fetch(SUPABASE_URL + "/functions/v1/" + nombre, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", apikey: SUPABASE_KEY, Authorization: "Bearer " + (ses ? ses.access_token : "") },
+    body: JSON.stringify(cuerpo)
+  });
+  var j = await res.json().catch(function () { return {}; });
+  if (!res.ok) { var er = new Error(j.error || "error"); er.codigo = j.error; throw er; }
+  return j;
+}
+function cargarJsQR() {
+  return new Promise(function (ok, fallo) {
+    if (window.jsQR) return ok(window.jsQR);
+    var sc = document.createElement("script");
+    sc.src = "https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js";
+    sc.onload = function () { ok(window.jsQR); }; sc.onerror = fallo;
+    document.head.appendChild(sc);
+  });
+}
+async function leerQR(canvas) {
+  if ("BarcodeDetector" in window) {
+    try { var r = await new BarcodeDetector({ formats: ["qr_code"] }).detect(canvas); if (r.length) return r[0].rawValue; } catch (e) { /* se prueba con jsQR */ }
+  }
+  var jq = await cargarJsQR();
+  var d = canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height);
+  var q = jq(d.data, d.width, d.height);
+  return q ? q.data : null;
+}
+function dmyAISO(t) {
+  var p = String(t || "").split("/"); if (p.length !== 3) return null;
+  var d = Number(p[0]), m = Number(p[1]), a = Number(p[2]), f = new Date(a, m - 1, d);
+  if (f.getFullYear() !== a || f.getMonth() !== m - 1 || f.getDate() !== d) return null;
+  return a + "-" + String(m).padStart(2, "0") + "-" + String(d).padStart(2, "0");
+}
+function estadoEscaner(t, tipo) { var p = $("escaner-estado"); if (p) { p.textContent = t || ""; p.className = "sub escaner-estado" + (tipo ? " " + tipo : ""); } }
+function textoErrorEscaner(e) {
+  var c = e && e.codigo;
+  if (c === "lectura_no_configurada") return "El escáner no está disponible por ahora. Escribe tus datos a mano.";
+  if (c === "qr_no_oficial") return "Ese QR no es de una página oficial. Revisa que sea el del verso de tu carné.";
+  if (c === "pagina_no_disponible") return "La página oficial no respondió ahora. Guardamos el QR; puedes continuar.";
+  return "No pudimos leer la foto. Intenta con más luz y sin reflejos, o escribe los datos a mano.";
+}
+function ponerCampo(id, valor) { var i = $(id); i.value = valor; i.dispatchEvent(new Event("input", { bubbles: true })); }
+function fijarValidez(texto, origen) {
+  var iso = dmyAISO(texto); if (!iso) return false;
+  carneEscaneado.validezISO = iso;
+  var vence = new Date(iso) < new Date();
+  estadoEscaner("Validez " + (origen === "qr" ? "según la página oficial" : "leída del carné") + ": " + texto + (vence ? " (¡vencida!)" : "") , vence ? "mal" : "ok");
+  return true;
+}
+$("btn-escanear-frente").addEventListener("click", function () { $("file-frente").click(); });
+$("btn-escanear-qr").addEventListener("click", function () { $("file-qr").click(); });
+$("file-frente").addEventListener("change", async function () {
+  var f = this.files && this.files[0]; this.value = ""; if (!f) return;
+  estadoEscaner("Leyendo tu carné…", "carga");
+  try {
+    var im = await reducirImagen(f, 1600);
+    var d = await llamarFuncion("rnm-leer-carne", { imagen: await blobABase64(im.blob), mime: "image/jpeg" });
+    if (!d.es_carne) return estadoEscaner("No parece un carné RNM. Intenta de nuevo con buena luz, o escribe los datos a mano.", "mal");
+    var leidos = [];
+    if (d.rnm) { ponerCampo("rnm", d.rnm); leidos.push("RNM"); }
+    if (d.fecha_nacimiento) { ponerCampo("nac", d.fecha_nacimiento); leidos.push("fecha de nacimiento"); }
+    if (d.validez && !carneEscaneado.validezISO) fijarValidez(d.validez, "frente");
+    if (!leidos.length) return estadoEscaner("No pudimos leer los datos. Intenta con más luz, o escríbelos a mano.", "mal");
+    carneEscaneado.foto = im.blob;
+    if (!carneEscaneado.validezISO) estadoEscaner("Leímos tu " + leidos.join(" y ") + ". Revisa que estén bien. Falta el verso (QR) para confirmar la validez.", "ok");
+    if (window.toast) toast("Carné leído. Revisa los datos.", "ok");
+  } catch (e) { estadoEscaner(textoErrorEscaner(e), "mal"); }
+});
+$("file-qr").addEventListener("change", async function () {
+  var f = this.files && this.files[0]; this.value = ""; if (!f) return;
+  estadoEscaner("Buscando el QR…", "carga");
+  try {
+    var im = await reducirImagen(f, 1400);
+    var url = await leerQR(im.canvas);
+    if (!url) return estadoEscaner("No encontré el QR. Acércalo, sin reflejos y con el QR centrado, e intenta de nuevo.", "mal");
+    carneEscaneado.qr = url;
+    estadoEscaner("QR leído. Consultando la página oficial…", "carga");
+    var v = await llamarFuncion("rnm-validar-carne", { url: url });
+    if (v.rnm_en_pagina && !$("rnm").value) ponerCampo("rnm", v.rnm_en_pagina);
+    if (v.validez && fijarValidez(v.validez, "qr")) { carneEscaneado.verificada = true; if (window.toast) toast("Validez confirmada en la página oficial", "ok"); }
+    else estadoEscaner("Guardamos el QR, pero no pudimos leer la validez ahora. Puedes continuar.", "ok");
+  } catch (e) { estadoEscaner(textoErrorEscaner(e), e && e.codigo === "pagina_no_disponible" ? "ok" : "mal"); }
+});
+function reiniciarEscaner() { carneEscaneado = { foto: null, qr: null, validezISO: null }; estadoEscaner(""); }
+
 var btnWizAtras = $("btn-wiz-atras");
 if (btnWizAtras) btnWizAtras.addEventListener("click", function () { if (subPaso > 1) irSubPaso(subPaso - 1, -1); });
 
@@ -479,6 +586,11 @@ $("form-rnm").addEventListener("submit", function (e) {
 
   var confRnm = $("conf-rnm-val"); if (confRnm) confRnm.textContent = rnm;
   var confNac = $("conf-nac-val"); if (confNac) confNac.textContent = nacTxt;
+  var confVal = $("conf-validez-val"), confValF = $("conf-validez-fila");
+  if (confValF) {
+    confValF.classList.toggle("oculto", !carneEscaneado.validezISO);
+    if (confVal && carneEscaneado.validezISO) { var pv = carneEscaneado.validezISO.split("-"); confVal.textContent = pv[2] + "/" + pv[1] + "/" + pv[0]; }
+  }
 
   var confCosto = $("conf-costo-val");
   if (confCosto) {
@@ -513,11 +625,21 @@ if (btnConfEnviar) {
     btn.disabled = true;
     msg("msg-confirmar", "Registrando documento y preparando consulta…", true);
 
+    var rutaFoto = null;
+    if (carneEscaneado.foto) {
+      var ruta = usuarioActual.id + "/" + Date.now() + ".jpg";
+      var sub = await sb.storage.from("rnm-carnes").upload(ruta, carneEscaneado.foto, { contentType: "image/jpeg" });
+      if (!sub.error) rutaFoto = ruta;
+    }
     var r = await sb.from("rnm_registros").insert({
       user_id: usuarioActual.id,
       rnm: consultaPendiente.rnm,
-      fecha_nacimiento: consultaPendiente.iso
+      fecha_nacimiento: consultaPendiente.iso,
+      validez: carneEscaneado.validezISO || null,
+      carne_qr_url: carneEscaneado.qr || null,
+      carne_foto_path: rutaFoto
     });
+    if (r.error && rutaFoto) { sb.storage.from("rnm-carnes").remove([rutaFoto]); }
 
     btn.disabled = false;
 
@@ -530,7 +652,7 @@ if (btnConfEnviar) {
         : "No pudimos procesar el registro. Intenta de nuevo.");
     }
 
-    $("form-rnm").reset();
+    $("form-rnm").reset(); reiniciarEscaner();
     await mostrarConsultando(function () { return cargarRegistros(); });
     irAPasoConsulta(1);
     var nuevo = registrosCargados.find(function (x) { return x.rnm === consultaPendiente.rnm; });
@@ -1026,7 +1148,7 @@ async function cargarRegistros() {
   actualizarAvisoRegistro();
   var q = await Promise.all([
     sb.from("rnm_registros")
-      .select("id, rnm, estado_pago, requiere_pago, estado_pf, unidad_pf, cambio_direccion, ultimo_resultado, ultima_consulta_at, cerrado, created_at")
+      .select("id, rnm, estado_pago, requiere_pago, estado_pf, unidad_pf, cambio_direccion, ultimo_resultado, ultima_consulta_at, cerrado, created_at, validez, carne_foto_path")
       .order("created_at", { ascending: true }),
     sb.from("rnm_planes").select("cupos, precio_centavos, vence_at").maybeSingle()
   ]);
@@ -1268,6 +1390,17 @@ function cambioAnimado(l) {
   requestAnimationFrame(function () { requestAnimationFrame(function () { box.style.setProperty("--p", String(idx)); box.classList.add("anim"); }); });
   return box;
 }
+/* Validez del carné: aviso solo si venció o vence en 90 días */
+function avisoValidez(x) {
+  if (!x.validez) return null;
+  var dias = Math.round((new Date(x.validez + "T00:00:00") - new Date()) / 864e5);
+  if (dias > 90) return null;
+  var p = el("p", "rt-validez " + (dias < 0 ? "mal" : "aviso"), "");
+  p.appendChild(el("b", "", dias < 0 ? "Tu carné está vencido" : "Tu carné vence pronto"));
+  var f = x.validez.split("-");
+  p.appendChild(document.createTextNode(dias < 0 ? " desde el " + f[2] + "/" + f[1] + "/" + f[0] : " en " + dias + (dias === 1 ? " día" : " días") + " (" + f[2] + "/" + f[1] + "/" + f[0] + ")"));
+  return p;
+}
 function rastreador(x, opciones) {
   opciones = opciones || {};
   var e = estadoPresentacion(x), tt = titularRastreador(e);
@@ -1281,6 +1414,7 @@ function rastreador(x, opciones) {
   var sub = el("p", "rt-sub"); sub.innerHTML = (e.tono === "ok" ? SVG_OK : (e.tono === "mal" || e.corto === "Falta algo" || e.corto === "No encontrado" ? "" : SVG_PIN)); sub.appendChild(document.createTextNode(tt.s)); c.appendChild(sub);
   var lc = x.cambio_direccion ? lineasCambio(x.cambio_direccion) : [];
   if (lc.length) c.appendChild(cambioAnimado(cambioReciente(lc)));
+  var av = avisoValidez(x); if (av) c.appendChild(av);
   if (idx !== undefined && !opciones.compacto) {
     var pista = el("div", "rt-pista");
     pista.style.setProperty("--idx", "0");
@@ -1541,9 +1675,22 @@ function construirDetalle(id) {
   var datos = el("div", "review-summary-card");
   var filas = [["Última revisión", x.ultima_consulta_at ? fechaHora(x.ultima_consulta_at) : "Aún sin revisión"], ["Seguimiento semanal", x.cubierto ? "Activo hasta " + fechaCorta(x.planVence) : "No activo"]];
   if (x.unidad_pf) filas.push(["Unidad de la PF", etiquetaUnidad(x.unidad_pf)]);
+  if (x.validez) { var vf = x.validez.split("-"); filas.push(["Validez del carné", vf[2] + "/" + vf[1] + "/" + vf[0]]); }
   (e.detalles || []).forEach(function (d) { filas.push(d); });
   filas.forEach(function (d) { var f = el("div", "review-row"); f.appendChild(el("span", "", d[0] + ":")); f.appendChild(el("b", "", d[1])); datos.appendChild(f); });
   cuerpo.appendChild(datos);
+  if (x.carne_foto_path) {
+    var bf = el("button", "sec btn-borrar-foto", "Borrar la foto de mi carné"); bf.type = "button";
+    bf.addEventListener("click", async function () {
+      if (!window.confirm("¿Borrar la foto de tu carné? Esto no se puede deshacer.")) return;
+      bf.disabled = true;
+      await sb.storage.from("rnm-carnes").remove([x.carne_foto_path]);
+      await sb.rpc("rnm_borrar_foto_carne", { p_registro: x.id });
+      if (window.toast) toast("Foto borrada", "ok");
+      cargarRegistros();
+    });
+    cuerpo.appendChild(bf);
+  }
   cuerpo.appendChild(el("h4", "titulo-sub", "Historial"));
   cuerpo.appendChild(construirHistorialDetalle(x));
   cuerpo.appendChild(pieOriginal(x));

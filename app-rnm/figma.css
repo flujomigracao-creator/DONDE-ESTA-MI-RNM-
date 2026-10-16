@@ -893,3 +893,23 @@ button.sec:hover:not(:disabled) { border-color: var(--brand-line); background: v
 #cartel .pay > .acciones { box-shadow: 0 -18px 16px -6px rgba(255, 255, 255, 0.96); }
 #cartel .pay-resumen { animation: ctr-pop .35s cubic-bezier(.3, 1.4, .5, 1) both; }
 @media (prefers-reduced-motion: reduce) { #cartel .pay-resumen { animation: none; } }
+
+/* Escáner del carné */
+.escaner { margin: 0 0 14px; padding: 14px; border-radius: 18px; background: var(--brand-soft); border: 1px solid var(--brand-line); }
+.escaner-titulo { margin: 0 0 10px; font-size: 0.95rem; color: var(--navy); }
+.escaner-botones { display: grid; gap: 8px; }
+.escaner-btn { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 10px 14px; border-radius: 14px; text-align: left; background: #fff !important; background-image: none !important; color: var(--navy) !important; border: 1.5px solid var(--brand-line); box-shadow: none !important; }
+.escaner-btn svg { width: 26px; height: 26px; flex: none; color: var(--brand); }
+.escaner-btn span { display: flex; flex-direction: column; gap: 1px; }
+.escaner-btn b { font-size: 0.95rem; }
+.escaner-btn small { font-size: 0.76rem; color: var(--text-muted); font-weight: 600; }
+.escaner-estado { margin: 10px 0 0; font-size: 0.86rem; font-weight: 600; min-height: 0; }
+.escaner-estado:empty { display: none; }
+.escaner-estado.ok { color: var(--success); }
+.escaner-estado.mal { color: var(--danger); }
+.escaner-estado.carga { color: var(--brand); }
+.escaner-aviso { margin: 8px 0 0; font-size: 0.74rem; line-height: 1.35; }
+.rt-validez { margin: 10px 0 0; padding: 7px 11px; border-radius: 12px; font-size: 0.84rem; }
+.rt-validez.aviso { background: var(--warning-soft); color: var(--warning); }
+.rt-validez.mal { background: var(--danger-soft, #FDECEC); color: var(--danger); }
+.btn-borrar-foto { margin: 8px 0 0; min-height: 44px; }
