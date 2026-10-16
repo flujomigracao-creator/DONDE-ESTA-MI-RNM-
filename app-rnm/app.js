@@ -551,7 +551,7 @@ async function validarQR(url) {
     var v = await llamarFuncion("rnm-validar-carne", { url: url });
     if (v.rnm_en_pagina && !$("rnm").value) ponerCampo("rnm", v.rnm_en_pagina);
     if (v.validez && fijarValidez(v.validez, "qr")) { carneEscaneado.verificada = true; if (window.toast) toast("Validez confirmada en la página oficial", "ok"); }
-    else estadoEscaner("Guardamos el QR, pero no pudimos leer la validez ahora. Puedes continuar.", "ok");
+    else estadoEscaner("QR guardado ✓ Confirmaremos la validez con la Policía Federal en unos minutos.", "ok");
   } catch (e) { estadoEscaner(textoErrorEscaner(e), e && e.codigo === "pagina_no_disponible" ? "ok" : "mal"); }
 }
 
@@ -1340,7 +1340,7 @@ async function cargarRegistros() {
   actualizarAvisoRegistro();
   var q = await Promise.all([
     sb.from("rnm_registros")
-      .select("id, rnm, estado_pago, requiere_pago, estado_pf, unidad_pf, cambio_direccion, ultimo_resultado, ultima_consulta_at, cerrado, created_at, validez, carne_foto_path, carne_foto_verso_path, carne_cpf")
+      .select("id, rnm, estado_pago, requiere_pago, estado_pf, unidad_pf, cambio_direccion, ultimo_resultado, ultima_consulta_at, cerrado, created_at, validez, validez_verificada_at, carne_validacion, carne_foto_path, carne_foto_verso_path, carne_cpf")
       .order("created_at", { ascending: true }),
     sb.from("rnm_planes").select("cupos, precio_centavos, vence_at").maybeSingle()
   ]);
@@ -1867,7 +1867,8 @@ function construirDetalle(id) {
   var datos = el("div", "review-summary-card");
   var filas = [["Última revisión", x.ultima_consulta_at ? fechaHora(x.ultima_consulta_at) : "Aún sin revisión"], ["Seguimiento semanal", x.cubierto ? "Activo hasta " + fechaCorta(x.planVence) : "No activo"]];
   if (x.unidad_pf) filas.push(["Unidad de la PF", etiquetaUnidad(x.unidad_pf)]);
-  if (x.validez) { var vf = x.validez.split("-"); filas.push(["Validez del carné", vf[2] + "/" + vf[1] + "/" + vf[0]]); }
+  if (x.validez) { var vf = x.validez.split("-"); filas.push(["Validez del carné", vf[2] + "/" + vf[1] + "/" + vf[0] + (x.carne_validacion === "autentico" ? " ✓ verificada en la PF" : "")]); }
+  if (x.carne_validacion === "no_valido") filas.push(["Carné", "La PF no lo reconoce: revisa tus datos o escríbenos"]);
   (e.detalles || []).forEach(function (d) { filas.push(d); });
   filas.forEach(function (d) { var f = el("div", "review-row"); f.appendChild(el("span", "", d[0] + ":")); f.appendChild(el("b", "", d[1])); datos.appendChild(f); });
   cuerpo.appendChild(datos);
