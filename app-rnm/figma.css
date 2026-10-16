@@ -842,3 +842,43 @@ button.sec:hover:not(:disabled) { border-color: var(--brand-line); background: v
 .ctr-texto { min-width: 150px; }
 .ctr-cab .insignia { margin-left: auto; }
 @media (max-width: 400px) { .ctr-cab .insignia { margin-left: 46px; } }
+
+/* ===== Teléfonos: todo más compacto sin perder información ===== */
+@media (max-width: 480px) {
+  :root { --bottom-nav-h: 58px; }
+  .app-header { min-height: 52px; padding: 8px 14px !important; }
+  .app-content { padding: 14px 14px calc(var(--bottom-nav-h) + 28px) !important; }
+  .bottom-nav-item { font-size: 0.68rem; gap: 2px; }
+  .saludo-fig h2 { font-size: 1.4rem; }
+  .btn-mas { min-height: 40px; padding: 0 14px 0 10px; }
+  .resumen-rnm { margin: 0 0 8px; font-size: 0.84rem; }
+  .titulo-otros { margin: 12px 0 6px; }
+  .page-header-text h2, .tarjeta h2 { font-size: 1.3rem; }
+  .plan-linea { min-height: 40px; padding: 8px 12px; margin-bottom: 10px; font-size: 0.84rem; }
+  /* Rastreador */
+  .rastreador { padding: 14px 14px 14px; margin-bottom: 10px; border-radius: 20px; }
+  .rt-top { font-size: 0.76rem; margin-top: 2px; }
+  .rt-titular { font-size: 1.3rem; margin: 6px 0 2px; }
+  .rt-sub { font-size: 0.92rem; margin-bottom: 10px; }
+  .rt-estaciones { padding-top: 22px; }
+  .rt-punto { width: 22px; height: 22px; }
+  .rt-estaciones b { font-size: 0.66rem; }
+  .rt-cta { min-height: 44px; margin-top: 10px; font-size: 0.95rem; }
+  .rastreador.compacto .rt-titular { font-size: 1.15rem; }
+  /* Cambio de dirección */
+  .cambio-tr { margin-top: 10px; padding: 9px 11px; border-radius: 14px; }
+  .ctr-icono { width: 30px; height: 30px; border-radius: 10px; }
+  .ctr-icono svg { width: 17px; height: 17px; }
+  .ctr-texto { min-width: 0; font-size: 0.78rem; }
+  .ctr-cab { flex-wrap: nowrap; gap: 8px; }
+  .ctr-cab .insignia { margin-left: auto; padding: 3px 8px; font-size: 0.7rem; flex: none; }
+  .ctr-pista { margin-top: 8px; }
+  .ctr-pasos b { font-size: 0.66rem; }
+  /* Filas */
+  .fila-rnm { padding: 10px 12px; margin-bottom: 6px; border-radius: 16px; gap: 10px; }
+  /* Tarjetas generales y planes */
+  .tarjeta, .panel-card { padding: 14px; margin-bottom: 10px; border-radius: 18px; }
+  .tarjeta p, .panel-card p { font-size: 0.92rem; line-height: 1.4; }
+  .plan-card { padding: 12px; gap: 1px; }
+  .plan-card small { font-size: 0.74rem; line-height: 1.25; }
+}
