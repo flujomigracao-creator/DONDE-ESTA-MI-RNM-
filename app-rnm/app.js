@@ -654,18 +654,21 @@ async function abrirCamara(modo) {
       }
     })();
   } else {
-    // Modo automático, en orden: 1) frente (IA, con la imagen quieta y nítida); 2) verso completo. El verso se da por leído con lo primero
-    // que ocurra: el QR decodificado en el aparato, o el verso leído por la IA (por si el QR sale chico, borroso o con reflejos).
-    var hechoFrente = false, hechoVerso = false, envios = 0, ultimoEnvio = Date.now() - 2000, leyendo = false, prev = null, frenteListoEn = 0;
+    // Modo automático, en orden: 1) frente (IA); 2) verso completo. En el verso hay DOS cosas: el QR (obligatorio: de él sale la validación
+    // oficial de la PF) y la lectura del resto del verso por la IA (CPF, validez). La cámara no se cierra hasta tener el QR; si el QR no
+    // se logra leer tras un buen rato, se cierra de todos modos para no dejar al cliente atrapado.
+    var hechoFrente = false, hechoVerso = false, hechoQR = false, qrEn = 0, envios = 0, ultimoEnvio = Date.now() - 2000, leyendo = false, prev = null, frenteListoEn = 0;
     var enviosV = 0, ultimoEnvioV = 0, leyendoV = false;
-    $("cp-frente").className = ""; $("cp-qr").className = "";
+    $("cp-frente").className = ""; $("cp-qr").className = ""; $("cp-qrc").className = "";
     $("camara-listo").onclick = cerrarCamara;
     var actualizarTexto = function () {
+      var enVerso = hechoFrente && !hechoQR, tarda = enVerso && Date.now() - frenteListoEn > 10000;
       $("cp-frente").className = hechoFrente ? "ok" : "actual";
       $("cp-qr").className = hechoVerso ? "ok" : (hechoFrente ? "actual" : "");
-      var tardaV = hechoFrente && !hechoVerso && Date.now() - frenteListoEn > 9000;
-      $("camara-texto").textContent = hechoFrente && hechoVerso ? "¡Listo! Leímos tu carné."
-        : tardaV ? "Acerca un poco el verso: el QR debe verse grande, nítido y sin reflejos."
+      $("cp-qrc").className = hechoQR ? "ok" : (hechoFrente ? "actual" : "");
+      $("camara-texto").textContent = hechoFrente && hechoQR ? (hechoVerso ? "¡Listo! Leímos tu carné." : "QR leído ✓ Terminando de leer el verso…")
+        : hechoFrente && hechoVerso ? "Verso leído ✓ Falta el QR: acércalo, centrado y sin reflejos."
+        : tarda ? "Acerca un poco el verso: el QR debe verse grande, nítido y sin reflejos."
         : hechoFrente ? "Frente leído ✓ Paso 2: gira el carné y muestra el VERSO completo, con el QR visible."
         : "Paso 1: muestra el FRENTE de tu carné dentro del marco, con buena luz y sin reflejos.";
     };
@@ -688,25 +691,36 @@ async function abrirCamara(modo) {
                 leerFrente({ blob: b, canvas: grande }).then(function (ok) { if (ok) { hechoFrente = true; frenteListoEn = Date.now(); if (navigator.vibrate) navigator.vibrate(40); } }).finally(function () { leyendo = false; if (!cam.parar) actualizarTexto(); });
               }, "image/jpeg", 0.85);
             }
-          } else if (!hechoVerso && ahora - frenteListoEn > 1800) {
-            // a) QR en el aparato: recorte al marco (más grande) y fotograma completo
-            try {
-              var tx = await leerQR(capturarGuia(video, 1200)) || await leerQR(capturarFotograma(video, 1280));
-              if (tx && !cam.parar) { hechoVerso = true; if (navigator.vibrate) navigator.vibrate(60); var imv2 = await fotoVerso(video); validarQR(tx); if (imv2) leerVerso(imv2, true); actualizarTexto(); }
-            } catch (e) { /* se sigue intentando */ }
-            // b) verso leído por la IA (la IA dice si de verdad es el verso, para no confundirlo con el frente)
+          } else if (ahora - frenteListoEn > 1800) {
+            // a) QR: se busca en TODOS los fotogramas hasta encontrarlo (recorte al marco, fotograma completo y fotograma entero de la cámara)
+            if (!hechoQR) {
+              try {
+                var tx = await leerQR(capturarGuia(video, 1200)) || await leerQR(capturarFotograma(video, 1280)) || await leerQR(capturarFotograma(video, 1920));
+                if (tx && !cam.parar) {
+                  hechoQR = true; qrEn = Date.now(); if (navigator.vibrate) navigator.vibrate(60);
+                  validarQR(tx);
+                  if (!hechoVerso) { var imv2 = await fotoVerso(video); if (imv2) leerVerso(imv2, true).then(function (d) { if (d) hechoVerso = true; }); }
+                  actualizarTexto();
+                }
+              } catch (e) { /* se sigue intentando */ }
+            }
+            // b) verso por IA (CPF, validez); la IA dice si de verdad es el verso, para no confundirlo con el frente
             if (!hechoVerso && !leyendoV && enviosV < 5 && ahora - ultimoEnvioV > 3000 && ((quieta && detalleHuella(hue) > 6) || ahora - ultimoEnvioV > 6000)) {
               leyendoV = true; enviosV++; ultimoEnvioV = ahora;
-              $("camara-texto").textContent = "Leyendo el verso…";
               var imV = await fotoVerso(video);
               if (!imV) { leyendoV = false; }
               else leerVerso(imV, false).then(function (d) { if (d && d.es_carne && d.es_verso) { hechoVerso = true; if (navigator.vibrate) navigator.vibrate(40); } }).finally(function () { leyendoV = false; if (!cam.parar) actualizarTexto(); });
             }
+            if (hechoFrente && !hechoQR && Math.floor(ahora / 1000) % 2 === 0) actualizarTexto();
           }
         }
-        if (hechoFrente && hechoVerso && !cam.parar) { actualizarTexto(); await new Promise(function (ok) { setTimeout(ok, 900); }); if (!cam.parar) cerrarCamara(); return; }
+        // Cierre: con el QR y el verso leído; o con el QR y 6 s de espera a la IA; o, sin QR, tras 25 s en el verso (para no atrapar al cliente)
+        if (hechoFrente && hechoQR && !cam.parar && (hechoVerso || Date.now() - qrEn > 6000)) { actualizarTexto(); await new Promise(function (ok) { setTimeout(ok, 900); }); if (!cam.parar) cerrarCamara(); return; }
+        if (hechoFrente && !hechoQR && !cam.parar && Date.now() - frenteListoEn > 25000) {
+          estadoEscaner(hechoVerso ? "Leímos el verso, pero no pudimos leer el QR. Sin el QR no podemos confirmar la validez con la Policía Federal. Puedes volver a intentarlo con el botón «2 · Verso completo»." : "No pudimos leer el verso ni el QR. Puedes volver a intentarlo con el botón «2 · Verso completo» o escribir tus datos a mano.", "mal");
+          cerrarCamara(); return;
+        }
         if (envios >= 5 && !hechoFrente && !leyendo && !cam.parar) { $("camara-texto").textContent = "No pudimos leer el frente. Toca Listo y escribe tus datos a mano."; }
-        if (hechoFrente && !hechoVerso && enviosV >= 5 && !leyendoV && !cam.parar) { $("camara-texto").textContent = "No pudimos leer el verso. Toca Listo para continuar sin él."; }
         await new Promise(function (ok) { setTimeout(ok, 250); });
       }
     })();
