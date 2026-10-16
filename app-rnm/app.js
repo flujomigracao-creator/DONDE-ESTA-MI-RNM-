@@ -575,6 +575,7 @@ function reales(c) { return "R$ " + (c / 100).toFixed(2).replace(".", ","); }
 function ahorro(n) { return n * PRECIOS[1] - PRECIOS[n]; } // lo que se ahorra frente a pagar R$ 4,99 por cada RNM por separado
 function porcentajeAhorro(n) { return Math.round(ahorro(n) * 100 / (n * PRECIOS[1])); }
 var planElegido = 1;
+var ampliando = false; // el cliente con plan activo quiere pasar a uno más grande aunque el suyo ya cubra todos sus RNM
 
 var esperandoPago = 0; // hora en que la persona volvió de Mercado Pago; mientras tanto se confirma el cobro
 
@@ -899,24 +900,30 @@ function cartelPlanes(regs, plan) {
     cont.appendChild(espera);
     return;
   }
-  if (activo && plan.cupos >= necesita) {
+  if (activo && plan.cupos >= necesita && !ampliando) {
     var ok = el("div", "pay pay-centro");
     ok.innerHTML = '<div class="pay-icono ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>';
     ok.appendChild(el("h2", "pay-titulo", "Tu plan está activo"));
     ok.appendChild(el("p", "sub", "Cubre hasta " + plan.cupos + " RNM (" + reales(plan.precio_centavos) + " al mes) y está pagado hasta el " + fechaCorta(plan.vence_at) + "."));
-    var cerrarOk = el("button", "", "Entendido"); cerrarOk.type = "button";
+    if (plan.cupos < 4) {
+      var masGrande = el("button", "", "Ampliar mi plan"); masGrande.type = "button";
+      masGrande.addEventListener("click", function () { ampliando = true; planElegido = plan.cupos + 1; cartelPlanes(regs, plan); });
+      ok.appendChild(masGrande);
+    }
+    var cerrarOk = el("button", plan.cupos < 4 ? "sec" : "", "Entendido"); cerrarOk.type = "button";
     cerrarOk.addEventListener("click", cerrarModalPlanes);
     ok.appendChild(cerrarOk);
     cont.appendChild(ok);
     return;
   }
   if (planElegido < necesita) planElegido = necesita;
+  if (activo && ampliando && planElegido <= plan.cupos) planElegido = Math.min(4, plan.cupos + 1);
   var c = el("div", "pay");
   c.appendChild(el("span", "pay-paso", "Paso 1 de 2"));
   var primeraHecha = regs.some(function (r) { return !r.cerrado && !r.cubierto && !!r.ultimo_resultado; });
-  c.appendChild(el("h2", "pay-titulo", activo ? "Tu plan cubre " + plan.cupos + " de tus " + abiertos + " RNM" : (primeraHecha ? "Activa un plan para seguir tu RNM" : "Elige tu plan")));
+  c.appendChild(el("h2", "pay-titulo", activo ? (plan.cupos >= necesita ? "Amplía tu plan" : "Tu plan cubre " + plan.cupos + " de tus " + abiertos + " RNM") : (primeraHecha ? "Activa un plan para seguir tu RNM" : "Elige tu plan")));
   c.appendChild(el("p", "sub", activo
-    ? "Amplía tu plan para cubrir los demás."
+    ? (plan.cupos >= necesita ? "Elige un plan más grande para cubrir más RNM." : "Amplía tu plan para cubrir los demás.")
     : (primeraHecha
       ? "Con un plan revisamos tu RNM cada 7 días. Sin plan, el estado ya no se actualiza."
       : "Elige cuántos RNM cubrir. Revisión cada 7 días.")));
@@ -933,10 +940,10 @@ function cartelPlanes(regs, plan) {
     b.appendChild(el("span", "precio", reales(PRECIOS[n]) + " /mes"));
     b.appendChild(el("small", "", reales(Math.round(PRECIOS[n] / n)) + " por RNM"));
     var esActual = activo && plan.cupos === n;
-    if (n < necesita) {
+    if (n < necesita || (activo && ampliando && n <= plan.cupos)) {
       b.disabled = true; b.classList.add("no-cubre");
       b.setAttribute("aria-label", "Plan de " + n + " RNM: no alcanza para tus " + necesita + " RNM");
-      b.appendChild(el("small", "aviso-chico", esActual ? "Tu plan actual" : "No alcanza para tus " + necesita + " RNM"));
+      b.appendChild(el("small", "aviso-chico", esActual ? "Tu plan actual" : (n < necesita ? "No alcanza para tus " + necesita + " RNM" : "Ya tienes uno mayor")));
     } else {
       b.appendChild(el("small", n > 1 ? "ahorro" : "", n > 1 ? "Ahorras " + porcentajeAhorro(n) + "%" : "\u00a0"));
       if (n === 4) b.classList.add("mejor-precio");
@@ -984,6 +991,7 @@ function abrirModalPlanes() {
   $("modal-planes").querySelector(".modal-caja").focus();
 }
 function cerrarModalPlanes() {
+  ampliando = false;
   if (pagandoPlan) { salirDePago(); cargarRegistros(); }
   var estabaAbierto = !$("modal-planes").classList.contains("oculto");
   $("modal-planes").classList.add("oculto");
@@ -1085,13 +1093,13 @@ function renderizarPlanes(regs, plan) {
       : "Tu primera consulta es gratis. Para seguir vigilando tus RNM después de la primera revisión necesitas un plan mensual."));
   }
   var acc = el("div", "acciones");
-  var ver = el("button", "btn", activo && !necesitan ? "Ver detalles del plan" : (activo ? "Ampliar mi plan" : "Elegir un plan"));
+  var ver = el("button", "btn", activo ? (plan.cupos < 4 || necesitan ? "Ampliar mi plan" : "Ver detalles del plan") : "Elegir un plan");
   ver.type = "button";
   if (!abiertos) {
     ver.disabled = true;
     estado.appendChild(el("p", "sub", "Cuando tengas un RNM en seguimiento podrás elegir un plan."));
   }
-  ver.addEventListener("click", abrirModalPlanes);
+  ver.addEventListener("click", function () { ampliando = activo && plan.cupos < 4; if (ampliando) planElegido = Math.max(planElegido, plan.cupos + 1); cartelPlanes(regs, plan); abrirModalPlanes(); });
   acc.appendChild(ver);
   estado.appendChild(acc);
   cont.appendChild(estado);
@@ -1117,7 +1125,7 @@ function renderizarPlanes(regs, plan) {
     if (n > 1 && ahorro(n) > 0) card.appendChild(el("small", "plan-ahorro", "Ahorras " + porcentajeAhorro(n) + "%"));
     card.addEventListener("click", function () {
       if (!abiertos) return navegarA("nueva-consulta");
-      planElegido = n; cartelPlanes(regs, plan); abrirModalPlanes();
+      planElegido = n; ampliando = activo && n > plan.cupos; cartelPlanes(regs, plan); abrirModalPlanes();
     });
     grid.appendChild(card);
   });
