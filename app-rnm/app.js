@@ -1217,7 +1217,8 @@ function titularRastreador(e) {
     case "En traslado": return { t: "Tu RNM está en camino", s: (e.ubicacion || "").replace(/^En camino /, "") };
     case "Entregado": return { t: "Tu RNM ya fue entregado", s: "Ya está contigo" };
     case "En trámite": return { t: "Tu RNM sigue en trámite", s: ciudad ? "En la unidad de " + ciudad : "La Policía Federal lo está procesando" };
-    case "En confección": return { t: "Tu RNM se está confeccionando", s: "Aún no hay novedades de la Policía Federal" };
+    case "Sin consultar": return { t: "Aún no consultamos tu RNM", s: "Activa un plan para consultarlo" };
+    case "Consultando": return { t: "Consultando la Policía Federal", s: "El resultado aparecerá en unos minutos" };
     default: return { t: e.t, s: e.resumen };
   }
 }
@@ -1914,11 +1915,17 @@ function estadoPresentacion(x) {
     return e0;
   }
   var plan = x.requiere_pago && !x.cubierto;
-  return { tono: "aviso", badge: "vigila", corto: "En confección", t: "Tu documento se está confeccionando",
-    resumen: plan ? "Todavía no hay información de la Policía Federal. Activa un plan para que consultemos tu RNM cada semana."
-                  : "Todavía no hay información de la Policía Federal. Cuando haya novedades las verás aquí.",
-    p: [plan ? "Todavía no hay información de la Policía Federal. Activa un plan para que consultemos tu RNM cada semana." : "Todavía no hay información de la Policía Federal. Cuando haya novedades las verás aquí."],
-    pasos: plan ? ["Elige un plan para empezar el seguimiento semanal."] : ["No tienes que hacer nada por ahora."], detalles: [], ubicacion: "Aún sin información de ubicación" };
+  if (plan) {
+    // Todavía no se consultó en la PF: no decimos nada del documento (podría ni existir o tener un dato mal escrito).
+    return { tono: "aviso", badge: "", corto: "Sin consultar", t: "Aún no consultamos este RNM",
+      resumen: "Para consultarlo en la Policía Federal y seguirlo cada semana, activa un plan.",
+      p: ["Para consultarlo en la Policía Federal y seguirlo cada semana, activa un plan."],
+      pasos: ["Elige un plan para empezar el seguimiento semanal."], detalles: [], ubicacion: "Aún sin consultar" };
+  }
+  return { tono: "aviso", badge: "vigila", corto: "Consultando", t: "Estamos consultando la Policía Federal",
+    resumen: "Tu primera consulta está en proceso. El resultado aparecerá aquí en unos minutos.",
+    p: ["Tu primera consulta está en proceso. El resultado aparecerá aquí en unos minutos."],
+    pasos: ["No tienes que hacer nada: vuelve en unos minutos."], detalles: [], ubicacion: "Consultando a la Policía Federal…" };
 }
 function explicar(txt) { return interpretarConsulta(txt); }
 
