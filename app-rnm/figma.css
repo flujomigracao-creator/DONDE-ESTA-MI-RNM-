@@ -1026,3 +1026,10 @@ body.escribiendo .app-content { padding-bottom: 24px; }
 .plan-op-puntos, .plan-op-puntos li { min-width: 0; max-width: 100%; }
 .plan-op-puntos li { overflow-wrap: anywhere; }
 /* v72 */
+
+/* Aviso de medición de anuncios (píxel de Meta) */
+.consent-pixel { position: fixed; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); z-index: 900; max-width: 520px; margin: 0 auto; background: #fff; border: 1px solid var(--line); border-radius: 18px; box-shadow: 0 12px 32px rgba(10, 42, 94, 0.22); padding: 14px 16px; }
+.consent-pixel p { margin: 0 0 10px; font-size: 0.86rem; line-height: 1.4; color: var(--text-main); }
+.consent-pixel a { color: var(--brand); font-weight: 700; }
+.consent-pixel-acc { display: flex; gap: 8px; }
+.consent-pixel-acc .btn { flex: 1; min-height: 44px; }

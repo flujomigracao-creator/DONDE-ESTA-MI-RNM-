@@ -902,6 +902,7 @@ if (btnConfEnviar) {
         : "No pudimos procesar el registro. Intenta de nuevo.");
     }
 
+    if (window.rnmTrack && !localStorage.getItem("rnm_reg_tracked")) { try { localStorage.setItem("rnm_reg_tracked", "1"); } catch (e) { /* sin almacenamiento */ } rnmTrack("CompleteRegistration", { content_name: "registro_rnm" }, "reg-" + usuarioActual.id); }
     $("form-rnm").reset(); reiniciarEscaner();
     await mostrarConsultando(function () { return cargarRegistros(); });
     irAPasoConsulta(1);
@@ -1056,6 +1057,7 @@ function mostrarPago(tipo) {
   }
   salirDePago();
   pagandoPlan = tipo; ultimoTipoPedido = tipo;
+  if (window.rnmTrack) rnmTrack("InitiateCheckout", { value: PRECIOS[tipo] / 100, currency: "BRL", content_name: tipo });
   cont.textContent = "";
   var precio = reales(PRECIOS[tipo]);
   var c = el("div", "pay");
@@ -1423,8 +1425,13 @@ async function cargarRegistros() {
     x.planVence = plan ? plan.vence_at : null;
     x.tuvoPlan = !!plan;
   });
+  var planAntes = planCargado;
   registrosCargados = r.data;
   planCargado = plan;
+  if (activo && ultimoTipoPedido && window.rnmTrack && (!planAntes || new Date(plan.vence_at) > new Date(planAntes.vence_at))) {
+    var clavePago = "rnm_purchase_" + plan.vence_at;
+    if (!localStorage.getItem(clavePago)) { try { localStorage.setItem(clavePago, "1"); } catch (e) { /* sin almacenamiento */ } rnmTrack("Purchase", { value: plan.precio_centavos / 100, currency: "BRL", content_name: plan.tipo }, "compra-" + plan.vence_at); }
+  }
   var lleno = r.data.length >= 4;
   $("form-rnm").classList.toggle("oculto", lleno);
   mostrarCosteAplicable();
