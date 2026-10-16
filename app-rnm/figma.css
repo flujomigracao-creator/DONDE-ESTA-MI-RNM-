@@ -442,7 +442,6 @@ button, .btn, .btn-enlace, .filter-pill, .nav-item, .bottom-nav-item, summary { 
 .hero-fig, .plan-card.actual { background-color: var(--navy); }
 .hero-fig { position: relative; overflow: hidden; }
 .hero-fig::after { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 5px; background: linear-gradient(90deg, var(--verde-marca) 0 55%, var(--amarillo-marca) 55% 100%); }
-.insignia.ok, .aviso-coste.gratis, .estado.ok { --success: #13803D; }
 
 /* Barra superior con el logo real y la franja de la marca */
 .app-header { position: sticky; }
