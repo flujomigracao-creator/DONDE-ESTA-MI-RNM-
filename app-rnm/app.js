@@ -557,7 +557,7 @@ async function validarQR(url) {
 
 /* Verso completo: además del QR, se lee el resto del verso (validez, CPF) y se guarda su foto */
 function fotoVerso(video) {
-  var cv = capturarFotograma(video, 1600);
+  var cv = capturarGuia(video, 1600);
   return new Promise(function (ok) { cv.toBlob(function (b) { ok(b ? { blob: b, canvas: cv } : null); }, "image/jpeg", 0.85); });
 }
 async function leerVerso(im) {
@@ -592,6 +592,21 @@ function huellaImagen(cv) {
 }
 function diferenciaHuella(a, b) { var t = 0; for (var i = 0; i < a.length; i++) t += Math.abs(a[i] - b[i]); return t / a.length; }
 function detalleHuella(a) { var t = 0; for (var i = 1; i < a.length; i++) t += Math.abs(a[i] - a[i - 1]); return t / a.length; }
+// Recorta el fotograma a lo que se ve dentro del marco (con un margen), pensando en que el video se muestra con "cover".
+function capturarGuia(video, maxLado) {
+  var guia = $("camara-guia"), vr = video.getBoundingClientRect(), gr = guia ? guia.getBoundingClientRect() : null;
+  var vw = video.videoWidth, vh = video.videoHeight;
+  if (!gr || !gr.width || !vr.width || !vw) return capturarFotograma(video, maxLado);
+  var k = Math.max(vr.width / vw, vr.height / vh), offX = (vw * k - vr.width) / 2, offY = (vh * k - vr.height) / 2;
+  var mx = gr.width * 0.08, my = gr.height * 0.08;
+  var sx = ((gr.left - mx - vr.left) + offX) / k, sy = ((gr.top - my - vr.top) + offY) / k, sw = (gr.width + 2 * mx) / k, sh = (gr.height + 2 * my) / k;
+  sx = Math.max(0, sx); sy = Math.max(0, sy); sw = Math.min(vw - sx, sw); sh = Math.min(vh - sy, sh);
+  if (sw < 50 || sh < 50) return capturarFotograma(video, maxLado);
+  var esc = Math.min(1, maxLado / Math.max(sw, sh)), cv = document.createElement("canvas");
+  cv.width = Math.round(sw * esc); cv.height = Math.round(sh * esc);
+  cv.getContext("2d").drawImage(video, sx, sy, sw, sh, 0, 0, cv.width, cv.height);
+  return cv;
+}
 function capturarFotograma(video, maxLado) {
   var k = Math.min(1, maxLado / Math.max(video.videoWidth, video.videoHeight)), cv = document.createElement("canvas");
   cv.width = Math.round(video.videoWidth * k); cv.height = Math.round(video.videoHeight * k);
@@ -617,7 +632,7 @@ async function abrirCamara(modo) {
   if (modo === "frente") {
     $("camara-disparo").onclick = async function () {
       if (cam.parar || !video.videoWidth) return;
-      var cv = capturarFotograma(video, 1600);
+      var cv = capturarGuia(video, 1600);
       cerrarCamara();
       var blob = await new Promise(function (ok) { cv.toBlob(ok, "image/jpeg", 0.85); });
       if (blob) leerFrente({ blob: blob, canvas: cv });
@@ -666,7 +681,7 @@ async function abrirCamara(modo) {
           if (!hechoFrente && !leyendo && envios < 5 && ahora - ultimoEnvio > 3000 && ((quieta && detalleHuella(hue) > 6) || ahora - ultimoEnvio > 6000)) {
             leyendo = true; envios++; ultimoEnvio = ahora;
             $("camara-texto").textContent = "Leyendo el frente…";
-            var grande = capturarFotograma(video, 1600);
+            var grande = capturarGuia(video, 1600);
             grande.toBlob(function (b) {
               if (!b) { leyendo = false; return; }
               leerFrente({ blob: b, canvas: grande }).then(function (ok) { if (ok) { hechoFrente = true; frenteListoEn = Date.now(); if (navigator.vibrate) navigator.vibrate(40); } }).finally(function () { leyendo = false; if (!cam.parar) actualizarTexto(); });
