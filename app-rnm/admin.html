@@ -49,6 +49,27 @@
   .centro h1 { color: var(--texto); }
   .nota { margin-top: 18px; color: var(--suave); font-size: 0.82rem; }
   .vacio { color: var(--suave); font-size: 0.9rem; padding: 6px 0; }
+  .barra { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
+  .barra input { flex: 1; min-width: 180px; min-height: 44px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--linea); background: var(--tarjeta); color: var(--texto); font: inherit; font-size: 16px; }
+  .chip { min-height: 38px; padding: 0 14px; border-radius: 999px; background: transparent; color: var(--suave); border: 1px solid var(--linea); font-weight: 600; font-size: 0.88rem; }
+  .chip.on { background: var(--azul); color: #fff; border-color: var(--azul); }
+  @media (prefers-color-scheme: dark) { .chip.on { color: #0B1220; } }
+  .personas { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 10px; }
+  .persona { padding: 14px; border-radius: 16px; background: var(--tarjeta); border: 1px solid var(--linea); min-width: 0; display: grid; gap: 6px; }
+  .persona .cab { display: flex; gap: 8px; align-items: flex-start; justify-content: space-between; }
+  .persona .cab b { font-size: 1.02rem; overflow-wrap: anywhere; }
+  .persona small { color: var(--suave); overflow-wrap: anywhere; }
+  .insignia { flex: none; padding: 3px 10px; border-radius: 999px; font-size: 0.74rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.03em; background: var(--linea); color: var(--suave); }
+  .insignia.activo { background: #DDF3E4; color: #13803D; } .insignia.cancelado { background: #FFF0CC; color: #8A5200; } .insignia.vencido { background: #FDE2E0; color: #B3261E; }
+  @media (prefers-color-scheme: dark) { .insignia.activo { background: #14391F; color: #4CD08A; } .insignia.cancelado { background: #3D2E0B; color: #F2B24D; } .insignia.vencido { background: #3F1714; color: #FF8A80; } }
+  .persona .datos { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; font-size: 0.86rem; }
+  .persona .datos span { color: var(--suave); } .persona .datos b { font-weight: 700; overflow-wrap: anywhere; }
+  .persona .acc { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+  .persona .acc a, .persona .acc button { min-height: 40px; padding: 0 14px; border-radius: 10px; font: inherit; font-weight: 700; font-size: 0.88rem; text-decoration: none; display: inline-flex; align-items: center; }
+  .persona .acc a { border: 1px solid var(--linea); color: var(--azul); }
+  .persona .acc button.peligro { background: transparent; color: var(--rojo); border: 1px solid var(--rojo); }
+  .persona .acc button:disabled { opacity: 0.55; }
+  .persona .nota-p { margin: 0; font-size: 0.8rem; color: var(--ambar); }
 </style>
 </head>
 <body>
@@ -113,6 +134,79 @@
     if (!filasDatos.length) { var f0 = e("tr"), c0 = e("td", "", "Sin datos todavía."); c0.colSpan = cabeceras.length; f0.appendChild(c0); tb.appendChild(f0); }
     filasDatos.forEach(function (fd) { var f = e("tr"); fd.forEach(function (v) { f.appendChild(e("td", "", v)); }); tb.appendChild(f); });
     t.appendChild(tb); w.appendChild(t); app.appendChild(w);
+  }
+
+  var estadoLista = { filtro: "activo", busca: "" };
+  var planesCargados = [];
+  var FUNCION_CANCELAR = "https://rumpfqevyspdmhaggxtq.supabase.co/functions/v1/mp-cancelar-plan";
+  var CLAVE = "sb_publishable_7znj3ENrTWXDE2dibUzv_A_a7HUoud_";
+  var etiquetaPlan = function (t) { return t === "manual" ? "Plan manual" : "Plan semanal"; };
+  var soloDigitos = function (t) { return String(t || "").replace(/[^0-9]/g, ""); };
+  var wa = function (tel) { var n = soloDigitos(tel); if (n.length === 10 || n.length === 11) n = "55" + n; return n.length >= 12 ? "https://wa.me/" + n : ""; };
+  var sinAcento = function (t) { return String(t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase(); };
+
+  function cancelarPlanDe(p, boton) {
+    var cuando = new Date(p.vence_at).toLocaleDateString("es", { day: "2-digit", month: "long", year: "numeric" });
+    var aviso = "¿Cancelar el plan de " + p.nombre + "?\n\nNo se volverá a cobrar" + (p.tarjeta ? " (se cancela también la suscripción de tarjeta en Mercado Pago)" : "") + ". Sigue activo hasta el " + cuando + ".";
+    if (!window.confirm(aviso)) return;
+    boton.disabled = true; var texto = boton.textContent; boton.textContent = "Cancelando…";
+    sb.auth.getSession().then(function (s) {
+      var tk = s.data.session && s.data.session.access_token;
+      return fetch(FUNCION_CANCELAR, { method: "POST", headers: { "Content-Type": "application/json", apikey: CLAVE, Authorization: "Bearer " + tk }, body: JSON.stringify({ user_id: p.user_id }) });
+    }).then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return { ok: r.ok && j.ok === true, j: j }; }); })
+      .then(function (x) {
+        if (!x.ok) { boton.disabled = false; boton.textContent = texto; window.alert("No se pudo cancelar" + (x.j && x.j.error ? " (" + x.j.error + ")" : "") + ". El plan sigue igual."); return; }
+        cargar();
+      }).catch(function () { boton.disabled = false; boton.textContent = texto; window.alert("No se pudo cancelar. Revisa la conexión."); });
+  }
+
+  function pintarPersonas(cont) {
+    cont.textContent = "";
+    var q = sinAcento(estadoLista.busca);
+    var lista = planesCargados.filter(function (p) {
+      if (estadoLista.filtro !== "todos" && p.estado !== estadoLista.filtro) return false;
+      return !q || sinAcento(p.nombre + " " + p.email + " " + p.telefono + " " + p.ciudad).indexOf(q) >= 0;
+    });
+    if (!lista.length) { cont.appendChild(e("p", "vacio", "Nadie coincide con ese filtro.")); return; }
+    lista.forEach(function (p) {
+      var c = e("div", "persona");
+      var cab = e("div", "cab"); var tit = e("div"); tit.appendChild(e("b", "", p.nombre)); tit.appendChild(e("br")); tit.appendChild(e("small", "", p.email || "")); cab.appendChild(tit);
+      cab.appendChild(e("span", "insignia " + p.estado, p.estado)); c.appendChild(cab);
+      var d = e("div", "datos");
+      [["Plan", etiquetaPlan(p.tipo) + " · " + reales(p.precio_centavos)],
+       [p.estado === "vencido" ? "Venció" : "Pagado hasta", new Date(p.vence_at).toLocaleDateString("es", { day: "2-digit", month: "short", year: "numeric" })],
+       ["Forma de pago", p.tarjeta ? "Tarjeta (se renueva)" : "Pix / boleto"],
+       ["Ha pagado", p.n_pagos ? num(p.n_pagos) + " pago(s) · " + reales(p.pagado_total_centavos) : "Nada registrado"],
+       ["RNM", num(p.n_rnm)],
+       ["Teléfono", p.telefono ? "+" + soloDigitos(p.telefono) : "—"],
+       ["Ciudad", p.ciudad ? p.ciudad + (p.uf ? " / " + p.uf : "") : "—"],
+       ["Llegó por", p.aliado || "directo"]].forEach(function (par) { var w = e("div"); w.appendChild(e("span", "", par[0])); w.appendChild(e("br")); w.appendChild(e("b", "", par[1])); d.appendChild(w); });
+      c.appendChild(d);
+      if (!p.n_pagos) c.appendChild(e("p", "nota-p", "Sin pago registrado: plan de cortesía o de prueba."));
+      if (p.estado === "cancelado") c.appendChild(e("p", "nota-p", "Cancelado: no se renueva. Sigue activo hasta la fecha de arriba."));
+      var acc = e("div", "acc");
+      var link = wa(p.telefono); if (link) { var a = e("a", "", "WhatsApp"); a.href = link; a.target = "_blank"; a.rel = "noopener"; acc.appendChild(a); }
+      if (p.email) { var m = e("a", "", "Correo"); m.href = "mailto:" + p.email; acc.appendChild(m); }
+      if (p.estado === "activo") { var b = e("button", "peligro", "Cancelar plan"); b.type = "button"; b.addEventListener("click", function () { cancelarPlanDe(p, b); }); acc.appendChild(b); }
+      c.appendChild(acc); cont.appendChild(c);
+    });
+  }
+
+  function dibujarPersonas() {
+    seccion("Personas con plan");
+    var conteo = { activo: 0, cancelado: 0, vencido: 0 }; planesCargados.forEach(function (p) { conteo[p.estado] = (conteo[p.estado] || 0) + 1; });
+    var barra = e("div", "barra");
+    var cont = e("div", "personas");
+    var chips = [["activo", "Activos (" + conteo.activo + ")"], ["cancelado", "Cancelados (" + conteo.cancelado + ")"], ["vencido", "Vencidos (" + conteo.vencido + ")"], ["todos", "Todos (" + planesCargados.length + ")"]];
+    var botones = chips.map(function (c) {
+      var b = e("button", "chip" + (estadoLista.filtro === c[0] ? " on" : ""), c[1]); b.type = "button";
+      b.addEventListener("click", function () { estadoLista.filtro = c[0]; botones.forEach(function (x, i) { x.className = "chip" + (chips[i][0] === c[0] ? " on" : ""); }); pintarPersonas(cont); });
+      barra.appendChild(b); return b;
+    });
+    var buscar = e("input"); buscar.type = "search"; buscar.placeholder = "Buscar por nombre, correo, teléfono o ciudad"; buscar.value = estadoLista.busca;
+    buscar.addEventListener("input", function () { estadoLista.busca = buscar.value; pintarPersonas(cont); });
+    barra.appendChild(buscar);
+    app.appendChild(barra); app.appendChild(cont); pintarPersonas(cont);
   }
 
   function dibujar(d) {
@@ -180,6 +274,7 @@
     var mt = e("div", "caja"); mt.appendChild(e("b", "", "Por método de pago"));
     var pm = Object.keys(v.por_metodo).map(function (k) { return [k, v.por_metodo[k].n, "", num(v.por_metodo[k].n) + " · " + reales(v.por_metodo[k].monto)]; });
     filas(mt, pm); dos2.appendChild(mt);
+    dibujarPersonas();
     var ultimos = e("h2", "", "Últimos pagos"); app.appendChild(ultimos);
     tabla(["Fecha", "Cliente", "Método", "Plan", "Monto"], v.ultimos.map(function (p) { return [fecha(p.fecha), p.cliente || "—", p.metodo || "—", p.tipo || "—", reales(p.monto)]; }));
 
@@ -211,7 +306,8 @@
   }
 
   function cargar() {
-    sb.rpc("rnm_admin_resumen").then(function (x) {
+    Promise.all([sb.rpc("rnm_admin_resumen"), sb.rpc("rnm_admin_planes")]).then(function (rs) {
+      var x = rs[0]; planesCargados = (rs[1] && rs[1].data) || [];
       if (x.error) {
         if (x.error.code === "42501" || /no_autorizado/.test(x.error.message || "")) return pantalla("Sin acceso", "Esta cuenta no tiene permiso para ver el panel.", [btn("Salir", function () { sb.auth.signOut().then(function () { location.reload(); }); })]);
         return pantalla("No se pudo cargar", "Revisa tu conexión e inténtalo de nuevo.", [btn("Reintentar", cargar)]);
