@@ -449,7 +449,7 @@ button, .btn, .btn-enlace, .filter-pill, .nav-item, .bottom-nav-item, summary { 
 /* Barra superior con el logo real y la franja de la marca */
 .app-header { position: sticky; }
 .app-header::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 3px; background: linear-gradient(90deg, var(--verde-marca) 0 60%, var(--amarillo-marca) 60% 100%); }
-.header-title-box::before { width: 46px; height: 30px; border-radius: 0; background-color: transparent; background-image: url("logo-marca.png"); background-size: contain; background-repeat: no-repeat; background-position: left center; }
+.header-title-box::before { width: 46px; height: 30px; border-radius: 0; background-color: transparent; background-image: url("logo-rnm.png"); background-size: contain; background-repeat: no-repeat; background-position: left center; }
 
 /* Bienvenida: la marca de FLUJO como protagonista (sin ilustración genérica) */
 .fig-barra { padding: 12px 20px; }
