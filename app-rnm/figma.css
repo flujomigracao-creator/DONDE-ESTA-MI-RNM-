@@ -950,3 +950,5 @@ button.sec:hover:not(:disabled) { border-color: var(--brand-line); background: v
 .camara-listo.oculto { display: none; }
 
 .camara-pasos li.actual { background: rgba(255, 200, 61, 0.28); box-shadow: inset 0 0 0 2px #FFC83D; }
+
+.camara[data-modo="qr"] .camara-guia { width: min(86vw, 520px); aspect-ratio: 1.586; }

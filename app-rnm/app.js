@@ -458,7 +458,7 @@ $("rnm").addEventListener("input", function (e) {
 });
 $("nac").addEventListener("input", function (e) { e.target.parentNode.classList.toggle("valido", !!fechaISO(e.target.value.trim())); });
 /* ---------- Escáner del carné RNM: frente (lee RNM y nacimiento) y verso (QR → validez oficial) ---------- */
-var carneEscaneado = { foto: null, qr: null, validezISO: null };
+var carneEscaneado = { foto: null, fotoVerso: null, qr: null, cpf: null, validezISO: null };
 function reducirImagen(archivo, maxLado) {
   return new Promise(function (ok, fallo) {
     var url = URL.createObjectURL(archivo), img = new Image();
@@ -555,6 +555,25 @@ async function validarQR(url) {
   } catch (e) { estadoEscaner(textoErrorEscaner(e), e && e.codigo === "pagina_no_disponible" ? "ok" : "mal"); }
 }
 
+/* Verso completo: además del QR, se lee el resto del verso (validez, CPF) y se guarda su foto */
+function fotoVerso(video) {
+  var cv = capturarFotograma(video, 1600);
+  return new Promise(function (ok) { cv.toBlob(function (b) { ok(b ? { blob: b, canvas: cv } : null); }, "image/jpeg", 0.85); });
+}
+async function leerVerso(im) {
+  carneEscaneado.fotoVerso = im.blob;
+  try {
+    var d = await llamarFuncion("rnm-leer-carne", { imagen: await blobABase64(im.blob), mime: "image/jpeg", lado: "verso" });
+    if (!d.es_carne) return false;
+    if (d.cpf) carneEscaneado.cpf = d.cpf;
+    if (d.rnm && $("rnm").value && d.rnm !== $("rnm").value) estadoEscaner("Ojo: el RNM del verso no coincide con el del frente. Revisa los datos.", "mal");
+    else if (d.rnm && !$("rnm").value) ponerCampo("rnm", d.rnm);
+    if (d.validez && !carneEscaneado.verificada && !carneEscaneado.validezISO) fijarValidez(d.validez, "verso");
+    if (d.cpf && window.toast) toast("CPF leído del carné", "ok");
+    return true;
+  } catch (e) { return false; }
+}
+
 /* Cámara en vivo. modo "frente": marco con proporción de tarjeta y botón de disparo. modo "qr": lee solo en cuanto lo enfoca. */
 var camaraAbierta = null;
 function cerrarCamara() {
@@ -592,7 +611,7 @@ async function abrirCamara(modo) {
   $("camara-disparo").classList.toggle("oculto", modo !== "frente");
   $("camara-pasos").classList.toggle("oculto", modo !== "auto");
   $("camara-listo").classList.toggle("oculto", modo !== "auto");
-  $("camara-texto").textContent = modo === "qr" ? "Apunta al código QR del verso del carné. Se leerá solo." : (modo === "auto" ? "Paso 1: muestra el FRENTE de tu carné dentro del marco, con buena luz y sin reflejos." : "Pon el frente del carné dentro del marco, con buena luz y sin reflejos.");
+  $("camara-texto").textContent = modo === "qr" ? "Muestra el VERSO completo del carné, con el código QR visible. Se leerá solo." : (modo === "auto" ? "Paso 1: muestra el FRENTE de tu carné dentro del marco, con buena luz y sin reflejos." : "Pon el frente del carné dentro del marco, con buena luz y sin reflejos.");
   try { await video.play(); } catch (e) { /* algunos navegadores ya lo reproducen */ }
   $("camara-cancelar").focus();
   if (modo === "frente") {
@@ -610,7 +629,7 @@ async function abrirCamara(modo) {
         if (video.videoWidth) {
           try {
             var texto = await leerQR(capturarFotograma(video, 900));
-            if (texto && !cam.parar) { if (navigator.vibrate) navigator.vibrate(60); cerrarCamara(); validarQR(texto); return; }
+            if (texto && !cam.parar) { if (navigator.vibrate) navigator.vibrate(60); var imv = await fotoVerso(video); cerrarCamara(); validarQR(texto); if (imv) leerVerso(imv); return; }
           } catch (e) { /* se sigue intentando */ }
         }
         if (!aviso && Date.now() - inicio > 12000) { aviso = true; $("camara-texto").textContent = "Acerca un poco el carné y evita reflejos. Mantén el QR centrado."; }
@@ -625,9 +644,8 @@ async function abrirCamara(modo) {
     var actualizarTexto = function () {
       $("cp-frente").className = hechoFrente ? "ok" : "actual";
       $("cp-qr").className = hechoQR ? "ok" : (hechoFrente ? "actual" : "");
-      $("camara").setAttribute("data-modo", hechoFrente ? "qr" : "auto"); // el marco pasa a cuadrado para el QR
       $("camara-texto").textContent = hechoFrente && hechoQR ? "¡Listo! Leímos tu carné."
-        : hechoFrente ? "Frente leído ✓ Paso 2: gira el carné y muestra el VERSO, con el código QR."
+        : hechoFrente ? "Frente leído ✓ Paso 2: gira el carné y muestra el VERSO completo, con el QR visible."
         : "Paso 1: muestra el FRENTE de tu carné dentro del marco, con buena luz y sin reflejos.";
     };
     actualizarTexto();
@@ -638,7 +656,7 @@ async function abrirCamara(modo) {
           if (hechoFrente && !hechoQR && Date.now() - frenteListoEn > 1800) {
             try {
               var tx = await leerQR(chico);
-              if (tx && !cam.parar) { hechoQR = true; if (navigator.vibrate) navigator.vibrate(60); validarQR(tx); actualizarTexto(); }
+              if (tx && !cam.parar) { hechoQR = true; if (navigator.vibrate) navigator.vibrate(60); var imv2 = await fotoVerso(video); validarQR(tx); if (imv2) leerVerso(imv2); actualizarTexto(); }
             } catch (e) { /* se sigue intentando */ }
           }
           var ahora = Date.now(), hue = huellaImagen(chico);
@@ -686,10 +704,10 @@ $("file-qr").addEventListener("change", async function () {
   try {
     var im = await reducirImagen(f, 1400), url = await leerQR(im.canvas);
     if (!url) return estadoEscaner("No encontré el QR. Acércalo, sin reflejos y con el QR centrado, e intenta de nuevo.", "mal");
-    validarQR(url);
+    validarQR(url); leerVerso(im);
   } catch (e) { estadoEscaner(textoErrorEscaner(e), "mal"); }
 });
-function reiniciarEscaner() { carneEscaneado = { foto: null, qr: null, validezISO: null }; estadoEscaner(""); }
+function reiniciarEscaner() { carneEscaneado = { foto: null, fotoVerso: null, qr: null, cpf: null, validezISO: null }; estadoEscaner(""); }
 
 var btnWizAtras = $("btn-wiz-atras");
 if (btnWizAtras) btnWizAtras.addEventListener("click", function () { if (subPaso > 1) irSubPaso(subPaso - 1, -1); });
@@ -714,6 +732,8 @@ $("form-rnm").addEventListener("submit", function (e) {
 
   var confRnm = $("conf-rnm-val"); if (confRnm) confRnm.textContent = rnm;
   var confNac = $("conf-nac-val"); if (confNac) confNac.textContent = nacTxt;
+  var confCpf = $("conf-cpf-val"), confCpfF = $("conf-cpf-fila");
+  if (confCpfF) { confCpfF.classList.toggle("oculto", !carneEscaneado.cpf); if (confCpf && carneEscaneado.cpf) confCpf.textContent = "•••.•••.•••-" + carneEscaneado.cpf.slice(9); }
   var confVal = $("conf-validez-val"), confValF = $("conf-validez-fila");
   if (confValF) {
     confValF.classList.toggle("oculto", !carneEscaneado.validezISO);
@@ -753,11 +773,16 @@ if (btnConfEnviar) {
     btn.disabled = true;
     msg("msg-confirmar", "Registrando documento y preparando consulta…", true);
 
-    var rutaFoto = null;
+    var rutaFoto = null, rutaVerso = null, marca = Date.now();
     if (carneEscaneado.foto) {
-      var ruta = usuarioActual.id + "/" + Date.now() + ".jpg";
+      var ruta = usuarioActual.id + "/" + marca + "-frente.jpg";
       var sub = await sb.storage.from("rnm-carnes").upload(ruta, carneEscaneado.foto, { contentType: "image/jpeg" });
       if (!sub.error) rutaFoto = ruta;
+    }
+    if (carneEscaneado.fotoVerso) {
+      var rutaV = usuarioActual.id + "/" + marca + "-verso.jpg";
+      var subV = await sb.storage.from("rnm-carnes").upload(rutaV, carneEscaneado.fotoVerso, { contentType: "image/jpeg" });
+      if (!subV.error) rutaVerso = rutaV;
     }
     var r = await sb.from("rnm_registros").insert({
       user_id: usuarioActual.id,
@@ -765,9 +790,11 @@ if (btnConfEnviar) {
       fecha_nacimiento: consultaPendiente.iso,
       validez: carneEscaneado.validezISO || null,
       carne_qr_url: carneEscaneado.qr || null,
-      carne_foto_path: rutaFoto
+      carne_foto_path: rutaFoto,
+      carne_foto_verso_path: rutaVerso,
+      carne_cpf: carneEscaneado.cpf || null
     });
-    if (r.error && rutaFoto) { sb.storage.from("rnm-carnes").remove([rutaFoto]); }
+    if (r.error) { var sobran = [rutaFoto, rutaVerso].filter(Boolean); if (sobran.length) sb.storage.from("rnm-carnes").remove(sobran); }
 
     btn.disabled = false;
 
@@ -989,6 +1016,11 @@ function mostrarPago(cupos) {
     else if (d.length > 3) s = d.slice(0, 3) + "." + d.slice(3);
     e.target.value = s;
   });
+  var conCpf = (registrosCargados || []).filter(function (g) { return g.carne_cpf; })[0];
+  if (conCpf) {
+    $("px-cpf").value = conCpf.carne_cpf; $("px-cpf").dispatchEvent(new Event("input"));
+    $("px-cpf").insertAdjacentHTML("afterend", '<p class="sub ayuda-campo">Rellenado con el CPF de tu carné. Cámbialo si paga otra persona.</p>');
+  }
   $("btn-generar").addEventListener("click", async function () {
     var cpf = $("px-cpf").value.replace(/\D/g, "");
     if (cpf.length !== 11) return aviso("Escribe tu CPF completo (11 números).");
@@ -1276,7 +1308,7 @@ async function cargarRegistros() {
   actualizarAvisoRegistro();
   var q = await Promise.all([
     sb.from("rnm_registros")
-      .select("id, rnm, estado_pago, requiere_pago, estado_pf, unidad_pf, cambio_direccion, ultimo_resultado, ultima_consulta_at, cerrado, created_at, validez, carne_foto_path")
+      .select("id, rnm, estado_pago, requiere_pago, estado_pf, unidad_pf, cambio_direccion, ultimo_resultado, ultima_consulta_at, cerrado, created_at, validez, carne_foto_path, carne_foto_verso_path, carne_cpf")
       .order("created_at", { ascending: true }),
     sb.from("rnm_planes").select("cupos, precio_centavos, vence_at").maybeSingle()
   ]);
@@ -1807,14 +1839,14 @@ function construirDetalle(id) {
   (e.detalles || []).forEach(function (d) { filas.push(d); });
   filas.forEach(function (d) { var f = el("div", "review-row"); f.appendChild(el("span", "", d[0] + ":")); f.appendChild(el("b", "", d[1])); datos.appendChild(f); });
   cuerpo.appendChild(datos);
-  if (x.carne_foto_path) {
-    var bf = el("button", "sec btn-borrar-foto", "Borrar la foto de mi carné"); bf.type = "button";
+  if (x.carne_foto_path || x.carne_foto_verso_path) {
+    var bf = el("button", "sec btn-borrar-foto", "Borrar las fotos de mi carné"); bf.type = "button";
     bf.addEventListener("click", async function () {
-      if (!window.confirm("¿Borrar la foto de tu carné? Esto no se puede deshacer.")) return;
+      if (!window.confirm("¿Borrar las fotos de tu carné (frente y verso)? Esto no se puede deshacer.")) return;
       bf.disabled = true;
-      await sb.storage.from("rnm-carnes").remove([x.carne_foto_path]);
+      await sb.storage.from("rnm-carnes").remove([x.carne_foto_path, x.carne_foto_verso_path].filter(Boolean));
       await sb.rpc("rnm_borrar_foto_carne", { p_registro: x.id });
-      if (window.toast) toast("Foto borrada", "ok");
+      if (window.toast) toast("Fotos borradas", "ok");
       cargarRegistros();
     });
     cuerpo.appendChild(bf);
