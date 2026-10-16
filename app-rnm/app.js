@@ -669,8 +669,8 @@ function mostrarPago(cupos) {
       '<div class="pay-precio"><b>' + precio + '</b><span>por mes</span></div></div>' +
     '<p class="pay-sub">Elige cómo quieres pagar</p>' +
     '<div class="metodos" role="radiogroup" aria-label="Forma de pago">' +
-      '<button type="button" class="metodo sel" data-m="tarjeta" role="radio" aria-checked="true">' + ICONOS_PAGO.tarjeta + '<b>Tarjeta</b><small>Se renueva solo</small></button>' +
-      '<button type="button" class="metodo" data-m="pix" role="radio" aria-checked="false">' + ICONOS_PAGO.pix + '<b>Pix</b><small>Al instante</small></button>' +
+      '<button type="button" class="metodo sel" data-m="pix" role="radio" aria-checked="true">' + ICONOS_PAGO.pix + '<b>Pix</b><small>Al instante</small></button>' +
+      '<button type="button" class="metodo" data-m="tarjeta" role="radio" aria-checked="false">' + ICONOS_PAGO.tarjeta + '<b>Tarjeta</b><small>Se renueva solo</small></button>' +
       '<button type="button" class="metodo" data-m="boleto" role="radio" aria-checked="false">' + ICONOS_PAGO.boleto + '<b>Boleto</b><small>1-2 días hábiles</small></button>' +
     '</div>' +
     '<form id="form-pago" class="pay-panel" novalidate>' +
@@ -705,7 +705,7 @@ function mostrarPago(cupos) {
   $("btn-volver-planes").addEventListener("click", function () { salirDePago(); cargarRegistros(); });
 
   function aviso(t, bien) { var m = $("msg-pago"); if (m) { m.textContent = t || ""; m.className = "msg" + (bien ? " bien" : ""); } }
-  var metodoActual = "tarjeta";
+  var metodoActual = "pix";
   var NOTAS = {
     pix: "Pagas una vez y activamos 1 mes de tu plan. No se renueva solo: cuando termine el mes te avisamos para pagar de nuevo.",
     boleto: "Pagas en tu banco, app o lotérica. El plan se activa cuando el banco confirma (1-2 días hábiles). No se renueva solo."
@@ -721,6 +721,7 @@ function mostrarPago(cupos) {
     if (m !== "tarjeta") { $("px-nota").textContent = NOTAS[m]; $("btn-generar").textContent = TEXTOS_BOTON[m] + " · " + precio; }
   }
   var botonesMetodo = Array.prototype.slice.call(c.querySelectorAll(".metodo"));
+  elegir("pix"); // estado inicial coherente con el método marcado
   function enfocarMetodo(i) { var b = botonesMetodo[(i + botonesMetodo.length) % botonesMetodo.length]; b.focus(); elegir(b.getAttribute("data-m")); }
   botonesMetodo.forEach(function (b, i) {
     b.setAttribute("tabindex", b.classList.contains("sel") ? "0" : "-1");
@@ -919,6 +920,11 @@ function cartelPlanes(regs, plan) {
     : (primeraHecha
       ? "Con un plan revisamos tu RNM cada 7 días. Sin plan, el estado ya no se actualiza."
       : "Elige cuántos RNM cubrir. Revisión cada 7 días.")));
+  var ben = el("ul", "pay-beneficios");
+  ["Revisión automática cada 7 días", "Ves dónde está tu RNM y qué hacer", "Pago seguro con Mercado Pago"].forEach(function (t) {
+    var li = el("li", "", ""); li.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>'; li.appendChild(document.createTextNode(t)); ben.appendChild(li);
+  });
+  c.appendChild(ben);
   var grid = el("div", "planes");
   [1, 2, 3, 4].forEach(function (n) {
     var b = el("button", "plan" + (n === planElegido ? " sel" : ""));
@@ -934,6 +940,7 @@ function cartelPlanes(regs, plan) {
     } else {
       b.appendChild(el("small", n > 1 ? "ahorro" : "", n > 1 ? "Ahorras " + porcentajeAhorro(n) + "%" : "\u00a0"));
       if (n === 4) b.classList.add("mejor-precio");
+      else if (n === necesita && abiertos > 0 && !activo) b.classList.add("recomendado");
       b.addEventListener("click", function () { planElegido = n; cartelPlanes(regs, plan); });
     }
     grid.appendChild(b);
@@ -985,9 +992,9 @@ function cerrarModalPlanes() {
   if (estabaAbierto) focoAntesModal = null;
 }
 $("modal-cerrar").addEventListener("click", cerrarModalPlanes);
-$("modal-planes").addEventListener("click", function (e) { if (e.target === this) cerrarModalPlanes(); });
+$("modal-planes").addEventListener("click", function (e) { if (e.target === this && !pagandoPlan) cerrarModalPlanes(); });
 document.addEventListener("keydown", function (e) {
-  if (e.key === "Escape") cerrarModalPlanes();
+  if (e.key === "Escape" && !pagandoPlan) cerrarModalPlanes();
   if (e.key !== "Tab") return;
   var abierto = document.querySelector(".modal:not(.oculto) .modal-caja");
   if (!abierto) return;
