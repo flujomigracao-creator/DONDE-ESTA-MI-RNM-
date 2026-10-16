@@ -1194,7 +1194,7 @@ function rastreador(x, opciones) {
   opciones = opciones || {};
   var e = estadoPresentacion(x), tt = titularRastreador(e);
   var idx = { "En confección": 0, "En trámite": 0, "En traslado": 1, "Listo": 2, "Entregado": 3 }[e.corto];
-  var c = el("div", "rastreador " + e.tono + (e.corto === "Listo" ? " listo" : ""));
+  var c = el("div", "rastreador " + e.tono + (e.corto === "Listo" ? " listo" : "") + (opciones.compacto ? " compacto" : ""));
   var top = el("div", "rt-top");
   top.appendChild(el("span", "rt-rnm", "RNM " + x.rnm));
   top.appendChild(el("span", "rt-fecha", x.ultima_consulta_at ? "Revisado " + new Date(x.ultima_consulta_at).toLocaleDateString("es", { day: "numeric", month: "short" }).replace(".", "") : "Sin revisión aún"));
@@ -1205,7 +1205,7 @@ function rastreador(x, opciones) {
   if (lc.length) {
     var cd = el("p", "rt-cambio", ""); cd.appendChild(el("b", "", "Cambio de dirección")); cd.appendChild(insigniaCambio(lc[0].estado)); c.appendChild(cd);
   }
-  if (idx !== undefined) {
+  if (idx !== undefined && !opciones.compacto) {
     var pista = el("div", "rt-pista");
     pista.style.setProperty("--idx", "0");
     pista.innerHTML = '<div class="rt-linea"><i class="rt-relleno"></i></div><span class="rt-marcador">' + SVG_PIN + '</span>';
@@ -1306,7 +1306,7 @@ function actualizarDashboard(regs, plan) {
       var completos = 0, compactos = [];
       orden.forEach(function (x, i) {
         var completo = x.estado_pf === "listo" || (i === 0) || (!x.cerrado && completos === 0);
-        if (completo && completos < 3) { heroCont.appendChild(rastreador(x, { cta: true })); completos++; }
+        if (completo && completos < 3) { heroCont.appendChild(rastreador(x, { cta: true, compacto: completos > 0 })); completos++; }
         else compactos.push(x);
       });
       if (compactos.length) {

@@ -789,3 +789,16 @@ button.sec:hover:not(:disabled) { border-color: var(--brand-line); background: v
 .titulo-otros { margin: 18px 0 8px; font-size: 0.95rem; color: var(--ink-soft, #5B6B86); font-weight: 700; }
 .rt-cambio { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 12px 0 0; padding: 8px 12px; border-radius: 12px; background: #F4F7FB; font-size: 0.85rem; }
 .rt-cambio b { font-weight: 700; }
+
+/* Tamaños: tarjetas más compactas; las tarjetas completas a partir de la segunda no repiten el recorrido */
+.rastreador { padding: 18px 16px 16px; margin-bottom: 12px; border-radius: 22px; }
+.rt-titular { font-size: 1.5rem; margin: 8px 0 4px; }
+.rt-sub { margin-bottom: 14px; font-size: 0.98rem; }
+.rt-estaciones { padding-top: 22px; }
+.rt-cta { margin-top: 14px; min-height: 48px; }
+.rt-cambio { margin-top: 10px; padding: 6px 10px; }
+.rastreador.compacto .rt-sub { margin-bottom: 4px; }
+.rastreador.compacto .rt-titular { font-size: 1.3rem; }
+.rastreador.compacto .rt-cta { margin-top: 12px; min-height: 44px; }
+.fila-rnm { padding: 12px 14px; margin-bottom: 8px; gap: 12px; }
+@media (min-width: 1024px) { .rt-titular { font-size: 2rem; } .rastreador { padding: 24px 28px 22px; } .rastreador.compacto .rt-titular { font-size: 1.5rem; } }
