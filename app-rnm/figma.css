@@ -952,3 +952,42 @@ button.sec:hover:not(:disabled) { border-color: var(--brand-line); background: v
 .camara-pasos li.actual { background: rgba(255, 200, 61, 0.28); box-shadow: inset 0 0 0 2px #FFC83D; }
 
 .camara[data-modo="qr"] .camara-guia { width: min(86vw, 520px); aspect-ratio: 1.586; }
+
+/* ===== Planes: dos tarjetas vistosas ===== */
+.planes-op { display: grid; gap: 12px; margin: 14px 0 6px; }
+@media (min-width: 680px) { .planes-op { grid-template-columns: 1fr 1fr; } }
+.plan-op { position: relative; display: flex; flex-direction: column; align-items: stretch; text-align: left; gap: 6px; padding: 18px 16px 16px; border-radius: 22px; border: 2px solid var(--line); background: #fff !important; background-image: none !important; color: var(--text-main) !important; box-shadow: var(--sombra-1) !important; transition: transform .15s ease, border-color .15s ease, box-shadow .2s ease; }
+.plan-op:hover:not(:disabled) { transform: translateY(-2px); }
+.plan-op.sel { border-color: var(--brand); box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 20%, transparent), var(--sombra-2) !important; }
+.plan-op.manual { background: linear-gradient(160deg, #0A2A5E 0%, #0E3F8E 100%) !important; color: #fff !important; border-color: #0A2A5E; }
+.plan-op.manual.sel { border-color: #FFC83D; box-shadow: 0 0 0 3px rgba(255, 200, 61, 0.35), var(--sombra-2) !important; }
+.plan-op:disabled { opacity: 0.7; cursor: default; }
+.plan-op-insignia { align-self: flex-start; padding: 3px 10px; border-radius: 99px; font-size: 0.7rem; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; background: var(--success-soft); color: var(--success); }
+.plan-op.manual .plan-op-insignia { background: #FFC83D; color: #0A2A5E; }
+.plan-op-insignia.actual { background: var(--brand-soft); color: var(--brand); }
+.plan-op.manual .plan-op-insignia.actual { background: rgba(255, 255, 255, 0.2); color: #fff; }
+.plan-op-cab { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-top: 4px; }
+.plan-op-nombre { font-size: 1.25rem; font-weight: 800; letter-spacing: -0.02em; }
+.plan-op-precio strong { font-size: 1.7rem; font-weight: 800; letter-spacing: -0.03em; }
+.plan-op-precio span { font-size: 0.85rem; opacity: 0.75; margin-left: 2px; }
+.plan-op-lema { margin: 0 0 4px; font-size: 0.9rem; font-weight: 600; opacity: 0.85; }
+.plan-op-puntos { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 7px; }
+.plan-op-puntos li { display: flex; align-items: flex-start; gap: 8px; font-size: 0.88rem; font-weight: 600; line-height: 1.3; }
+.plan-op-puntos svg { width: 17px; height: 17px; flex: none; margin-top: 1px; padding: 2px; border-radius: 50%; background: var(--success-soft); color: var(--success); }
+.plan-op.manual .plan-op-puntos svg { background: #FFC83D; color: #0A2A5E; }
+.plan-op-aviso { color: var(--text-muted); font-weight: 600; }
+.plan-op.sel::after { content: ""; position: absolute; right: 14px; bottom: 14px; width: 24px; height: 24px; border-radius: 50%; background: var(--brand) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E") center / 14px no-repeat; }
+.plan-op.manual.sel::after { background-color: #FFC83D; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230A2A5E' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E"); }
+#modal-planes .plan-op { padding: 14px 14px 14px; }
+@media (max-width: 480px) { .plan-op-precio strong { font-size: 1.5rem; } }
+@media (prefers-reduced-motion: reduce) { .plan-op { transition: none; } .plan-op:hover:not(:disabled) { transform: none; } }
+
+/* Verificar ahora */
+.verif-ahora { display: grid; gap: 12px; }
+.verif-cab { display: flex; align-items: center; gap: 12px; }
+.verif-ico { width: 40px; height: 40px; border-radius: 13px; display: grid; place-items: center; flex: none; background: var(--brand-soft); color: var(--brand); }
+.verif-ico svg { width: 22px; height: 22px; }
+.verif-texto { display: flex; flex-direction: column; gap: 2px; font-size: 0.86rem; line-height: 1.3; }
+.verif-texto b { font-size: 1rem; color: var(--navy); }
+.verif-texto span { color: var(--text-muted); font-weight: 600; }
+.verif-btn { min-height: 48px; border-radius: 14px; font-weight: 800; }

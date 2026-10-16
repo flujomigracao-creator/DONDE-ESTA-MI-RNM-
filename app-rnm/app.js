@@ -15,9 +15,10 @@ var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
    Se guarda unos días porque el inicio de sesión con Google no conserva la dirección. */
 (function () {
   try {
-    var q = new URLSearchParams(location.search), cupos = Number(q.get("plan")), metodo = q.get("pago");
-    if (cupos >= 1 && cupos <= 4) {
-      localStorage.setItem("rnm_ir_pago", JSON.stringify({ cupos: cupos, metodo: metodo === "boleto" ? "boleto" : "pix", t: Date.now() }));
+    var q = new URLSearchParams(location.search), planParam = String(q.get("plan") || "").toLowerCase(), metodo = q.get("pago");
+    var tipoPlan = planParam === "manual" ? "manual" : ((planParam === "semanal" || (Number(planParam) >= 1 && Number(planParam) <= 4)) ? "semanal" : null);
+    if (tipoPlan) {
+      localStorage.setItem("rnm_ir_pago", JSON.stringify({ plan: tipoPlan, metodo: metodo === "boleto" ? "boleto" : "pix", t: Date.now() }));
       history.replaceState(null, "", location.pathname + location.hash);
     }
   } catch (e) { /* sin almacenamiento: simplemente no se abre el pago solo */ }
@@ -25,10 +26,11 @@ var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 function consumirIrAPago() {
   var d;
   try { d = JSON.parse(localStorage.getItem("rnm_ir_pago") || "null"); localStorage.removeItem("rnm_ir_pago"); } catch (e) { return; }
-  if (!d || Date.now() - d.t > 7 * 24 * 3600 * 1000 || !d.cupos) return;
+  if (!d || Date.now() - d.t > 7 * 24 * 3600 * 1000) return;
+  var tipoIr = d.plan === "manual" ? "manual" : "semanal";
   navegarA("planes");
   setTimeout(function () {
-    mostrarPago(d.cupos);
+    mostrarPago(tipoIr);
     var b = document.querySelector('.metodo[data-m="' + d.metodo + '"]');
     if (b) b.click();
   }, 400);
@@ -165,7 +167,7 @@ function actualizarResumenPerfil() {
   var n = $("perfil-n-rnm"); if (n) { if (window.contarHasta) contarHasta(n, registrosCargados.length); else n.textContent = String(registrosCargados.length); }
   var activo = !!planCargado && new Date(planCargado.vence_at) > new Date();
   var p = $("perfil-plan"), ps = $("perfil-plan-sub");
-  if (p) p.textContent = activo ? "Plan de " + planCargado.cupos + " RNM" : "Sin plan";
+  if (p) p.textContent = activo ? nombrePlan(planCargado.tipo) : "Sin plan";
   if (ps) ps.textContent = activo ? "Activo hasta " + fechaCorta(planCargado.vence_at) : "Ver planes";
   var del = $("perfil-eliminar");
   if (del) del.href = WHATSAPP ? "https://wa.me/" + WHATSAPP + "?text=" + encodeURIComponent("Hola, quiero solicitar la eliminación de mi cuenta y mis datos en ¿Dónde está mi RNM?") : "mailto:" + CONTACTO_EMAIL + "?subject=" + encodeURIComponent("Eliminar mi cuenta");
@@ -788,16 +790,8 @@ $("form-rnm").addEventListener("submit", function (e) {
 
   var confCosto = $("conf-costo-val");
   if (confCosto) {
-    if (gratisDisponible) {
-      confCosto.textContent = "Primera consulta gratuita incluida";
-      confCosto.style.color = "var(--success)";
-    } else if (planCargado && new Date(planCargado.vence_at) > new Date() && registrosCargados.length + 1 <= planCargado.cupos) {
-      confCosto.textContent = "Cubierto por tu plan mensual activo";
-      confCosto.style.color = "var(--brand)";
-    } else {
-      confCosto.textContent = "Documento adicional (requiere plan)";
-      confCosto.style.color = "var(--warning)";
-    }
+    confCosto.textContent = "Primera verificación gratis";
+    confCosto.style.color = "var(--success)";
   }
 
   irAPasoConsulta(2);
@@ -883,33 +877,57 @@ var gratisDisponible = true;
 function mostrarCosteAplicable() {
   var lleno = registrosCargados.length >= 4;
   var activo = !!planCargado && new Date(planCargado.vence_at) > new Date();
-  var cual = lleno ? "tope-4" : (gratisDisponible ? "reg-gratis" : (activo && registrosCargados.length + 1 <= planCargado.cupos ? "reg-cubierto" : "reg-adicional"));
+  var cual = lleno ? "tope-4" : "reg-gratis"; // cada RNM (hasta 4) tiene su primera verificación gratis
   ["reg-gratis", "reg-cubierto", "reg-adicional", "tope-4"].forEach(function (id) { var n = $(id); if (n) n.classList.toggle("oculto", id !== cual); });
 }
 async function actualizarAvisoRegistro() {
-  var g = await sb.rpc("rnm_gratis_disponible");
-  if (g.error || typeof g.data !== "boolean") return;
-  gratisDisponible = g.data;
+  gratisDisponible = true;
   mostrarCosteAplicable();
 }
 
-var PRECIOS = { 1: 499, 2: 899, 3: 1299, 4: 1599 }; // centavos al mes por cuenta, según cuántos RNM cubre el plan
+/* Dos planes, ambos de hasta 4 RNM: Semanal (revisión automática) y Manual (todo lo del semanal + "Verificar ahora"). */
+var PRECIOS = { semanal: 999, manual: 1999 }; // centavos al mes
 function reales(c) { return "R$ " + (c / 100).toFixed(2).replace(".", ","); }
-function ahorro(n) { return n * PRECIOS[1] - PRECIOS[n]; } // lo que se ahorra frente a pagar R$ 4,99 por cada RNM por separado
-function porcentajeAhorro(n) { return Math.round(ahorro(n) * 100 / (n * PRECIOS[1])); }
-var planElegido = 1;
-var ampliando = false; // el cliente con plan activo quiere pasar a uno más grande aunque el suyo ya cubra todos sus RNM
+var PLANES = {
+  semanal: { nombre: "Semanal", etiqueta: "Plan semanal", insignia: "Más elegido", lema: "Lo revisamos por ti, cada semana",
+    puntos: ["Hasta 4 RNM en una sola cuenta", "Revisión automática cada 7 días", "Ves dónde está tu RNM y qué hacer", "Primera verificación gratis en cada RNM"] },
+  manual: { nombre: "Manual", etiqueta: "Plan manual", insignia: "Control total", lema: "Verifica tú, el día que quieras",
+    puntos: ["Todo lo del plan semanal", "Botón «Verificar ahora» en cada RNM", "1 verificación por día y por RNM", "Ideal si estás por retirar tu documento"] }
+};
+function nombrePlan(tipo) { return (PLANES[tipo] || PLANES.semanal).etiqueta; }
+var ICO_CHECK_PLAN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+function tarjetaPlan(tipo, o) {
+  var p = PLANES[tipo], b = el("button", "plan-op " + tipo + (o.sel ? " sel" : "") + (o.actual ? " actual" : ""));
+  b.type = "button";
+  if (o.off) b.disabled = true;
+  b.appendChild(el("span", "plan-op-insignia" + (o.actual ? " actual" : ""), o.actual ? "Tu plan" : p.insignia));
+  var cab = el("div", "plan-op-cab");
+  cab.appendChild(el("b", "plan-op-nombre", p.nombre));
+  var pr = el("div", "plan-op-precio");
+  pr.appendChild(el("strong", "", reales(PRECIOS[tipo]))); pr.appendChild(el("span", "", "/mes"));
+  cab.appendChild(pr); b.appendChild(cab);
+  b.appendChild(el("p", "plan-op-lema", p.lema));
+  var ul = el("ul", "plan-op-puntos");
+  p.puntos.forEach(function (t) { var li = el("li", "", ""); li.innerHTML = ICO_CHECK_PLAN; li.appendChild(document.createTextNode(t)); ul.appendChild(li); });
+  b.appendChild(ul);
+  if (o.aviso) b.appendChild(el("small", "plan-op-aviso", o.aviso));
+  if (o.onClick && !o.off) b.addEventListener("click", o.onClick);
+  return b;
+}
+var planElegido = "semanal";
+var ultimoTipoPedido = ""; // el plan que la persona está pagando ahora (para saber cuándo quedó activo)
+var ampliando = false; // el cliente con plan semanal activo quiere pasar al manual
 
 var esperandoPago = 0; // hora en que la persona volvió de Mercado Pago; mientras tanto se confirma el cobro
 
 // Pide al servidor que cree la suscripción con el código de la tarjeta (los datos de la tarjeta nunca pasan por FLUJO).
-async function pedirSuscripcion(cupos, tarjetaToken) {
+async function pedirSuscripcion(tipo, tarjetaToken) {
   var s = await sb.auth.getSession();
   var token = s.data.session && s.data.session.access_token;
   var r = await fetch(SUPABASE_URL + "/functions/v1/mp-crear-suscripcion", {
     method: "POST",
     headers: { "Content-Type": "application/json", apikey: SUPABASE_KEY, Authorization: "Bearer " + token },
-    body: JSON.stringify({ cupos: cupos, card_token_id: tarjetaToken })
+    body: JSON.stringify({ plan: tipo, card_token_id: tarjetaToken })
   });
   var j = await r.json().catch(function () { return {}; });
   return { ok: r.ok && j.ok === true, j: j };
@@ -944,13 +962,13 @@ function salirDePago() {
 }
 
 // Pix y Boleto: pago de un mes (no se renueva solo). El servidor crea el cobro y devuelve el código.
-async function pedirPagoUnico(cupos, metodo, cpf) {
+async function pedirPagoUnico(tipo, metodo, cpf) {
   var s = await sb.auth.getSession();
   var token = s.data.session && s.data.session.access_token;
   var r = await fetch(SUPABASE_URL + "/functions/v1/mp-crear-pago", {
     method: "POST",
     headers: { "Content-Type": "application/json", apikey: SUPABASE_KEY, Authorization: "Bearer " + token },
-    body: JSON.stringify({ cupos: cupos, metodo: metodo, cpf: cpf })
+    body: JSON.stringify({ plan: tipo, metodo: metodo, cpf: cpf })
   });
   var j = await r.json().catch(function () { return {}; });
   return { ok: r.ok && j.ok === true, j: j };
@@ -975,21 +993,21 @@ var ICONOS_PAGO = {
   boleto: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5v14M7.5 5v14M11 5v14M14 5v14M17.5 5v14M20 5v14"/></svg>'
 };
 
-function mostrarPago(cupos) {
+function mostrarPago(tipo) {
   var cont = $("cartel");
   if (!window.MercadoPago) { // el script de Mercado Pago no cargó (sin internet o bloqueado)
     var av = $("msg-pago"); if (av) av.textContent = "No pudimos cargar el pago seguro. Revisa tu internet e intenta de nuevo.";
     return;
   }
   salirDePago();
-  pagandoPlan = cupos;
+  pagandoPlan = tipo; ultimoTipoPedido = tipo;
   cont.textContent = "";
-  var precio = reales(PRECIOS[cupos]);
+  var precio = reales(PRECIOS[tipo]);
   var c = el("div", "pay");
   c.innerHTML =
     '<div class="pay-top"><button type="button" class="sec" id="btn-volver-planes"><svg class=\"ic\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M19 12H5M11 6l-6 6 6 6\"/></svg> Cambiar plan</button><span class="pay-paso">Paso 2 de 2</span></div>' +
     '<h2 class="pay-titulo">Finaliza tu suscripción</h2>' +
-    '<div class="pay-resumen"><div><b>Plan de ' + cupos + ' RNM</b><span>Vigilamos hasta ' + cupos + (cupos === 1 ? " documento" : " documentos") + ': revisión semanal</span></div>' +
+    '<div class="pay-resumen"><div><b>' + nombrePlan(tipo) + '</b><span>' + (tipo === "manual" ? "Hasta 4 RNM · revisión semanal + Verificar ahora" : "Hasta 4 RNM · revisión automática cada 7 días") + '</span></div>' +
       '<div class="pay-precio"><b>' + precio + '</b><span>por mes</span></div></div>' +
     '<p class="pay-sub">Elige cómo quieres pagar</p>' +
     '<div class="metodos" role="radiogroup" aria-label="Forma de pago">' +
@@ -1072,19 +1090,19 @@ function mostrarPago(cupos) {
     if (cpf.length !== 11) return aviso("Escribe tu CPF completo (11 números).");
     var b = this; b.disabled = true; aviso(metodoActual === "pix" ? "Generando tu código Pix…" : "Generando tu boleto…", true);
     var res;
-    try { res = await pedirPagoUnico(cupos, metodoActual, cpf); }
+    try { res = await pedirPagoUnico(tipo, metodoActual, cpf); }
     catch (e) { b.disabled = false; return aviso("No pudimos conectar con el pago. Revisa tu internet e intenta de nuevo."); }
     b.disabled = false;
     if (!res.ok) return aviso(textoErrorPago(res.j));
     aviso("");
-    mostrarCodigoPago(cupos, res.j);
+    mostrarCodigoPago(tipo, res.j);
   });
 
   var btn = $("btn-pagar-tarjeta");
   try {
     mpSdk = mpSdk || new MercadoPago(MP_PUBLIC_KEY, { locale: "es-AR" });
     formTarjeta = mpSdk.cardForm({
-      amount: String(PRECIOS[cupos] / 100),
+      amount: String(PRECIOS[tipo] / 100),
       iframe: true,
       form: {
         id: "form-pago",
@@ -1111,7 +1129,7 @@ function mostrarPago(cupos) {
           if (!d || !d.token) return aviso("Revisa los datos de la tarjeta.");
           btn.disabled = true; aviso("Procesando el pago…", true);
           var res;
-          try { res = await pedirSuscripcion(cupos, d.token); }
+          try { res = await pedirSuscripcion(tipo, d.token); }
           catch (e) { btn.disabled = false; return aviso("No pudimos conectar con el pago. Revisa tu internet e intenta de nuevo."); }
           if (!res.ok) { btn.disabled = false; return aviso(textoErrorPago(res.j)); }
           salirDePago();
@@ -1127,7 +1145,7 @@ function mostrarPago(cupos) {
 }
 
 // Pantalla con el código Pix (QR + copia y cola) o el boleto; espera sola la confirmación del pago.
-function mostrarCodigoPago(cupos, d) {
+function mostrarCodigoPago(tipo, d) {
   var cont = $("cartel");
   try { if (formTarjeta) formTarjeta.unmount(); } catch (e) { /* ya desmontado */ }
   formTarjeta = null;
@@ -1137,8 +1155,8 @@ function mostrarCodigoPago(cupos, d) {
   var codigo = esPix ? d.pix.copia_y_cola : (d.boleto.codigo || "");
   var h =
     '<div class="pay-top"><button type="button" class="sec" id="btn-volver-planes"><svg class=\"ic\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M19 12H5M11 6l-6 6 6 6\"/></svg> Volver</button><span class="pay-paso">' + (esPix ? "Pago con Pix" : "Pago con boleto") + '</span></div>' +
-    '<div class="pay-resumen"><div><b>Plan de ' + cupos + ' RNM · 1 mes</b><span>' + (esPix ? "Paga y se activa en segundos" : "Se activa cuando el banco confirma") + '</span></div>' +
-      '<div class="pay-precio"><b>' + reales(PRECIOS[cupos]) + '</b></div></div>';
+    '<div class="pay-resumen"><div><b>' + nombrePlan(tipo) + ' · 1 mes</b><span>' + (esPix ? "Paga y se activa en segundos" : "Se activa cuando el banco confirma") + '</span></div>' +
+      '<div class="pay-precio"><b>' + reales(PRECIOS[tipo]) + '</b></div></div>';
   if (esPix) {
     h += (d.pix.qr_base64 ? '<div class="pix-qr"><img alt="Código QR para pagar con Pix" src="data:image/png;base64,' + d.pix.qr_base64.replace(/[^A-Za-z0-9+/=]/g, "") + '"></div>' : "") +
       '<ol class="pay-pasos"><li>Abre la app de tu banco y entra en <b>Pix</b>.</li><li>Escanea el QR o elige <b>Pix copia y cola</b>.</li><li>Confirma el pago. Aquí se activa solo.</li></ol>';
@@ -1204,7 +1222,7 @@ function notaSemanal() {
   var n = el("div", "nota-semanal");
   n.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>';
   var t = el("p", "", "");
-  t.innerHTML = "<b>Revisión semanal.</b> Con un plan revisamos cada RNM una vez por semana (cada 7 días) hasta que el documento esté listo. No es en tiempo real.";
+  t.innerHTML = "<b>Revisión semanal.</b> Con cualquier plan revisamos cada RNM una vez por semana (cada 7 días) hasta que el documento esté listo. Con el plan manual, además, puedes pedir una verificación el día que quieras.";
   n.appendChild(t);
   return n;
 }
@@ -1216,8 +1234,8 @@ function cartelPlanes(regs, plan) {
   var abiertos = regs.filter(function (r) { return !r.cerrado; }).length;
   if (!regs.length || !abiertos) return; // sin RNM por vigilar no hay nada que ofrecer
   var activo = !!plan && new Date(plan.vence_at) > new Date();
-  var necesita = Math.min(abiertos, 4);
-  if (esperandoPago && Date.now() - esperandoPago < 180000 && !(activo && plan.cupos >= necesita)) {
+  var logrado = activo && (!ultimoTipoPedido || plan.tipo === ultimoTipoPedido);
+  if (esperandoPago && Date.now() - esperandoPago < 180000 && !logrado) {
     var espera = el("div", "pay pay-centro");
     espera.innerHTML = '<div class="pay-icono"><span class="punto"></span></div>';
     espera.appendChild(el("h2", "pay-titulo", "Confirmando tu pago…"));
@@ -1228,66 +1246,45 @@ function cartelPlanes(regs, plan) {
     cont.appendChild(espera);
     return;
   }
-  if (activo && plan.cupos >= necesita && !ampliando) {
+  if (activo && !ampliando) {
     var ok = el("div", "pay pay-centro");
     ok.innerHTML = '<div class="pay-icono ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>';
-    ok.appendChild(el("h2", "pay-titulo", "Tu plan está activo"));
-    ok.appendChild(el("p", "sub", "Cubre hasta " + plan.cupos + " RNM (" + reales(plan.precio_centavos) + " al mes) y está pagado hasta el " + fechaCorta(plan.vence_at) + "."));
-    if (plan.cupos < 4) {
-      var masGrande = el("button", "", "Ampliar mi plan"); masGrande.type = "button";
-      masGrande.addEventListener("click", function () { ampliando = true; planElegido = plan.cupos + 1; cartelPlanes(regs, plan); });
-      ok.appendChild(masGrande);
+    ok.appendChild(el("h2", "pay-titulo", nombrePlan(plan.tipo) + " activo"));
+    ok.appendChild(el("p", "sub", "Cubre hasta 4 RNM (" + reales(plan.precio_centavos) + " al mes) y está pagado hasta el " + fechaCorta(plan.vence_at) + "."));
+    if (plan.tipo !== "manual") {
+      var aManual = el("button", "", "Pasar al plan manual · " + reales(PRECIOS.manual)); aManual.type = "button";
+      aManual.addEventListener("click", function () { ampliando = true; planElegido = "manual"; cartelPlanes(regs, plan); });
+      ok.appendChild(aManual);
     }
-    var cerrarOk = el("button", plan.cupos < 4 ? "sec" : "", "Entendido"); cerrarOk.type = "button";
+    var cerrarOk = el("button", plan.tipo !== "manual" ? "sec" : "", "Entendido"); cerrarOk.type = "button";
     cerrarOk.addEventListener("click", cerrarModalPlanes);
     ok.appendChild(cerrarOk);
     cont.appendChild(ok);
     return;
   }
-  if (planElegido < necesita) planElegido = necesita;
-  if (activo && ampliando && planElegido <= plan.cupos) planElegido = Math.min(4, plan.cupos + 1);
+  if (!PLANES[planElegido]) planElegido = "semanal";
+  if (activo && ampliando) planElegido = "manual";
   var c = el("div", "pay");
   c.appendChild(el("span", "pay-paso", "Paso 1 de 2"));
   var primeraHecha = regs.some(function (r) { return !r.cerrado && !r.cubierto && !!r.ultimo_resultado; });
-  c.appendChild(el("h2", "pay-titulo", activo ? (plan.cupos >= necesita ? "Amplía tu plan" : "Tu plan cubre " + plan.cupos + " de tus " + abiertos + " RNM") : (primeraHecha ? "Activa un plan para seguir tu RNM" : "Elige tu plan")));
+  c.appendChild(el("h2", "pay-titulo", activo ? "Pasa al plan manual" : (primeraHecha ? "Activa un plan para seguir tus RNM" : "Elige tu plan")));
   c.appendChild(el("p", "sub", activo
-    ? (plan.cupos >= necesita ? "Elige un plan más grande para cubrir más RNM." : "Amplía tu plan para cubrir los demás.")
-    : (primeraHecha
-      ? "Con un plan revisamos tu RNM cada 7 días. Sin plan, el estado ya no se actualiza."
-      : "Elige cuántos RNM cubrir. Revisión cada 7 días.")));
-  var ben = el("ul", "pay-beneficios");
-  ["Revisión automática cada 7 días", "Ves dónde está tu RNM y qué hacer", "Pago seguro con Mercado Pago"].forEach(function (t) {
-    var li = el("li", "", ""); li.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>'; li.appendChild(document.createTextNode(t)); ben.appendChild(li);
-  });
-  c.appendChild(ben);
-  var grid = el("div", "planes");
-  [1, 2, 3, 4].forEach(function (n) {
-    var b = el("button", "plan" + (n === planElegido ? " sel" : ""));
-    b.type = "button";
-    b.appendChild(el("b", "", n + (n === 1 ? " RNM" : " RNM")));
-    b.appendChild(el("span", "precio", reales(PRECIOS[n]) + " /mes"));
-    b.appendChild(el("small", "", reales(Math.round(PRECIOS[n] / n)) + " por RNM"));
-    var esActual = activo && plan.cupos === n;
-    if (n < necesita || (activo && ampliando && n <= plan.cupos)) {
-      b.disabled = true; b.classList.add("no-cubre");
-      b.setAttribute("aria-label", "Plan de " + n + " RNM: no alcanza para tus " + necesita + " RNM");
-      b.appendChild(el("small", "aviso-chico", esActual ? "Tu plan actual" : (n < necesita ? "No alcanza para tus " + necesita + " RNM" : "Ya tienes uno mayor")));
-    } else {
-      b.appendChild(el("small", n > 1 ? "ahorro" : "", n > 1 ? "Ahorras " + porcentajeAhorro(n) + "%" : "\u00a0"));
-      if (n === 4) b.classList.add("mejor-precio");
-      else if (n === necesita && abiertos > 0 && !activo) b.classList.add("recomendado");
-      b.addEventListener("click", function () { planElegido = n; cartelPlanes(regs, plan); });
-    }
-    grid.appendChild(b);
+    ? "Pagas el plan manual completo y reemplaza al semanal durante 1 mes desde hoy."
+    : "Cada RNM ya tuvo su primera verificación gratis. Con un plan, lo seguimos por ti."));
+  var grid = el("div", "planes-op");
+  ["semanal", "manual"].forEach(function (tipo) {
+    var esActual = activo && plan.tipo === tipo;
+    grid.appendChild(tarjetaPlan(tipo, { sel: tipo === planElegido && !esActual, actual: esActual, off: esActual,
+      onClick: function () { planElegido = tipo; cartelPlanes(regs, plan); } }));
   });
   c.appendChild(grid);
   if (activo) {
     var nota = el("p", "nota-ampliar");
-    nota.innerHTML = "<b>Cómo funciona ampliar:</b> pagas el plan nuevo completo (" + reales(PRECIOS[planElegido]) + ") y reemplaza a tu plan actual de " + plan.cupos + (plan.cupos === 1 ? " RNM" : " RNM") + ". Pasa a cubrir " + planElegido + " RNM durante 1 mes desde hoy; los días que te quedaban del plan anterior no se suman.";
+    nota.innerHTML = "<b>Cómo funciona el cambio:</b> pagas el plan manual completo (" + reales(PRECIOS.manual) + ") y reemplaza a tu plan semanal. Dura 1 mes desde hoy; los días que te quedaban del plan anterior no se suman.";
     c.appendChild(nota);
   }
   var acc = el("div", "acciones");
-  var pagar = el("button", "", (activo ? "Ampliar a " : "Continuar · ") + planElegido + " RNM · " + reales(PRECIOS[planElegido]) + "/mes");
+  var pagar = el("button", "", (activo ? "Pasar a " : "Continuar · ") + PLANES[planElegido].etiqueta.toLowerCase() + " · " + reales(PRECIOS[planElegido]) + "/mes");
   pagar.type = "button";
   pagar.addEventListener("click", function () { mostrarPago(planElegido); });
   acc.appendChild(pagar);
@@ -1354,9 +1351,9 @@ async function cargarRegistros() {
   actualizarAvisoRegistro();
   var q = await Promise.all([
     sb.from("rnm_registros")
-      .select("id, rnm, estado_pago, requiere_pago, estado_pf, unidad_pf, cambio_direccion, ultimo_resultado, ultima_consulta_at, cerrado, created_at, validez, validez_verificada_at, carne_validacion, carne_foto_path, carne_foto_verso_path, carne_cpf")
+      .select("id, rnm, estado_pago, requiere_pago, estado_pf, unidad_pf, cambio_direccion, ultimo_resultado, ultima_consulta_at, cerrado, created_at, validez, validez_verificada_at, carne_validacion, carne_foto_path, carne_foto_verso_path, carne_cpf, ultima_manual_at")
       .order("created_at", { ascending: true }),
-    sb.from("rnm_planes").select("cupos, precio_centavos, vence_at").maybeSingle()
+    sb.from("rnm_planes").select("cupos, tipo, precio_centavos, vence_at").maybeSingle()
   ]);
   var r = q[0];
   if (r.error || !r.data) return;
@@ -1395,18 +1392,19 @@ function renderizarPlanes(regs, plan) {
   cont.textContent = "";
   var activo = !!plan && new Date(plan.vence_at) > new Date();
   var abiertos = regs.filter(function (x) { return !x.cerrado; }).length;
-  var necesitan = regs.filter(function (x) { return !x.cerrado && !x.cubierto && (!!x.ultimo_resultado || x.requiere_pago); }).length;
+  var tipoActual = activo ? (plan.tipo === "manual" ? "manual" : "semanal") : null;
 
-  var estado = el("div", "tarjeta");
+  var estado = el("div", "tarjeta plan-estado");
   estado.appendChild(el("p", "hero-eyebrow", "Tu plan actual"));
   if (activo) {
-    estado.appendChild(el("h3", "", "Plan activo · cubre hasta " + plan.cupos + " RNM"));
+    estado.appendChild(el("h3", "", nombrePlan(tipoActual) + " activo"));
     var filas = el("div", "review-summary-card");
     [["Precio mensual", reales(plan.precio_centavos)],
      ["Pagado hasta", fechaCorta(plan.vence_at)],
-     ["RNM incluidos", String(plan.cupos)],
-     ["Frecuencia de revisión", "1 vez por semana"],
-     ["RNM en seguimiento", abiertos + " de " + plan.cupos + (abiertos > plan.cupos ? " (" + (abiertos - plan.cupos) + " sin cobertura)" : "")]
+     ["RNM incluidos", "hasta 4"],
+     ["Revisión automática", "1 vez por semana"],
+     ["Verificar ahora", tipoActual === "manual" ? "Incluido (1 por día y por RNM)" : "Solo en el plan manual"],
+     ["RNM en seguimiento", String(abiertos) + " de 4"]
     ].forEach(function (par) {
       var f = el("div", "review-row");
       f.appendChild(el("span", "", par[0] + ":"));
@@ -1418,44 +1416,33 @@ function renderizarPlanes(regs, plan) {
     estado.appendChild(el("h3", "", plan ? "Tu plan venció" : "Todavía no tienes un plan"));
     estado.appendChild(el("p", "sub", plan
       ? "La vigilancia de tus RNM se detuvo el " + fechaCorta(plan.vence_at) + ". Puedes renovarlo cuando quieras."
-      : "Tu primera consulta es gratis. Para seguir vigilando tus RNM después de la primera revisión necesitas un plan mensual."));
+      : "Cada RNM tiene su primera verificación gratis (hasta 4). Para seguir vigilándolos después necesitas un plan mensual."));
   }
   var acc = el("div", "acciones");
-  var ver = el("button", "btn", activo ? (plan.cupos < 4 || necesitan ? "Ampliar mi plan" : "Ver detalles del plan") : "Elegir un plan");
+  var ver = el("button", "btn", activo ? (tipoActual === "semanal" ? "Pasar al plan manual" : "Ver detalles del plan") : "Elegir un plan");
   ver.type = "button";
   if (!abiertos) {
     ver.disabled = true;
     estado.appendChild(el("p", "sub", "Cuando tengas un RNM en seguimiento podrás elegir un plan."));
   }
-  ver.addEventListener("click", function () { ampliando = activo && plan.cupos < 4; if (ampliando) planElegido = Math.max(planElegido, plan.cupos + 1); cartelPlanes(regs, plan); abrirModalPlanes(); });
+  ver.addEventListener("click", function () { ampliando = tipoActual === "semanal"; planElegido = ampliando ? "manual" : planElegido; cartelPlanes(regs, plan); abrirModalPlanes(); });
   acc.appendChild(ver);
   estado.appendChild(acc);
   cont.appendChild(estado);
   cont.appendChild(notaSemanal());
 
   var precios = el("div", "tarjeta");
-  precios.appendChild(el("h3", "", "Compara los planes"));
-  precios.appendChild(el("p", "sub", "Todos incluyen revisión semanal (cada 7 días) hasta que tu documento esté listo."));
-  var grid = el("div", "plan-grid");
-  [1, 2, 3, 4].forEach(function (n) {
-    var esActual = activo && plan.cupos === n;
-    var esVencido = !activo && !!plan && plan.cupos === n;
-    var card = el("button", "plan-card" + (esActual ? " actual" : "") + (n === 4 ? " destacado" : ""));
-    card.type = "button";
-    card.setAttribute("aria-label", "Plan de " + n + (n === 1 ? " RNM" : " RNM") + ", " + reales(PRECIOS[n]) + " al mes");
-    if (esActual) card.appendChild(el("span", "plan-sello", "Tu plan"));
-    else if (esVencido) card.appendChild(el("span", "plan-sello vencido", "Vencido"));
-    else if (n === 4) card.appendChild(el("span", "plan-sello", "Mejor precio"));
-    card.appendChild(el("b", "plan-n", n + " RNM"));
-    card.appendChild(el("span", "plan-precio", reales(PRECIOS[n])));
-    card.appendChild(el("small", "", "por mes"));
-    card.appendChild(el("small", "plan-por", reales(Math.round(PRECIOS[n] / n)) + " por RNM"));
-    if (n > 1 && ahorro(n) > 0) card.appendChild(el("small", "plan-ahorro", "Ahorras " + porcentajeAhorro(n) + "%"));
-    card.addEventListener("click", function () {
-      if (!abiertos) return navegarA("nueva-consulta");
-      planElegido = n; ampliando = activo && n > plan.cupos; cartelPlanes(regs, plan); abrirModalPlanes();
-    });
-    grid.appendChild(card);
+  precios.appendChild(el("h3", "", "Elige tu plan"));
+  precios.appendChild(el("p", "sub", "Los dos incluyen hasta 4 RNM y la primera verificación gratis de cada uno."));
+  var grid = el("div", "planes-op");
+  ["semanal", "manual"].forEach(function (tipo) {
+    var esActual = tipoActual === tipo;
+    grid.appendChild(tarjetaPlan(tipo, { sel: !esActual && planElegido === tipo, actual: esActual,
+      onClick: function () {
+        if (!abiertos) return navegarA("nueva-consulta");
+        planElegido = tipo; ampliando = tipoActual === "semanal" && tipo === "manual";
+        cartelPlanes(regs, plan); abrirModalPlanes();
+      } }));
   });
   precios.appendChild(grid);
   var como = el("div", "como-pagar");
@@ -1772,6 +1759,59 @@ function renderizarMisRnm(regs, plan) {
   });
 }
 
+/* ---------- Verificar ahora (plan manual): 1 vez por día y por RNM ---------- */
+var verifPendiente = {}; // id del RNM -> ultima_consulta_at que tenía cuando se pidió la verificación
+function diaBrasil(fecha) { return new Date(fecha).toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }); }
+function bloqueVerificarAhora(x) {
+  if (x.cerrado) return null;
+  var plan = planCargado, activo = !!plan && new Date(plan.vence_at) > new Date();
+  var caja = el("div", "tarjeta verif-ahora");
+  var cab = el("div", "verif-cab");
+  var ic = el("span", "verif-ico", ""); ic.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 11-2.3-5.7"/><path d="M20 4v5h-5"/></svg>';
+  cab.appendChild(ic);
+  var tx = el("div", "verif-texto"); tx.appendChild(el("b", "", "Verificar ahora"));
+  var sub = el("span", "", ""); tx.appendChild(sub); cab.appendChild(tx); caja.appendChild(cab);
+  var boton = el("button", "verif-btn", ""); boton.type = "button";
+  if (activo && plan.tipo === "manual") {
+    var yaHoy = !!x.ultima_manual_at && diaBrasil(x.ultima_manual_at) === diaBrasil(new Date());
+    var enCurso = verifPendiente[x.id] !== undefined && (x.ultima_consulta_at || "") === verifPendiente[x.id];
+    if (!enCurso && verifPendiente[x.id] !== undefined) delete verifPendiente[x.id];
+    if (enCurso) { sub.textContent = "Verificando con la Policía Federal… tarda unos minutos. Puedes cerrar esta pantalla."; boton.textContent = "Verificando…"; boton.disabled = true; }
+    else if (yaHoy) { sub.textContent = "Ya verificaste este RNM hoy. Mañana podrás hacerlo otra vez."; boton.textContent = "Ya verificado hoy"; boton.disabled = true; }
+    else { sub.textContent = "Pide una verificación ahora mismo. Puedes hacerla 1 vez por día y por RNM."; boton.textContent = "Verificar ahora"; }
+    boton.addEventListener("click", function () { verificarAhora(x, boton, sub); });
+  } else {
+    sub.textContent = "Con el plan manual (" + reales(PRECIOS.manual) + "/mes) verificas este RNM el día que quieras.";
+    boton.textContent = "Ver plan manual"; boton.className = "verif-btn sec";
+    boton.addEventListener("click", function () { planElegido = "manual"; ampliando = activo; cartelPlanes(registrosCargados, planCargado); abrirModalPlanes(); });
+  }
+  caja.appendChild(boton);
+  return caja;
+}
+async function verificarAhora(x, boton, sub) {
+  boton.disabled = true; sub.textContent = "Enviando tu pedido…";
+  var r = await sb.rpc("rnm_verificar_ahora", { p_registro: x.id });
+  if (r.error) {
+    var m = r.error.message || "";
+    if (m.indexOf("ya_verificado_hoy") >= 0) { sub.textContent = "Ya verificaste este RNM hoy. Mañana podrás hacerlo otra vez."; boton.textContent = "Ya verificado hoy"; return; }
+    boton.disabled = false;
+    sub.textContent = m.indexOf("plan_manual_requerido") >= 0 ? "Esta función es del plan manual."
+      : (m.indexOf("rnm_cerrado") >= 0 ? "Este RNM ya está terminado." : "No pudimos pedir la verificación. Intenta de nuevo.");
+    return;
+  }
+  var antes = x.ultima_consulta_at || "";
+  verifPendiente[x.id] = antes;
+  boton.textContent = "Verificando…";
+  sub.textContent = "Verificando con la Policía Federal… tarda unos minutos. Puedes cerrar esta pantalla.";
+  if (window.toast) toast("Verificación pedida. Te mostramos el resultado aquí.", "ok");
+  for (var i = 0; i < 24; i++) {
+    await new Promise(function (ok) { setTimeout(ok, 10000); });
+    await cargarRegistros();
+    var n = registrosCargados.find(function (g) { return g.id === x.id; });
+    if (n && (n.ultima_consulta_at || "") !== antes) { delete verifPendiente[x.id]; if (window.toast) toast("Verificación lista", "ok"); cargarRegistros(); return; }
+  }
+}
+
 /* ---------- Detalle de RNM e Historial (Pantallas 7 y 8) ---------- */
 function abrirDetalleRnm(id) {
   construirDetalle(id);
@@ -1864,6 +1904,7 @@ function construirDetalle(id) {
     cp.appendChild(ol); cont.appendChild(cp);
   }
 
+  var bvah = bloqueVerificarAhora(x); if (bvah) cont.appendChild(bvah);
   // 3. Dónde retirar (una línea) y plan (un enlace)
   if (e.traslado) { /* mientras se traslada no se indica dónde retirar */ }
   else if (x.unidad_pf && (x.estado_pf === "listo" || e.corto === "Listo")) cont.appendChild(dondeRetirarCompacto(x));
