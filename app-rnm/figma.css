@@ -991,3 +991,6 @@ button.sec:hover:not(:disabled) { border-color: var(--brand-line); background: v
 .verif-texto b { font-size: 1rem; color: var(--navy); }
 .verif-texto span { color: var(--text-muted); font-weight: 600; }
 .verif-btn { min-height: 48px; border-radius: 14px; font-weight: 800; }
+
+.btn-cancelar-plan { color: var(--text-muted); }
+.btn-cancelar-plan:hover { color: #b3261e; border-color: #b3261e; }

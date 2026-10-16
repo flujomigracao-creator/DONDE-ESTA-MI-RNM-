@@ -100,6 +100,7 @@ function mostrarConfirmacion(opts) {
 
     if (tit) tit.textContent = opts.titulo || "¿Confirmar acción?";
     if (desc) desc.textContent = opts.desc || "Esta acción no se puede deshacer.";
+    if (btnCanc) btnCanc.textContent = opts.cancelarTexto || "Cancelar";
     if (btnAcc) {
       btnAcc.textContent = opts.accionTexto || "Confirmar";
       btnAcc.className = "btn " + (opts.esPeligroso ? "danger" : "");
@@ -181,7 +182,9 @@ function actualizarResumenPerfil() {
   var activo = !!planCargado && new Date(planCargado.vence_at) > new Date();
   var p = $("perfil-plan"), ps = $("perfil-plan-sub");
   if (p) p.textContent = activo ? nombrePlan(planCargado.tipo) : "Sin plan";
-  if (ps) ps.textContent = activo ? "Activo hasta " + fechaCorta(planCargado.vence_at) : "Ver planes";
+  if (ps) ps.textContent = activo ? (planCargado.cancelado_at ? "Cancelado · hasta " : "Activo hasta ") + fechaCorta(planCargado.vence_at) : "Ver planes";
+  var bc = $("btn-cancelar-plan-perfil");
+  if (bc) bc.classList.toggle("oculto", !(activo && !planCargado.cancelado_at));
   var del = $("perfil-eliminar");
   if (del) del.href = WHATSAPP ? "https://wa.me/" + WHATSAPP + "?text=" + encodeURIComponent("Hola, quiero solicitar la eliminación de mi cuenta y mis datos en ¿Dónde está mi RNM?") : "mailto:" + CONTACTO_EMAIL + "?subject=" + encodeURIComponent("Eliminar mi cuenta");
 }
@@ -394,6 +397,44 @@ async function confirmarSalir() {
 $("btn-salir").addEventListener("click", confirmarSalir);
 var btnSalirPerfil = $("btn-salir-perfil");
 if (btnSalirPerfil) btnSalirPerfil.addEventListener("click", confirmarSalir);
+
+/* ---------- Cancelar plan ---------- */
+// Corta la renovación (en tarjeta, cancela la suscripción en Mercado Pago). Lo ya pagado sigue activo hasta su fecha.
+async function cancelarPlan(boton) {
+  var plan = planCargado;
+  if (!plan || new Date(plan.vence_at) <= new Date() || plan.cancelado_at) return;
+  var ok = await mostrarConfirmacion({
+    titulo: "¿Cancelar tu plan?",
+    desc: "No se volverá a cobrar. Sigues con todo activo hasta el " + fechaCorta(plan.vence_at) + " (ya lo pagaste); después tus RNM dejan de revisarse cada semana. Puedes volver a activarlo cuando quieras.",
+    accionTexto: "Sí, cancelar plan",
+    cancelarTexto: "Mantener mi plan",
+    esPeligroso: true
+  });
+  if (!ok) return;
+  var textoBoton = boton ? boton.textContent : "";
+  if (boton) { boton.disabled = true; boton.setAttribute("aria-busy", "true"); boton.textContent = "Cancelando…"; }
+  var j = null, bien = false;
+  try {
+    var s = await sb.auth.getSession();
+    var token = s.data.session && s.data.session.access_token;
+    var r = await fetch(SUPABASE_URL + "/functions/v1/mp-cancelar-plan", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: SUPABASE_KEY, Authorization: "Bearer " + token },
+      body: "{}"
+    });
+    j = await r.json().catch(function () { return {}; });
+    bien = r.ok && j.ok === true;
+  } catch (e) { bien = false; }
+  if (boton) { boton.disabled = false; boton.removeAttribute("aria-busy"); boton.textContent = textoBoton; }
+  if (!bien) {
+    if (window.toast) toast("No pudimos cancelar el plan. Tu plan sigue igual; inténtalo de nuevo en un momento" + (WHATSAPP ? " o escríbenos " + VIA_CONTACTO : "") + ".", "error");
+    return;
+  }
+  if (window.toast) toast("Plan cancelado. No se volverá a cobrar.", "ok");
+  await cargarRegistros();
+}
+var btnCancelarPerfil = $("btn-cancelar-plan-perfil");
+if (btnCancelarPerfil) btnCancelarPerfil.addEventListener("click", function () { cancelarPlan(null); });
 
 /* ---------- Formulario ---------- */
 $("nac").addEventListener("input", function (e) {
@@ -1367,7 +1408,7 @@ async function cargarRegistros() {
     sb.from("rnm_registros")
       .select("id, rnm, estado_pago, requiere_pago, estado_pf, unidad_pf, cambio_direccion, ultimo_resultado, ultima_consulta_at, cerrado, created_at, validez, validez_verificada_at, carne_validacion, carne_foto_path, carne_foto_verso_path, carne_cpf, ultima_manual_at")
       .order("created_at", { ascending: true }),
-    sb.from("rnm_planes").select("cupos, tipo, precio_centavos, vence_at").maybeSingle()
+    sb.from("rnm_planes").select("cupos, tipo, precio_centavos, vence_at, cancelado_at").maybeSingle()
   ]);
   var r = q[0];
   if (r.error || !r.data) return;
@@ -1411,7 +1452,8 @@ function renderizarPlanes(regs, plan) {
   var estado = el("div", "tarjeta plan-estado");
   estado.appendChild(el("p", "hero-eyebrow", "Tu plan actual"));
   if (activo) {
-    estado.appendChild(el("h3", "", nombrePlan(tipoActual) + " activo"));
+    estado.appendChild(el("h3", "", nombrePlan(tipoActual) + (plan.cancelado_at ? " · cancelado" : " activo")));
+    if (plan.cancelado_at) estado.appendChild(el("p", "sub", "No se renovará ni se volverá a cobrar. Sigues con todo activo hasta el " + fechaCorta(plan.vence_at) + "; después tus RNM dejan de revisarse cada semana."));
     var filas = el("div", "review-summary-card");
     [["Precio mensual", reales(plan.precio_centavos)],
      ["Pagado hasta", fechaCorta(plan.vence_at)],
@@ -1440,7 +1482,13 @@ function renderizarPlanes(regs, plan) {
     estado.appendChild(el("p", "sub", "Cuando tengas un RNM en seguimiento podrás elegir un plan."));
   }
   ver.addEventListener("click", function () { ampliando = tipoActual === "semanal"; planElegido = ampliando ? "manual" : planElegido; cartelPlanes(regs, plan); abrirModalPlanes(); });
-  acc.appendChild(ver);
+  if (!(activo && plan.cancelado_at && tipoActual === "manual")) acc.appendChild(ver);
+  if (activo && !plan.cancelado_at) {
+    var canc = el("button", "btn sec btn-cancelar-plan", "Cancelar plan");
+    canc.type = "button";
+    canc.addEventListener("click", function () { cancelarPlan(canc); });
+    acc.appendChild(canc);
+  }
   estado.appendChild(acc);
   cont.appendChild(estado);
   cont.appendChild(notaSemanal());
