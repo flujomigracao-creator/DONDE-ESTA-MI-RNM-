@@ -802,3 +802,43 @@ button.sec:hover:not(:disabled) { border-color: var(--brand-line); background: v
 .rastreador.compacto .rt-cta { margin-top: 12px; min-height: 44px; }
 .fila-rnm { padding: 12px 14px; margin-bottom: 8px; gap: 12px; }
 @media (min-width: 1024px) { .rt-titular { font-size: 2rem; } .rastreador { padding: 24px 28px 22px; } .rastreador.compacto .rt-titular { font-size: 1.5rem; } }
+
+/* Cambio de dirección animado */
+.cambio-tr { --t: var(--brand); margin: 14px 0 0; padding: 12px 14px 12px; border-radius: 16px; background: #F4F7FB; border: 1px solid rgba(10, 42, 94, 0.07); }
+.cambio-tr.ok { --t: var(--success); background: color-mix(in srgb, var(--success) 7%, #fff); }
+.cambio-tr.aviso { --t: #D98A00; background: color-mix(in srgb, #D98A00 8%, #fff); }
+.cambio-tr.mal { --t: var(--danger); background: color-mix(in srgb, var(--danger) 7%, #fff); }
+.cambio-tr.gris { --t: #6B7A94; }
+.ctr-cab { display: flex; align-items: center; gap: 10px; }
+.ctr-icono { width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center; background: var(--t); color: #fff; flex: none; transform: scale(.6); opacity: 0; }
+.cambio-tr.anim .ctr-icono { animation: ctr-pop .5s cubic-bezier(.3, 1.6, .5, 1) .1s forwards; }
+.ctr-icono svg { width: 20px; height: 20px; }
+.ctr-texto { flex: 1; min-width: 0; display: flex; flex-direction: column; font-size: 0.84rem; line-height: 1.25; }
+.ctr-texto b { color: var(--navy); font-weight: 800; }
+.ctr-texto span { color: var(--text-muted); font-weight: 600; }
+.ctr-pista { position: relative; margin-top: 12px; }
+.ctr-linea { position: absolute; left: 16.66%; right: 16.66%; top: 9px; height: 4px; border-radius: 99px; background: #DCE3F0; overflow: hidden; }
+.ctr-relleno { position: absolute; left: 0; top: 0; bottom: 0; width: calc(var(--p) * 50%); border-radius: 99px; background: var(--t); transition: width 1s cubic-bezier(.2, .8, .2, 1) .35s; }
+.ctr-pasos { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); position: relative; }
+.ctr-pasos li { display: flex; flex-direction: column; align-items: center; gap: 5px; text-align: center; }
+.ctr-punto { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: #fff; border: 3px solid #CBD5E6; color: #fff; position: relative; z-index: 1; transition: background-color .4s ease .9s, border-color .4s ease .9s; }
+.ctr-punto svg { width: 12px; height: 12px; }
+.ctr-pasos li.hecho .ctr-punto, .ctr-pasos li.actual .ctr-punto { border-color: var(--t); }
+.ctr-pasos li.hecho .ctr-punto { background: var(--t); }
+.cambio-tr.ok .ctr-pasos li.actual .ctr-punto { background: var(--t); }
+.cambio-tr.ok.anim .ctr-pasos li.actual .ctr-punto { animation: ctr-pop .6s cubic-bezier(.3, 1.6, .5, 1) 1.3s both; }
+.cambio-tr.aviso .ctr-pasos li.actual .ctr-punto { animation: ctr-latido 1.8s ease-in-out infinite; }
+.cambio-tr.mal.anim .ctr-pasos li.actual .ctr-punto { background: var(--t); animation: ctr-sacude .5s ease 1.3s both; }
+.ctr-pasos b { font-size: 0.7rem; font-weight: 600; color: var(--text-muted); line-height: 1.2; }
+.ctr-pasos li.actual b { color: var(--text-main); font-weight: 800; }
+.cambio-tr.ok.anim { animation: ctr-brillo 1.4s ease 1.2s 1; }
+@keyframes ctr-pop { 0% { transform: scale(.6); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+@keyframes ctr-latido { 0%, 100% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--t) 22%, transparent); } 50% { box-shadow: 0 0 0 8px color-mix(in srgb, var(--t) 6%, transparent); } }
+@keyframes ctr-sacude { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
+@keyframes ctr-brillo { 50% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--success) 22%, transparent); } }
+@media (prefers-reduced-motion: reduce) { .ctr-icono { opacity: 1; transform: none; animation: none !important; } .ctr-relleno { transition: none; } .ctr-punto { transition: none; } .cambio-tr, .ctr-punto { animation: none !important; } }
+
+.ctr-cab { flex-wrap: wrap; }
+.ctr-texto { min-width: 150px; }
+.ctr-cab .insignia { margin-left: auto; }
+@media (max-width: 400px) { .ctr-cab .insignia { margin-left: 46px; } }

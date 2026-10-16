@@ -1190,6 +1190,41 @@ function titularRastreador(e) {
     default: return { t: e.t, s: e.resumen };
   }
 }
+/* ---------- Cambio de dirección animado (mini rastreador) ---------- */
+function fechaNum(f) { var m = /(\d{2})\/(\d{2})\/(\d{4})/.exec(f || ""); return m ? Number(m[3] + m[2] + m[1]) : 0; }
+function cambioReciente(lc) { return lc.slice().sort(function (a, b) { return fechaNum(b.fecha) - fechaNum(a.fecha); })[0]; }
+var SVG_CASA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-7 8 7"/><path d="M6 10v10h12V10"/><path d="M10 20v-5h4v5"/></svg>';
+function cambioAnimado(l) {
+  var est = l.estado;
+  var idx = (est === "aprobada" || est === "desaprobada") ? 2 : ((est === "en trámite" || est === "cancelada") ? 1 : 0);
+  var tono = est === "aprobada" ? "ok" : (est === "desaprobada" ? "mal" : (est === "cancelada" ? "gris" : "aviso"));
+  var rot = ["Solicitado", "En análisis", est === "desaprobada" ? "Rechazado" : (est === "cancelada" ? "Cancelado" : "Aprobado")];
+  var box = el("div", "cambio-tr " + tono);
+  box.style.setProperty("--p", "0");
+  var cab = el("div", "ctr-cab");
+  var ic = el("span", "ctr-icono", ""); ic.innerHTML = SVG_CASA; cab.appendChild(ic);
+  var tx = el("div", "ctr-texto");
+  tx.appendChild(el("b", "", "Cambio de dirección"));
+  var sub = (l.destino ? "Hacia " + l.destino : "En proceso") + (l.fecha ? " · " + l.fecha : "");
+  tx.appendChild(el("span", "", sub));
+  cab.appendChild(tx);
+  cab.appendChild(insigniaCambio(est));
+  box.appendChild(cab);
+  var pista = el("div", "ctr-pista");
+  pista.innerHTML = '<i class="ctr-linea"><i class="ctr-relleno"></i></i>';
+  var ol = el("ol", "ctr-pasos");
+  rot.forEach(function (n, i) {
+    var li = el("li", i < idx ? "hecho" : (i === idx ? "actual" : ""));
+    var pt = el("span", "ctr-punto", "");
+    if (i < idx || (i === idx && est === "aprobada")) pt.innerHTML = SVG_OK;
+    else if (i === idx && est === "desaprobada") pt.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"/></svg>';
+    li.appendChild(pt); li.appendChild(el("b", "", n));
+    ol.appendChild(li);
+  });
+  pista.appendChild(ol); box.appendChild(pista);
+  requestAnimationFrame(function () { requestAnimationFrame(function () { box.style.setProperty("--p", String(idx)); box.classList.add("anim"); }); });
+  return box;
+}
 function rastreador(x, opciones) {
   opciones = opciones || {};
   var e = estadoPresentacion(x), tt = titularRastreador(e);
@@ -1202,9 +1237,7 @@ function rastreador(x, opciones) {
   c.appendChild(el("h2", "rt-titular", tt.t));
   var sub = el("p", "rt-sub"); sub.innerHTML = (e.tono === "ok" ? SVG_OK : (e.tono === "mal" || e.corto === "Falta algo" || e.corto === "No encontrado" ? "" : SVG_PIN)); sub.appendChild(document.createTextNode(tt.s)); c.appendChild(sub);
   var lc = x.cambio_direccion ? lineasCambio(x.cambio_direccion) : [];
-  if (lc.length) {
-    var cd = el("p", "rt-cambio", ""); cd.appendChild(el("b", "", "Cambio de dirección")); cd.appendChild(insigniaCambio(lc[0].estado)); c.appendChild(cd);
-  }
+  if (lc.length) c.appendChild(cambioAnimado(cambioReciente(lc)));
   if (idx !== undefined && !opciones.compacto) {
     var pista = el("div", "rt-pista");
     pista.style.setProperty("--idx", "0");
