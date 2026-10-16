@@ -502,7 +502,7 @@ async function leerQR(canvas) {
   }
   var jq = await cargarJsQR();
   var d = canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height);
-  var q = jq(d.data, d.width, d.height);
+  var q = jq(d.data, d.width, d.height, { inversionAttempts: "attemptBoth" });
   return q ? q.data : null;
 }
 function dmyAISO(t) {
@@ -560,18 +560,20 @@ function fotoVerso(video) {
   var cv = capturarGuia(video, 1600);
   return new Promise(function (ok) { cv.toBlob(function (b) { ok(b ? { blob: b, canvas: cv } : null); }, "image/jpeg", 0.85); });
 }
-async function leerVerso(im) {
-  carneEscaneado.fotoVerso = im.blob;
+// seguro = ya sabemos que es el verso (se leyó el QR); si no, la IA decide con "es_verso".
+async function leerVerso(im, seguro) {
+  if (seguro) carneEscaneado.fotoVerso = im.blob;
   try {
     var d = await llamarFuncion("rnm-leer-carne", { imagen: await blobABase64(im.blob), mime: "image/jpeg", lado: "verso" });
-    if (!d.es_carne) return false;
+    if (!seguro && !(d.es_carne && d.es_verso)) return d;
+    carneEscaneado.fotoVerso = im.blob;
     if (d.cpf) carneEscaneado.cpf = d.cpf;
     if (d.rnm && $("rnm").value && d.rnm !== $("rnm").value) estadoEscaner("Ojo: el RNM del verso no coincide con el del frente. Revisa los datos.", "mal");
     else if (d.rnm && !$("rnm").value) ponerCampo("rnm", d.rnm);
     if (d.validez && !carneEscaneado.verificada && !carneEscaneado.validezISO) fijarValidez(d.validez, "verso");
     if (d.cpf && window.toast) toast("CPF leído del carné", "ok");
-    return true;
-  } catch (e) { return false; }
+    return d;
+  } catch (e) { return null; }
 }
 
 /* Cámara en vivo. modo "frente": marco con proporción de tarjeta y botón de disparo. modo "qr": lee solo en cuanto lo enfoca. */
@@ -644,7 +646,7 @@ async function abrirCamara(modo) {
         if (video.videoWidth) {
           try {
             var texto = await leerQR(capturarFotograma(video, 900));
-            if (texto && !cam.parar) { if (navigator.vibrate) navigator.vibrate(60); var imv = await fotoVerso(video); cerrarCamara(); validarQR(texto); if (imv) leerVerso(imv); return; }
+            if (texto && !cam.parar) { if (navigator.vibrate) navigator.vibrate(60); var imv = await fotoVerso(video); cerrarCamara(); validarQR(texto); if (imv) leerVerso(imv, true); return; }
           } catch (e) { /* se sigue intentando */ }
         }
         if (!aviso && Date.now() - inicio > 12000) { aviso = true; $("camara-texto").textContent = "Acerca un poco el carné y evita reflejos. Mantén el QR centrado."; }
@@ -652,14 +654,18 @@ async function abrirCamara(modo) {
       }
     })();
   } else {
-    // Modo automático: reconoce solo el frente (IA, cuando la imagen está nítida y quieta) y el QR del verso (local, en cada fotograma).
-    var hechoFrente = false, hechoQR = false, envios = 0, ultimoEnvio = Date.now() - 2000, leyendo = false, prev = null, ini = Date.now(), frenteListoEn = 0;
+    // Modo automático, en orden: 1) frente (IA, con la imagen quieta y nítida); 2) verso completo. El verso se da por leído con lo primero
+    // que ocurra: el QR decodificado en el aparato, o el verso leído por la IA (por si el QR sale chico, borroso o con reflejos).
+    var hechoFrente = false, hechoVerso = false, envios = 0, ultimoEnvio = Date.now() - 2000, leyendo = false, prev = null, frenteListoEn = 0;
+    var enviosV = 0, ultimoEnvioV = 0, leyendoV = false;
     $("cp-frente").className = ""; $("cp-qr").className = "";
     $("camara-listo").onclick = cerrarCamara;
     var actualizarTexto = function () {
       $("cp-frente").className = hechoFrente ? "ok" : "actual";
-      $("cp-qr").className = hechoQR ? "ok" : (hechoFrente ? "actual" : "");
-      $("camara-texto").textContent = hechoFrente && hechoQR ? "¡Listo! Leímos tu carné."
+      $("cp-qr").className = hechoVerso ? "ok" : (hechoFrente ? "actual" : "");
+      var tardaV = hechoFrente && !hechoVerso && Date.now() - frenteListoEn > 9000;
+      $("camara-texto").textContent = hechoFrente && hechoVerso ? "¡Listo! Leímos tu carné."
+        : tardaV ? "Acerca un poco el verso: el QR debe verse grande, nítido y sin reflejos."
         : hechoFrente ? "Frente leído ✓ Paso 2: gira el carné y muestra el VERSO completo, con el QR visible."
         : "Paso 1: muestra el FRENTE de tu carné dentro del marco, con buena luz y sin reflejos.";
     };
@@ -668,28 +674,39 @@ async function abrirCamara(modo) {
       while (!cam.parar) {
         if (video.videoWidth) {
           var chico = capturarFotograma(video, 900);
-          if (hechoFrente && !hechoQR && Date.now() - frenteListoEn > 1800) {
-            try {
-              var tx = await leerQR(chico);
-              if (tx && !cam.parar) { hechoQR = true; if (navigator.vibrate) navigator.vibrate(60); var imv2 = await fotoVerso(video); validarQR(tx); if (imv2) leerVerso(imv2); actualizarTexto(); }
-            } catch (e) { /* se sigue intentando */ }
-          }
           var ahora = Date.now(), hue = huellaImagen(chico);
           var quieta = prev && diferenciaHuella(prev, hue) < 14;
           prev = hue;
-          // Se manda a la IA solo si la imagen está quieta y con detalle; si pasan 6 s sin poder, se manda igual (máx. 5 envíos)
-          if (!hechoFrente && !leyendo && envios < 5 && ahora - ultimoEnvio > 3000 && ((quieta && detalleHuella(hue) > 6) || ahora - ultimoEnvio > 6000)) {
-            leyendo = true; envios++; ultimoEnvio = ahora;
-            $("camara-texto").textContent = "Leyendo el frente…";
-            var grande = capturarGuia(video, 1600);
-            grande.toBlob(function (b) {
-              if (!b) { leyendo = false; return; }
-              leerFrente({ blob: b, canvas: grande }).then(function (ok) { if (ok) { hechoFrente = true; frenteListoEn = Date.now(); if (navigator.vibrate) navigator.vibrate(40); } }).finally(function () { leyendo = false; if (!cam.parar) actualizarTexto(); });
-            }, "image/jpeg", 0.85);
+          if (!hechoFrente) {
+            // Se manda a la IA solo si la imagen está quieta y con detalle; si pasan 6 s sin poder, se manda igual (máx. 5 envíos)
+            if (!leyendo && envios < 5 && ahora - ultimoEnvio > 3000 && ((quieta && detalleHuella(hue) > 6) || ahora - ultimoEnvio > 6000)) {
+              leyendo = true; envios++; ultimoEnvio = ahora;
+              $("camara-texto").textContent = "Leyendo el frente…";
+              var grande = capturarGuia(video, 1600);
+              grande.toBlob(function (b) {
+                if (!b) { leyendo = false; return; }
+                leerFrente({ blob: b, canvas: grande }).then(function (ok) { if (ok) { hechoFrente = true; frenteListoEn = Date.now(); if (navigator.vibrate) navigator.vibrate(40); } }).finally(function () { leyendo = false; if (!cam.parar) actualizarTexto(); });
+              }, "image/jpeg", 0.85);
+            }
+          } else if (!hechoVerso && ahora - frenteListoEn > 1800) {
+            // a) QR en el aparato: recorte al marco (más grande) y fotograma completo
+            try {
+              var tx = await leerQR(capturarGuia(video, 1200)) || await leerQR(capturarFotograma(video, 1280));
+              if (tx && !cam.parar) { hechoVerso = true; if (navigator.vibrate) navigator.vibrate(60); var imv2 = await fotoVerso(video); validarQR(tx); if (imv2) leerVerso(imv2, true); actualizarTexto(); }
+            } catch (e) { /* se sigue intentando */ }
+            // b) verso leído por la IA (la IA dice si de verdad es el verso, para no confundirlo con el frente)
+            if (!hechoVerso && !leyendoV && enviosV < 5 && ahora - ultimoEnvioV > 3000 && ((quieta && detalleHuella(hue) > 6) || ahora - ultimoEnvioV > 6000)) {
+              leyendoV = true; enviosV++; ultimoEnvioV = ahora;
+              $("camara-texto").textContent = "Leyendo el verso…";
+              var imV = await fotoVerso(video);
+              if (!imV) { leyendoV = false; }
+              else leerVerso(imV, false).then(function (d) { if (d && d.es_carne && d.es_verso) { hechoVerso = true; if (navigator.vibrate) navigator.vibrate(40); } }).finally(function () { leyendoV = false; if (!cam.parar) actualizarTexto(); });
+            }
           }
         }
-        if (hechoFrente && hechoQR && !cam.parar) { actualizarTexto(); await new Promise(function (ok) { setTimeout(ok, 900); }); if (!cam.parar) cerrarCamara(); return; }
+        if (hechoFrente && hechoVerso && !cam.parar) { actualizarTexto(); await new Promise(function (ok) { setTimeout(ok, 900); }); if (!cam.parar) cerrarCamara(); return; }
         if (envios >= 5 && !hechoFrente && !leyendo && !cam.parar) { $("camara-texto").textContent = "No pudimos leer el frente. Toca Listo y escribe tus datos a mano."; }
+        if (hechoFrente && !hechoVerso && enviosV >= 5 && !leyendoV && !cam.parar) { $("camara-texto").textContent = "No pudimos leer el verso. Toca Listo para continuar sin él."; }
         await new Promise(function (ok) { setTimeout(ok, 250); });
       }
     })();
@@ -719,7 +736,7 @@ $("file-qr").addEventListener("change", async function () {
   try {
     var im = await reducirImagen(f, 1400), url = await leerQR(im.canvas);
     if (!url) return estadoEscaner("No encontré el QR. Acércalo, sin reflejos y con el QR centrado, e intenta de nuevo.", "mal");
-    validarQR(url); leerVerso(im);
+    validarQR(url); leerVerso(im, true);
   } catch (e) { estadoEscaner(textoErrorEscaner(e), "mal"); }
 });
 function reiniciarEscaner() { carneEscaneado = { foto: null, fotoVerso: null, qr: null, cpf: null, validezISO: null }; estadoEscaner(""); }
