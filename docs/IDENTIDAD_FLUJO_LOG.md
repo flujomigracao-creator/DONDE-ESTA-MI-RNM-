@@ -25,3 +25,11 @@ Recorrido de 18 pantallas/estados con datos y servicios simulados en **360×800,
 - **Mi cuenta resumida y funcional**: cabecera con avatar y "Editar", dos cifras (RNM registrados y plan actual con fecha), lista "Tus datos" (teléfono, dirección, ciudad) y lista "Cuenta y ayuda" con accesos directos (Mis RNM, Planes y pagos, Ayuda, Privacidad, Términos), "Cerrar sesión" con confirmación y enlace discreto a soporte para eliminar la cuenta.
 - sw v44.
 **Probado** (19 pantallas × 6 tamaños: 360, 390, 768, 1024, 1280, 1440; datos simulados): 0 desbordes, 0 controles < 40 px, 0 imágenes rotas, 0 errores JS, popup cabe. **No probado:** login/registro/pagos reales, dispositivos reales.
+
+## Efectos, iconos y microinteracciones (15-oct-2026, sw v45)
+- **`efectos.js` (nuevo, opcional):** avisos emergentes (`toast`) con icono, onda al tocar botones, vibración suave en la barra inferior (móvil), sombra de cabecera al desplazar, aparición escalonada de tarjetas (con red de seguridad para que nada quede invisible), contador animado, **esqueleto de carga** en Inicio (con mensaje y "Reintentar" si los datos no llegan en 9 s).
+- **Iconos SVG** en lugar de emojis y flechas de texto (candado, pin, check, flecha de volver); **insignias con icono propio** (reloj/check/alerta) para no depender solo del color; icono activo relleno en la navegación.
+- **Efectos de marca:** cinta verde/amarilla animada en la bienvenida y la tarjeta principal, logo flotante, brillo y "check" animado cuando el documento está **Listo**, barra de etapas que se llena, punto de la etapa actual con latido, spinner en botones mientras envían, acento verde/amarillo en los títulos de sección.
+- Todo respeta `prefers-reduced-motion`.
+- **Bug encontrado en la prueba y corregido:** un `$$` mal escapado hacía fallar el temporizador de seguridad (error de JavaScript al cambiar de pantalla).
+**Probado:** 19 pantallas × 6 tamaños (360–1440 px, datos simulados): 0 errores JS, popup cabe; un botón "Quitar este RNM" medía 39,6 px → 44 px. **No probado:** dispositivos reales, vibración, rendimiento en móviles lentos.

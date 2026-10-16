@@ -138,7 +138,7 @@ function vista(nombre) { // "login" | "perfil" | "app"
 }
 
 function actualizarResumenPerfil() {
-  var n = $("perfil-n-rnm"); if (n) n.textContent = String(registrosCargados.length);
+  var n = $("perfil-n-rnm"); if (n) { if (window.contarHasta) contarHasta(n, registrosCargados.length); else n.textContent = String(registrosCargados.length); }
   var activo = !!planCargado && new Date(planCargado.vence_at) > new Date();
   var p = $("perfil-plan"), ps = $("perfil-plan-sub");
   if (p) p.textContent = activo ? "Plan de " + planCargado.cupos + " RNM" : "Sin plan";
@@ -458,6 +458,7 @@ if (btnConfEnviar) {
     }
 
     $("form-rnm").reset();
+    if (window.toast) toast("RNM registrado. Preparando tu consulta…", "ok");
     await cargarRegistros();
     irAPasoConsulta(1);
     var nuevo = registrosCargados.find(function (x) { return x.rnm === consultaPendiente.rnm; });
@@ -574,7 +575,7 @@ function mostrarPago(cupos) {
   var precio = reales(PRECIOS[cupos]);
   var c = el("div", "pay");
   c.innerHTML =
-    '<div class="pay-top"><button type="button" class="sec" id="btn-volver-planes">← Cambiar plan</button><span class="pay-paso">Paso 2 de 2</span></div>' +
+    '<div class="pay-top"><button type="button" class="sec" id="btn-volver-planes"><svg class=\"ic\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M19 12H5M11 6l-6 6 6 6\"/></svg> Cambiar plan</button><span class="pay-paso">Paso 2 de 2</span></div>' +
     '<h2 class="pay-titulo">Finaliza tu suscripción</h2>' +
     '<div class="pay-resumen"><div><b>Plan de ' + cupos + ' RNM</b><span>Vigilamos hasta ' + cupos + (cupos === 1 ? " documento" : " documentos") + ': revisión semanal</span></div>' +
       '<div class="pay-precio"><b>' + precio + '</b><span>por mes</span></div></div>' +
@@ -607,7 +608,7 @@ function mostrarPago(cupos) {
       '<p class="pay-nota" id="px-nota"></p>' +
       '<button type="button" id="btn-generar" class="pay-boton"></button>' +
     '</div>' +
-    '<p class="pay-seguro">🔒 Pago procesado por Mercado Pago. FLUJO nunca ve los datos de tu tarjeta.</p>' +
+    '<p class="pay-seguro"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg> Pago procesado por Mercado Pago. FLUJO nunca ve los datos de tu tarjeta.</p>' +
     '<p class="msg" id="msg-pago" aria-live="polite"></p>';
   cont.appendChild(c);
   $("mp-email").value = (usuarioActual && usuarioActual.email) || "";
@@ -717,7 +718,7 @@ function mostrarCodigoPago(cupos, d) {
   var c = el("div", "pay");
   var codigo = esPix ? d.pix.copia_y_cola : (d.boleto.codigo || "");
   var h =
-    '<div class="pay-top"><button type="button" class="sec" id="btn-volver-planes">← Volver</button><span class="pay-paso">' + (esPix ? "Pago con Pix" : "Pago con boleto") + '</span></div>' +
+    '<div class="pay-top"><button type="button" class="sec" id="btn-volver-planes"><svg class=\"ic\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M19 12H5M11 6l-6 6 6 6\"/></svg> Volver</button><span class="pay-paso">' + (esPix ? "Pago con Pix" : "Pago con boleto") + '</span></div>' +
     '<div class="pay-resumen"><div><b>Plan de ' + cupos + ' RNM · 1 mes</b><span>' + (esPix ? "Paga y se activa en segundos" : "Se activa cuando el banco confirma") + '</span></div>' +
       '<div class="pay-precio"><b>' + reales(PRECIOS[cupos]) + '</b></div></div>';
   if (esPix) {
@@ -731,7 +732,7 @@ function mostrarCodigoPago(cupos, d) {
   h += '<p class="msg" id="msg-pago-codigo" aria-live="polite"></p>' +
     '<div class="pay-espera" role="status" aria-live="polite"><span class="punto"></span><span id="px-estado">Pago pendiente: esperando la confirmación…</span></div>' +
     '<p class="pay-nota">Pendiente no significa pagado: tu plan se activa solo cuando Mercado Pago confirma el pago.</p>' +
-    '<p class="pay-seguro">🔒 Pago procesado por Mercado Pago. Este pago cubre 1 mes; te avisaremos cuando toque renovar.</p>';
+    '<p class="pay-seguro"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg> Pago procesado por Mercado Pago. Este pago cubre 1 mes; te avisaremos cuando toque renovar.</p>';
   c.innerHTML = h;
   cont.appendChild(c);
   if (codigo) $("px-codigo").value = codigo;
@@ -1157,7 +1158,7 @@ function actualizarDashboard(regs, plan) {
       var p = regs.find(function (x) { return x.estado_pf === "listo"; }) || regs.find(function (x) { return !x.cerrado; }) || regs[0];
       var e = estadoPresentacion(p);
 
-      var hero = el("div", "hero-fig");
+      var hero = el("div", "hero-fig" + (e.tono === "ok" ? " hero-listo" : ""));
       var top = el("div", "hero-fig-top");
       top.appendChild(el("span", "", "RNM " + p.rnm));
       var ico = el("span", "");
@@ -1166,7 +1167,7 @@ function actualizarDashboard(regs, plan) {
       hero.appendChild(top);
       hero.appendChild(el("h3", "", estadoCorto(p)));
       hero.appendChild(el("p", "", e.p[0] || e.t));
-      if (e.ubicacion) hero.appendChild(el("p", "hero-ubic", "📍 " + e.ubicacion));
+      if (e.ubicacion) { var hu = el("p", "hero-ubic", ""); hu.innerHTML = '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s7-6 7-12a7 7 0 10-14 0c0 6 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>'; hu.appendChild(document.createTextNode(e.ubicacion)); hero.appendChild(hu); }
       hero.appendChild(el("small", "", p.ultima_consulta_at ? "Consultado el " + fechaHora(p.ultima_consulta_at) : "Aún sin resultado"));
       var bv = el("button", "", "Ver detalle de mi RNM"); bv.type = "button";
       bv.addEventListener("click", function () { abrirDetalleRnm(p.id); });
@@ -1395,7 +1396,7 @@ function construirDetalle(id) {
 /* El estado lo actualiza el equipo de FLUJO: la app se refresca sola cada minuto mientras está visible. */
 $("btn-actualizar").addEventListener("click", function () {
   var b = this; b.disabled = true;
-  cargarRegistros().then(function () { setTimeout(function () { b.disabled = false; }, 800); });
+  cargarRegistros().then(function () { setTimeout(function () { b.disabled = false; }, 800); if (window.toast) toast("Pantalla actualizada", "ok"); });
 });
 setInterval(function () { // mientras se confirma un cobro, revisa cada 8 segundos
   if (esperandoPago && Date.now() - esperandoPago < 180000 && usuarioActual) cargarRegistros();
@@ -1417,8 +1418,8 @@ function etapasConsulta(e) {
   var cont = el("ol", "etapas");
   cont.setAttribute("aria-label", "Etapa del documento");
   ["En trámite", "En traslado", "Listo", "Entregado"].forEach(function (n, i) {
-    var li = el("li", i < idx ? "hecha" : (i === idx ? "actual" : ""));
-    li.appendChild(el("span", "punto-etapa", i < idx ? "✓" : String(i + 1)));
+    var li = el("li", i < idx ? "hecha" : (i === idx ? "actual" : "")); li.style.setProperty("--i", i);
+    var pe = el("span", "punto-etapa", i < idx ? "" : String(i + 1)); if (i < idx) pe.innerHTML = '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>'; li.appendChild(pe);
     li.appendChild(el("span", "nombre-etapa", n));
     if (i === idx) li.setAttribute("aria-current", "step");
     cont.appendChild(li);
@@ -1783,7 +1784,7 @@ if (btnActualizarHist) {
     var b = this, t = b.textContent;
     b.disabled = true; b.textContent = "Actualizando…"; b.setAttribute("aria-busy", "true");
     cargarHistorialConsultas().then(function () {
-      b.disabled = false; b.textContent = "Lista actualizada ✓"; b.removeAttribute("aria-busy");
+      b.disabled = false; b.textContent = "Lista actualizada"; if (window.toast) toast("Historial actualizado", "ok"); b.removeAttribute("aria-busy");
       setTimeout(function () { b.textContent = t; }, 1800);
     });
   });
