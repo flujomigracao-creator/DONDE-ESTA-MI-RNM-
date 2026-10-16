@@ -1444,6 +1444,7 @@ async function cargarRegistros() {
   $("form-rnm").classList.toggle("oculto", lleno);
   mostrarCosteAplicable();
   actualizarDashboard(r.data, plan);
+  cargarMensajes();
   renderizarMisRnm(r.data, plan);
   actualizarResumenPerfil();
   cartelPlanes(r.data, plan);
@@ -1959,6 +1960,68 @@ function construirHistorialDetalle(x) {
   }
   return tl;
 }
+
+/* ---------- Chat con el equipo ---------- */
+var mensajesSinLeer = 0, pollChat = null;
+function pintarAvisoMensajes() {
+  var b = $("chat-badge"); if (b) { b.textContent = String(mensajesSinLeer); b.classList.toggle("oculto", !mensajesSinLeer); }
+  var nav = document.querySelector('.bottom-nav-item[data-seccion="perfil"]'); if (nav) nav.classList.toggle("con-aviso", mensajesSinLeer > 0);
+  var a = $("aviso-mensaje");
+  if (a) {
+    a.classList.toggle("oculto", !mensajesSinLeer);
+    a.textContent = mensajesSinLeer ? (mensajesSinLeer === 1 ? "Tienes 1 mensaje del equipo. Tócalo para leerlo." : "Tienes " + mensajesSinLeer + " mensajes del equipo. Tócalos para leerlos.") : "";
+  }
+}
+async function cargarMensajes() {
+  if (!usuarioActual) return;
+  var r = await sb.from("rnm_mensajes").select("id", { count: "exact", head: true }).eq("de", "equipo").is("leido_at", null);
+  if (r.error) return;
+  mensajesSinLeer = r.count || 0; pintarAvisoMensajes();
+}
+async function pintarChat() {
+  var lista = $("chat-lista"); if (!lista) return;
+  var r = await sb.from("rnm_mensajes").select("de, cuerpo, creado_at").order("creado_at", { ascending: true }).limit(100);
+  if (r.error) return;
+  var abajo = lista.scrollHeight - lista.scrollTop - lista.clientHeight < 80;
+  lista.textContent = "";
+  if (!r.data.length) lista.appendChild(el("p", "chat-vacio", "Escríbenos aquí tu duda o lo que necesitas. Te respondemos en esta misma conversación."));
+  r.data.forEach(function (m) {
+    var b = el("div", "chat-burbuja " + (m.de === "equipo" ? "equipo" : "yo"));
+    b.appendChild(el("p", "", m.cuerpo)); b.appendChild(el("small", "", (m.de === "equipo" ? "Equipo · " : "") + fechaHora(m.creado_at)));
+    lista.appendChild(b);
+  });
+  if (abajo || !lista.dataset.visto) { lista.scrollTop = lista.scrollHeight; lista.dataset.visto = "1"; }
+}
+async function abrirChat() {
+  var m = $("modal-chat"); if (!m) return;
+  msg("msg-chat", ""); $("chat-lista").dataset.visto = "";
+  m.classList.remove("oculto"); document.body.style.overflow = "hidden";
+  await pintarChat();
+  await sb.rpc("rnm_mensajes_leer"); mensajesSinLeer = 0; pintarAvisoMensajes();
+  if (pollChat) clearInterval(pollChat);
+  pollChat = setInterval(function () { if (!document.hidden) { pintarChat(); sb.rpc("rnm_mensajes_leer"); } }, 15000);
+}
+function cerrarChat() {
+  var m = $("modal-chat"); if (!m) return;
+  m.classList.add("oculto"); document.body.style.overflow = "";
+  if (pollChat) { clearInterval(pollChat); pollChat = null; }
+}
+(function () {
+  var a = $("btn-chat-perfil"); if (a) a.addEventListener("click", abrirChat);
+  var b = $("aviso-mensaje"); if (b) b.addEventListener("click", abrirChat);
+  var c = $("chat-cerrar"); if (c) c.addEventListener("click", cerrarChat);
+  var m = $("modal-chat"); if (m) m.addEventListener("click", function (e) { if (e.target === m) cerrarChat(); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && m && !m.classList.contains("oculto")) cerrarChat(); });
+  var env = $("chat-enviar"), txt = $("chat-texto");
+  if (env && txt) env.addEventListener("click", async function () {
+    var t = txt.value.trim(); if (!t) return;
+    env.disabled = true;
+    var r = await sb.rpc("rnm_mensaje_enviar", { p_cuerpo: t });
+    env.disabled = false;
+    if (r.error) return msg("msg-chat", (r.error.message || "").indexOf("demasiados") >= 0 ? "Enviaste muchos mensajes seguidos. Espera un rato y vuelve a intentar." : "No pudimos enviar tu mensaje. Intenta de nuevo.");
+    txt.value = ""; msg("msg-chat", ""); await pintarChat();
+  });
+})();
 
 function abrirCorregir(x) {
   var m = $("modal-corregir"), iRnm = $("cor-rnm"), iNac = $("cor-nac"), bG = $("cor-guardar"), bC = $("cor-cancelar");

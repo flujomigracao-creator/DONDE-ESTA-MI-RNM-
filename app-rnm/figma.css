@@ -1041,3 +1041,22 @@ body.escribiendo .app-content { padding-bottom: 24px; }
 
 /* El aviso de medicion no tapa ventanas ni la camara */
 body:has(.modal:not(.oculto)) .consent-pixel, body:has(.camara:not(.oculto)) .consent-pixel { display: none; }
+
+/* Chat con el equipo */
+.aviso-mensaje { display: block; width: 100%; margin: 0 0 12px; padding: 12px 14px; border-radius: 14px; border: 0; background: #FFF0CC; color: #5E3A00; font: inherit; font-weight: 700; text-align: left; cursor: pointer; }
+.aviso-mensaje.oculto { display: none; }
+.chat-badge { min-width: 22px; height: 22px; padding: 0 7px; border-radius: 999px; background: #B3261E; color: #fff; font-size: 0.78rem; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; margin-left: auto; margin-right: 6px; }
+.chat-badge.oculto { display: none; }
+.bottom-nav-item.con-aviso { position: relative; }
+.bottom-nav-item.con-aviso::after { content: ""; position: absolute; top: 6px; left: calc(50% + 8px); width: 10px; height: 10px; border-radius: 50%; background: #B3261E; border: 2px solid #fff; }
+.chat-caja { max-width: 480px; display: flex; flex-direction: column; max-height: min(86dvh, 640px); }
+.chat-lista { flex: 1; min-height: 160px; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 8px; padding: 6px 2px 10px; }
+.chat-vacio { color: var(--text-muted); font-size: 0.92rem; margin: 8px 0; }
+.chat-burbuja { max-width: 86%; padding: 9px 12px; border-radius: 16px; font-size: 0.95rem; overflow-wrap: anywhere; }
+.chat-burbuja p { margin: 0; white-space: pre-wrap; }
+.chat-burbuja small { display: block; margin-top: 3px; font-size: 0.72rem; opacity: 0.7; }
+.chat-burbuja.equipo { align-self: flex-start; background: #EAF1FF; color: #0A2A5E; border-bottom-left-radius: 4px; }
+.chat-burbuja.yo { align-self: flex-end; background: #0A2A5E; color: #fff; border-bottom-right-radius: 4px; }
+.chat-envio { display: flex; gap: 8px; align-items: flex-end; margin-top: 6px; }
+.chat-envio textarea { flex: 1; min-height: 48px; max-height: 120px; resize: none; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); font: inherit; font-size: 16px; }
+.chat-envio .btn { min-height: 48px; }

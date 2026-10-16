@@ -70,6 +70,22 @@
   .persona .acc button.peligro { background: transparent; color: var(--rojo); border: 1px solid var(--rojo); }
   .persona .acc button:disabled { opacity: 0.55; }
   .persona .nota-p { margin: 0; font-size: 0.8rem; color: var(--ambar); }
+  .persona .sinleer { background: var(--rojo); color: #fff; border-radius: 999px; padding: 2px 9px; font-size: 0.74rem; font-weight: 800; }
+  .persona .acc button.msg { background: var(--azul); color: #fff; border: 0; }
+  @media (prefers-color-scheme: dark) { .persona .acc button.msg { color: #0B1220; } }
+  .fondo { position: fixed; inset: 0; z-index: 50; background: rgba(8, 18, 40, 0.65); display: flex; align-items: center; justify-content: center; padding: 14px; }
+  .dialogo { width: 100%; max-width: 560px; max-height: min(92dvh, 760px); display: flex; flex-direction: column; background: var(--tarjeta); border: 1px solid var(--linea); border-radius: 18px; padding: 16px; }
+  .dialogo h3 { margin: 0; font-size: 1.1rem; } .dialogo .sub { margin: 2px 0 8px; color: var(--suave); font-size: 0.85rem; overflow-wrap: anywhere; }
+  .hilo { flex: 1; min-height: 150px; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 8px; padding: 6px 2px; }
+  .burbuja { max-width: 86%; padding: 9px 12px; border-radius: 16px; font-size: 0.93rem; overflow-wrap: anywhere; }
+  .burbuja p { margin: 0; white-space: pre-wrap; } .burbuja small { display: block; margin-top: 3px; font-size: 0.72rem; opacity: 0.7; }
+  .burbuja.cliente { align-self: flex-start; background: var(--linea); color: var(--texto); border-bottom-left-radius: 4px; }
+  .burbuja.equipo { align-self: flex-end; background: var(--azul); color: #fff; border-bottom-right-radius: 4px; }
+  @media (prefers-color-scheme: dark) { .burbuja.equipo { color: #0B1220; } }
+  .dialogo textarea { width: 100%; min-height: 84px; margin-top: 8px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--linea); background: var(--fondo); color: var(--texto); font: inherit; font-size: 16px; resize: vertical; }
+  .dialogo .botones { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  .dialogo .botones a { min-height: 44px; padding: 0 16px; border-radius: 12px; border: 1px solid var(--verde); color: var(--verde); font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; }
+  .dialogo .plantilla { background: transparent; color: var(--azul); border: 1px dashed var(--linea); min-height: 38px; font-size: 0.85rem; }
 </style>
 </head>
 <body>
@@ -209,6 +225,101 @@
     app.appendChild(barra); app.appendChild(cont); pintarPersonas(cont);
   }
 
+  var clientesCargados = [];
+  var estadoClientes = { filtro: "todos", busca: "" };
+  var FUNCION_SIN = 0;
+
+  function textoWhatsApp(c, texto) {
+    return (texto ? texto + "\n\n" : "") + "(También te lo escribí en la app ¿Dónde está mi RNM?: entra, ve a Perfil y toca «Hablar con el equipo».)";
+  }
+  function abrirHilo(c) {
+    var fondo = e("div", "fondo"), dlg = e("div", "dialogo"); fondo.appendChild(dlg);
+    dlg.appendChild(e("h3", "", c.nombre)); dlg.appendChild(e("p", "sub", [c.email, c.telefono ? "+" + soloDigitos(c.telefono) : ""].filter(Boolean).join(" · ")));
+    var hilo = e("div", "hilo"); dlg.appendChild(hilo);
+    var area = e("textarea"); area.maxLength = 1000; area.placeholder = "Escribe tu mensaje para " + c.nombre.split(" ")[0] + "…"; dlg.appendChild(area);
+    var estado = e("p", "vacio", ""); dlg.appendChild(estado);
+    var bot = e("div", "botones"); dlg.appendChild(bot);
+    var timer = null;
+    function cerrar() { if (timer) clearInterval(timer); fondo.remove(); document.body.style.overflow = ""; cargar(); }
+    function pintar() {
+      return sb.rpc("rnm_admin_hilo", { p_user: c.user_id }).then(function (x) {
+        if (x.error) { estado.textContent = "No se pudo cargar la conversación."; return; }
+        var abajo = hilo.scrollHeight - hilo.scrollTop - hilo.clientHeight < 80;
+        hilo.textContent = "";
+        if (!x.data.length) hilo.appendChild(e("p", "vacio", "Todavía no hay mensajes con este cliente."));
+        x.data.forEach(function (m) { var b = e("div", "burbuja " + m.de); b.appendChild(e("p", "", m.cuerpo)); b.appendChild(e("small", "", (m.de === "cliente" ? "Cliente · " : "Tú · ") + fecha(m.creado_at))); hilo.appendChild(b); });
+        if (abajo || !hilo.dataset.v) { hilo.scrollTop = hilo.scrollHeight; hilo.dataset.v = "1"; }
+      });
+    }
+    function enviar() {
+      var t = area.value.trim(); if (!t) { estado.textContent = "Escribe un mensaje primero."; return Promise.resolve(false); }
+      estado.textContent = "Enviando…";
+      return sb.rpc("rnm_admin_mensaje_enviar", { p_user: c.user_id, p_cuerpo: t }).then(function (x) {
+        if (x.error) { estado.textContent = "No se pudo enviar. Intenta de nuevo."; return false; }
+        area.value = ""; estado.textContent = "Enviado en la app."; return pintar().then(function () { return true; });
+      });
+    }
+    var b1 = btn("Enviar en la app", enviar); bot.appendChild(b1);
+    var wa1 = wa(c.telefono);
+    if (wa1) {
+      var a = e("a", "", "Enviar y abrir WhatsApp"); a.href = wa1; a.target = "_blank"; a.rel = "noopener";
+      area.addEventListener("input", function () { a.href = wa1 + "?text=" + encodeURIComponent(textoWhatsApp(c, area.value.trim())); });
+      a.addEventListener("click", function () { if (area.value.trim()) enviar(); });
+      bot.appendChild(a);
+    }
+    if (c.rnm_no_encontrado > 0) {
+      var pl = btn("Plantilla: RNM mal escrito", function () {
+        area.value = "Hola " + c.nombre.split(" ")[0] + ", la Polícia Federal no encontró el RNM que registraste. Revisa tu carné: el número lleva letras, por ejemplo A123456B. Entra a la app, abre ese RNM y toca «Corregir RNM o fecha»; lo consultamos de nuevo gratis.";
+        area.dispatchEvent(new Event("input")); area.focus();
+      }, true); pl.className = "plantilla"; bot.appendChild(pl);
+    }
+    bot.appendChild(btn("Cerrar", cerrar, true));
+    fondo.addEventListener("click", function (ev) { if (ev.target === fondo) cerrar(); });
+    document.body.appendChild(fondo); document.body.style.overflow = "hidden";
+    pintar(); timer = setInterval(function () { if (!document.hidden) pintar(); }, 10000);
+  }
+
+  function pintarClientes(cont) {
+    cont.textContent = "";
+    var q = sinAcento(estadoClientes.busca);
+    var lista = clientesCargados.filter(function (c) {
+      if (estadoClientes.filtro === "sin_leer" && !c.sin_leer) return false;
+      if (estadoClientes.filtro === "no_enc" && !c.rnm_no_encontrado) return false;
+      return !q || sinAcento(c.nombre + " " + c.email + " " + c.telefono + " " + c.ciudad).indexOf(q) >= 0;
+    });
+    if (!lista.length) { cont.appendChild(e("p", "vacio", "Nadie coincide con ese filtro.")); return; }
+    lista.forEach(function (c) {
+      var t = e("div", "persona"), cab = e("div", "cab"), tit = e("div");
+      tit.appendChild(e("b", "", c.nombre)); tit.appendChild(e("br")); tit.appendChild(e("small", "", c.email || "")); cab.appendChild(tit);
+      if (c.sin_leer) cab.appendChild(e("span", "sinleer", c.sin_leer + " sin leer")); else cab.appendChild(e("span", "insignia " + (c.plan_estado === "activo" ? "activo" : c.plan_estado === "cancelado" ? "cancelado" : c.plan_estado === "vencido" ? "vencido" : ""), c.plan_estado));
+      t.appendChild(cab);
+      var d = e("div", "datos");
+      [["Teléfono", c.telefono ? "+" + soloDigitos(c.telefono) : "—"], ["Ciudad", c.ciudad ? c.ciudad + (c.uf ? " / " + c.uf : "") : "—"], ["RNM", num(c.n_rnm)], ["Se registró", new Date(c.creado_at).toLocaleDateString("es", { day: "2-digit", month: "short" })]].forEach(function (par) { var w = e("div"); w.appendChild(e("span", "", par[0])); w.appendChild(e("br")); w.appendChild(e("b", "", par[1])); d.appendChild(w); });
+      t.appendChild(d);
+      if (c.rnm_no_encontrado > 0) t.appendChild(e("p", "nota-p", "Tiene " + c.rnm_no_encontrado + " RNM que la PF no encontró: probablemente lo escribió mal."));
+      var acc = e("div", "acc"); var m = e("button", "msg", c.ultimo_mensaje_at ? "Conversación" : "Escribir"); m.type = "button"; m.addEventListener("click", function () { abrirHilo(c); }); acc.appendChild(m);
+      var link = wa(c.telefono); if (link) { var a = e("a", "", "WhatsApp"); a.href = link; a.target = "_blank"; a.rel = "noopener"; acc.appendChild(a); }
+      t.appendChild(acc); cont.appendChild(t);
+    });
+  }
+
+  function dibujarClientes() {
+    seccion("Clientes y mensajes");
+    var sin = clientesCargados.filter(function (c) { return c.sin_leer > 0; }).length;
+    var noEnc = clientesCargados.filter(function (c) { return c.rnm_no_encontrado > 0; }).length;
+    if (estadoClientes.filtro === "todos" && !estadoClientes.tocado) estadoClientes.filtro = sin ? "sin_leer" : (noEnc ? "no_enc" : "todos");
+    var barra = e("div", "barra"), cont = e("div", "personas");
+    var chips = [["sin_leer", "Sin leer (" + sin + ")"], ["no_enc", "RNM no encontrado (" + noEnc + ")"], ["todos", "Todos (" + clientesCargados.length + ")"]];
+    var botones = chips.map(function (c) {
+      var b = e("button", "chip" + (estadoClientes.filtro === c[0] ? " on" : ""), c[1]); b.type = "button";
+      b.addEventListener("click", function () { estadoClientes.filtro = c[0]; estadoClientes.tocado = true; botones.forEach(function (x, i) { x.className = "chip" + (chips[i][0] === c[0] ? " on" : ""); }); pintarClientes(cont); });
+      barra.appendChild(b); return b;
+    });
+    var bus = e("input"); bus.type = "search"; bus.placeholder = "Buscar cliente"; bus.value = estadoClientes.busca;
+    bus.addEventListener("input", function () { estadoClientes.busca = bus.value; pintarClientes(cont); });
+    barra.appendChild(bus); app.appendChild(barra); app.appendChild(cont); pintarClientes(cont);
+  }
+
   function dibujar(d) {
     limpiar();
     var c = d.clientes, r = d.rnm, s = d.suscripciones, v = d.ventas, m = d.marketing, av = (d.avisos && d.avisos.por_estado) || {};
@@ -226,6 +337,11 @@
     if (s.vencen_7d > 0) alerta(num(s.vencen_7d) + " plan(es) vencen en los próximos 7 días.", "");
     if (r.sin_consultar > 0) alerta(num(r.sin_consultar) + " RNM todavía sin ninguna consulta.", "");
     if (m.ultimo_dato && (Date.now() - new Date(m.ultimo_dato).getTime()) / 86400000 > 3) alerta("Los datos de gasto de Meta están atrasados (último: " + m.ultimo_dato + ").", "");
+    var sinLeerTot = clientesCargados.reduce(function (a, c) { return a + (c.sin_leer || 0); }, 0);
+    var cSin = clientesCargados.filter(function (c) { return c.sin_leer > 0; }).length;
+    if (cSin) alerta(cSin + " cliente(s) te escribieron (" + sinLeerTot + " mensajes) y esperan respuesta.", "mal");
+    var cNoEnc = clientesCargados.filter(function (c) { return c.rnm_no_encontrado > 0; }).length;
+    if (cNoEnc) alerta(cNoEnc + " cliente(s) tienen un RNM que la PF no encontró (probable error al escribirlo): avísales desde «Clientes y mensajes».", "");
     if (!hayAlerta) alerta("Todo en orden: sin alertas.", "ok");
     app.appendChild(al);
 
@@ -256,6 +372,8 @@
     ], c.total || 1);
     emb.appendChild(e("p", "vacio", num(c.con_avisos_whatsapp) + " aceptaron avisos por WhatsApp."));
     dos.appendChild(emb);
+
+    dibujarClientes();
 
     // Suscripciones y compras
     seccion("Suscripciones y compras");
@@ -306,8 +424,8 @@
   }
 
   function cargar() {
-    Promise.all([sb.rpc("rnm_admin_resumen"), sb.rpc("rnm_admin_planes")]).then(function (rs) {
-      var x = rs[0]; planesCargados = (rs[1] && rs[1].data) || [];
+    Promise.all([sb.rpc("rnm_admin_resumen"), sb.rpc("rnm_admin_planes"), sb.rpc("rnm_admin_clientes")]).then(function (rs) {
+      var x = rs[0]; planesCargados = (rs[1] && rs[1].data) || []; clientesCargados = (rs[2] && rs[2].data) || [];
       if (x.error) {
         if (x.error.code === "42501" || /no_autorizado/.test(x.error.message || "")) return pantalla("Sin acceso", "Esta cuenta no tiene permiso para ver el panel.", [btn("Salir", function () { sb.auth.signOut().then(function () { location.reload(); }); })]);
         return pantalla("No se pudo cargar", "Revisa tu conexión e inténtalo de nuevo.", [btn("Reintentar", cargar)]);
