@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Panel general</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<style>
+  :root { --fondo: #F5F7FB; --tarjeta: #fff; --texto: #0F1B33; --suave: #5B6B86; --linea: #E1E7F2; --azul: #0E3F8E; --azul2: #3B7BE0; --verde: #13803D; --ambar: #B26A00; --rojo: #B3261E; --amarillo: #FFC83D; }
+  @media (prefers-color-scheme: dark) { :root { --fondo: #0B1220; --tarjeta: #121B2E; --texto: #E8EEFA; --suave: #9AA9C4; --linea: #223152; --azul: #6FA3FF; --azul2: #4E86E8; --verde: #4CD08A; --ambar: #F2B24D; --rojo: #FF8A80; } }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--fondo); color: var(--texto); font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 1100px; margin: 0 auto; padding: calc(14px + env(safe-area-inset-top, 0px)) 16px calc(48px + env(safe-area-inset-bottom, 0px)); }
+  header.top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+  header.top h1 { margin: 0; font-size: 1.4rem; letter-spacing: -0.02em; flex: 1; min-width: 180px; }
+  header.top small { color: var(--suave); }
+  button { min-height: 44px; padding: 0 16px; border: 0; border-radius: 12px; background: var(--azul); color: #fff; font: inherit; font-weight: 700; cursor: pointer; touch-action: manipulation; }
+  button.sec { background: transparent; color: var(--azul); border: 1px solid var(--linea); }
+  @media (prefers-color-scheme: dark) { button { color: #0B1220; } button.sec { color: var(--azul); } }
+  h2 { margin: 26px 0 10px; font-size: 1.02rem; letter-spacing: -0.01em; }
+  .cifras { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+  .cifra { padding: 13px 14px; border-radius: 16px; background: var(--tarjeta); border: 1px solid var(--linea); min-width: 0; }
+  .cifra small { display: block; color: var(--suave); font-size: 0.74rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+  .cifra b { display: block; margin-top: 3px; font-size: 1.45rem; letter-spacing: -0.02em; overflow-wrap: anywhere; }
+  .cifra span { display: block; color: var(--suave); font-size: 0.78rem; margin-top: 2px; }
+  .cifra.ok b { color: var(--verde); } .cifra.aviso b { color: var(--ambar); } .cifra.mal b { color: var(--rojo); }
+  .caja { padding: 14px; border-radius: 16px; background: var(--tarjeta); border: 1px solid var(--linea); min-width: 0; }
+  .dos { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 10px; }
+  .alertas { display: grid; gap: 8px; margin-bottom: 6px; }
+  .alerta { padding: 11px 14px; border-radius: 14px; border: 1px solid var(--linea); background: var(--tarjeta); font-size: 0.92rem; border-left: 5px solid var(--ambar); }
+  .alerta.mal { border-left-color: var(--rojo); } .alerta.ok { border-left-color: var(--verde); }
+  .barras { display: flex; align-items: flex-end; gap: 3px; height: 130px; }
+  .barras i { flex: 1; min-width: 0; background: var(--azul2); border-radius: 4px 4px 0 0; min-height: 2px; position: relative; }
+  .barras i.cero { background: var(--linea); }
+  .ejex { display: flex; justify-content: space-between; color: var(--suave); font-size: 0.74rem; margin-top: 6px; }
+  .fila { display: grid; grid-template-columns: minmax(90px, 140px) 1fr auto; gap: 10px; align-items: center; margin: 8px 0; font-size: 0.9rem; }
+  .fila .pista { height: 14px; border-radius: 8px; background: var(--linea); overflow: hidden; }
+  .fila .pista i { display: block; height: 100%; background: var(--azul2); border-radius: 8px; }
+  .fila b { font-variant-numeric: tabular-nums; }
+  .tabla { overflow-x: auto; border-radius: 16px; background: var(--tarjeta); border: 1px solid var(--linea); }
+  table { width: 100%; border-collapse: collapse; min-width: 520px; font-size: 0.9rem; }
+  th, td { padding: 10px 12px; text-align: right; border-bottom: 1px solid var(--linea); white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; }
+  th { color: var(--suave); font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  tr:last-child td { border-bottom: 0; }
+  .centro { padding: 40px 16px; text-align: center; color: var(--suave); }
+  .centro h1 { color: var(--texto); }
+  .nota { margin-top: 18px; color: var(--suave); font-size: 0.82rem; }
+  .vacio { color: var(--suave); font-size: 0.9rem; padding: 6px 0; }
+</style>
+</head>
+<body>
+<main id="app"><p class="centro">Cargando…</p></main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+(function () {
+  "use strict";
+  var sb = window.supabase.createClient("https://rumpfqevyspdmhaggxtq.supabase.co", "sb_publishable_7znj3ENrTWXDE2dibUzv_A_a7HUoud_");
+  var app = document.getElementById("app");
+  var temporizador = null;
+
+  var num = function (n) { return Number(n || 0).toLocaleString("es"); };
+  var reales = function (c) { return "R$ " + (Number(c || 0) / 100).toLocaleString("es", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
+  var realesU = function (u) { return "R$ " + Number(u || 0).toLocaleString("es", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
+  var pct = function (a, b) { return b ? Math.round((a / b) * 100) + " %" : "—"; };
+  var hace = function (iso) {
+    if (!iso) return "nunca";
+    var m = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+    if (m < 1) return "hace un momento"; if (m < 60) return "hace " + m + " min";
+    var h = Math.round(m / 60); if (h < 48) return "hace " + h + " h"; return "hace " + Math.round(h / 24) + " días";
+  };
+  var fecha = function (iso) { return new Date(iso).toLocaleString("es", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }); };
+  var MES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+  function e(t, c, h) { var n = document.createElement(t); if (c) n.className = c; if (h !== undefined) n.textContent = h; return n; }
+  function limpiar() { app.textContent = ""; }
+
+  function pantalla(titulo, texto, botones) {
+    limpiar();
+    var d = e("div", "centro"); d.appendChild(e("h1", "", titulo)); d.appendChild(e("p", "", texto));
+    (botones || []).forEach(function (b) { d.appendChild(b); d.appendChild(document.createTextNode(" ")); });
+    app.appendChild(d);
+  }
+  function btn(texto, fn, sec) { var b = e("button", sec ? "sec" : "", texto); b.type = "button"; b.addEventListener("click", fn); return b; }
+
+  function cifra(titulo, valor, extra, clase) {
+    var c = e("div", "cifra" + (clase ? " " + clase : "")); c.appendChild(e("small", "", titulo)); c.appendChild(e("b", "", valor));
+    if (extra) c.appendChild(e("span", "", extra)); return c;
+  }
+  function seccion(titulo) { app.appendChild(e("h2", "", titulo)); }
+  function rejilla(cifras) { var g = e("div", "cifras"); cifras.forEach(function (c) { g.appendChild(c); }); app.appendChild(g); return g; }
+  function filas(caja, pares, total) {
+    var max = total || Math.max.apply(null, pares.map(function (p) { return p[1]; }).concat([1]));
+    if (!pares.length) { caja.appendChild(e("p", "vacio", "Sin datos todavía.")); return; }
+    pares.forEach(function (p) {
+      var f = e("div", "fila"); f.appendChild(e("span", "", p[0]));
+      var pi = e("div", "pista"), i = e("i"); i.style.width = Math.max(2, Math.round((p[1] / max) * 100)) + "%"; if (p[2]) i.style.background = p[2]; pi.appendChild(i); f.appendChild(pi);
+      f.appendChild(e("b", "", p[3] || num(p[1]))); caja.appendChild(f);
+    });
+  }
+  function barras(caja, valores, etiquetaIzq, etiquetaDer) {
+    var max = Math.max.apply(null, valores.concat([1]));
+    var b = e("div", "barras");
+    valores.forEach(function (v, k) { var i = e("i", v ? "" : "cero"); i.style.height = Math.max(2, (v / max) * 100) + "%"; i.title = String(v); b.appendChild(i); });
+    caja.appendChild(b);
+    var x = e("div", "ejex"); x.appendChild(e("span", "", etiquetaIzq)); x.appendChild(e("span", "", etiquetaDer)); caja.appendChild(x);
+  }
+  function tabla(cabeceras, filasDatos) {
+    var w = e("div", "tabla"), t = e("table"), th = e("thead"), tr = e("tr");
+    cabeceras.forEach(function (c) { tr.appendChild(e("th", "", c)); }); th.appendChild(tr); t.appendChild(th);
+    var tb = e("tbody");
+    if (!filasDatos.length) { var f0 = e("tr"), c0 = e("td", "", "Sin datos todavía."); c0.colSpan = cabeceras.length; f0.appendChild(c0); tb.appendChild(f0); }
+    filasDatos.forEach(function (fd) { var f = e("tr"); fd.forEach(function (v) { f.appendChild(e("td", "", v)); }); tb.appendChild(f); });
+    t.appendChild(tb); w.appendChild(t); app.appendChild(w);
+  }
+
+  function dibujar(d) {
+    limpiar();
+    var c = d.clientes, r = d.rnm, s = d.suscripciones, v = d.ventas, m = d.marketing, av = (d.avisos && d.avisos.por_estado) || {};
+    var top = e("header", "top"); top.appendChild(e("h1", "", "Panel general"));
+    top.appendChild(e("small", "", "Actualizado " + fecha(d.generado_at)));
+    top.appendChild(btn("Actualizar", cargar, true)); top.appendChild(btn("Salir", function () { sb.auth.signOut().then(function () { location.reload(); }); }, true));
+    app.appendChild(top);
+
+    // Alertas
+    var al = e("div", "alertas"); var hayAlerta = false;
+    function alerta(t, cl) { hayAlerta = true; al.appendChild(e("div", "alerta" + (cl ? " " + cl : ""), t)); }
+    var minBot = r.ultima_consulta ? (Date.now() - new Date(r.ultima_consulta).getTime()) / 60000 : Infinity;
+    if (r.en_cola > 0 && minBot > 180) alerta("Hay " + r.en_cola + " RNM esperando consulta y el bot no consulta " + hace(r.ultima_consulta) + ". Revisa el servidor.", "mal");
+    if ((av.error || 0) > 0) alerta(num(av.error) + " aviso(s) de WhatsApp con error o esperando número de un aliado.", "");
+    if (s.vencen_7d > 0) alerta(num(s.vencen_7d) + " plan(es) vencen en los próximos 7 días.", "");
+    if (r.sin_consultar > 0) alerta(num(r.sin_consultar) + " RNM todavía sin ninguna consulta.", "");
+    if (m.ultimo_dato && (Date.now() - new Date(m.ultimo_dato).getTime()) / 86400000 > 3) alerta("Los datos de gasto de Meta están atrasados (último: " + m.ultimo_dato + ").", "");
+    if (!hayAlerta) alerta("Todo en orden: sin alertas.", "ok");
+    app.appendChild(al);
+
+    // Resumen
+    seccion("Resumen");
+    var costoReg = c.ultimos_30d ? (Number(m.gasto_30d) / c.ultimos_30d) : null;
+    rejilla([
+      cifra("Clientes", num(c.total), "+" + num(c.hoy) + " hoy · +" + num(c.ultimos_7d) + " en 7 días"),
+      cifra("Suscripciones activas", num(s.activas), num(s.semanal) + " semanal · " + num(s.manual) + " manual", s.activas ? "ok" : ""),
+      cifra("Ingreso mensual recurrente", reales(s.mrr_centavos), "planes activos sin cancelar"),
+      cifra("Vendido (30 días)", reales(v.bruto_30d_centavos), num(v.pagos) + " pagos en total"),
+      cifra("Gasto en anuncios (30 días)", realesU(m.gasto_30d), "7 días: " + realesU(m.gasto_7d)),
+      cifra("Costo por cliente nuevo", costoReg === null ? "—" : realesU(costoReg), "gasto 30 d ÷ clientes nuevos 30 d")
+    ]);
+
+    // Clientes
+    seccion("Clientes");
+    var dos = e("div", "dos"); app.appendChild(dos);
+    var cj = e("div", "caja"); cj.appendChild(e("b", "", "Registros por día (últimos 30)"));
+    barras(cj, c.serie_30d.map(function (x) { return x.n; }), c.serie_30d[0].d.slice(5), c.serie_30d[c.serie_30d.length - 1].d.slice(5)); dos.appendChild(cj);
+    var emb = e("div", "caja"); emb.appendChild(e("b", "", "Embudo"));
+    filas(emb, [
+      ["Se registraron", c.total, "", num(c.total)],
+      ["Completaron perfil", c.con_perfil, "", num(c.con_perfil) + " · " + pct(c.con_perfil, c.total)],
+      ["Registraron un RNM", c.con_rnm, "", num(c.con_rnm) + " · " + pct(c.con_rnm, c.total)],
+      ["Han pagado alguna vez", c.han_pagado, "var(--verde)", num(c.han_pagado) + " · " + pct(c.han_pagado, c.total)],
+      ["Plan activo hoy", c.con_plan_activo, "var(--verde)", num(c.con_plan_activo) + " · " + pct(c.con_plan_activo, c.total)]
+    ], c.total || 1);
+    emb.appendChild(e("p", "vacio", num(c.con_avisos_whatsapp) + " aceptaron avisos por WhatsApp."));
+    dos.appendChild(emb);
+
+    // Suscripciones y compras
+    seccion("Suscripciones y compras");
+    rejilla([
+      cifra("Activas", num(s.activas), "semanal " + num(s.semanal) + " · manual " + num(s.manual), s.activas ? "ok" : ""),
+      cifra("Canceladas (aún activas)", num(s.canceladas_aun_activas), "no se renuevan", s.canceladas_aun_activas ? "aviso" : ""),
+      cifra("Vencen en 7 días", num(s.vencen_7d), "", s.vencen_7d ? "aviso" : ""),
+      cifra("Vencidas", num(s.vencidas), "dejaron de pagar"),
+      cifra("Cobrado bruto", reales(v.bruto_centavos), "neto " + reales(v.neto_centavos)),
+      cifra("Comisiones de Mercado Pago", reales(v.comision_centavos), "sobre pagos con neto conocido")
+    ]);
+    var dos2 = e("div", "dos"); dos2.style.marginTop = "10px"; app.appendChild(dos2);
+    var cm = e("div", "caja"); cm.appendChild(e("b", "", "Ventas por mes"));
+    barras(cm, v.por_mes.map(function (x) { return x.bruto; }), MES[Number(v.por_mes[0].mes.slice(5, 7)) - 1], MES[Number(v.por_mes[v.por_mes.length - 1].mes.slice(5, 7)) - 1]);
+    cm.appendChild(e("p", "vacio", v.por_mes.map(function (x) { return MES[Number(x.mes.slice(5, 7)) - 1] + " " + reales(x.bruto); }).join(" · "))); dos2.appendChild(cm);
+    var mt = e("div", "caja"); mt.appendChild(e("b", "", "Por método de pago"));
+    var pm = Object.keys(v.por_metodo).map(function (k) { return [k, v.por_metodo[k].n, "", num(v.por_metodo[k].n) + " · " + reales(v.por_metodo[k].monto)]; });
+    filas(mt, pm); dos2.appendChild(mt);
+    var ultimos = e("h2", "", "Últimos pagos"); app.appendChild(ultimos);
+    tabla(["Fecha", "Cliente", "Método", "Plan", "Monto"], v.ultimos.map(function (p) { return [fecha(p.fecha), p.cliente || "—", p.metodo || "—", p.tipo || "—", reales(p.monto)]; }));
+
+    // RNM y bot
+    seccion("RNM y bot de consultas");
+    rejilla([
+      cifra("RNM registrados", num(r.total), num(r.abiertos) + " abiertos · " + num(r.cerrados) + " cerrados"),
+      cifra("Consultas (24 h)", num(r.consultas_24h), "7 días: " + num(r.consultas_7d)),
+      cifra("Última consulta", hace(r.ultima_consulta), r.ultima_consulta ? fecha(r.ultima_consulta) : "", (r.en_cola > 0 && minBot > 180) ? "mal" : "ok"),
+      cifra("En cola ahora", num(r.en_cola), "esperando que el bot los consulte", r.en_cola ? "aviso" : "ok"),
+      cifra("Sin consultar", num(r.sin_consultar), "", r.sin_consultar ? "aviso" : ""),
+      cifra("Con validez leída", num(r.con_validez), pct(r.con_validez, r.total) + " de los RNM"),
+      cifra("«Verificar ahora» (7 d)", num(r.verificaciones_manuales_7d), "plan manual")
+    ]);
+    var est = e("div", "caja"); est.style.marginTop = "10px"; est.appendChild(e("b", "", "RNM por estado"));
+    filas(est, Object.keys(r.por_estado).map(function (k) { return [k, r.por_estado[k]]; }).sort(function (a, b) { return b[1] - a[1]; })); app.appendChild(est);
+
+    // Aliados
+    seccion("Aliados");
+    tabla(["Aliado", "Clientes", "Con plan", "Neto generado", "Su parte", "Liquidado"], d.aliados.map(function (a) {
+      var parte = Math.round(a.neto_centavos * a.porcentaje / 100);
+      return [a.nombre + " (" + a.porcentaje + " %)", num(a.clientes), num(a.con_plan_activo), reales(a.neto_centavos), reales(parte), reales(a.liquidado_centavos)];
+    }));
+
+    // Avisos
+    seccion("Avisos por WhatsApp");
+    var ac = e("div", "caja"); filas(ac, Object.keys(av).map(function (k) { return [k, av[k], k === "error" ? "var(--rojo)" : (k === "enviado" ? "var(--verde)" : "")]; })); app.appendChild(ac);
+    app.appendChild(e("p", "nota", "Datos en vivo de la base de la app. Los importes de ventas vienen de Mercado Pago (tarjeta, Pix y boleto); el gasto, de la sincronización de Meta. El ingreso mensual recurrente suma el precio de los planes activos que no se han cancelado."));
+  }
+
+  function cargar() {
+    sb.rpc("rnm_admin_resumen").then(function (x) {
+      if (x.error) {
+        if (x.error.code === "42501" || /no_autorizado/.test(x.error.message || "")) return pantalla("Sin acceso", "Esta cuenta no tiene permiso para ver el panel.", [btn("Salir", function () { sb.auth.signOut().then(function () { location.reload(); }); })]);
+        return pantalla("No se pudo cargar", "Revisa tu conexión e inténtalo de nuevo.", [btn("Reintentar", cargar)]);
+      }
+      dibujar(x.data);
+    });
+  }
+
+  function iniciar() {
+    sb.auth.getSession().then(function (s) {
+      if (!s.data.session) {
+        return pantalla("Panel general", "Solo para el dueño. Entra con tu cuenta de Google.", [btn("Entrar con Google", function () {
+          sb.auth.signInWithOAuth({ provider: "google", options: { redirectTo: location.origin + location.pathname } });
+        })]);
+      }
+      cargar();
+      if (temporizador) clearInterval(temporizador);
+      temporizador = setInterval(function () { if (!document.hidden) cargar(); }, 120000);
+    });
+  }
+  iniciar();
+})();
+</script>
+</body>
+</html>
