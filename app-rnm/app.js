@@ -1026,9 +1026,12 @@ async function cargarRegistros() {
   if (r.error || !r.data) return;
   var plan = q[1].data || null;
   var activo = !!plan && new Date(plan.vence_at) > new Date();
-  // Los RNM se cubren por orden de registro hasta el número de cupos del plan (igual que en la base de datos).
-  r.data.forEach(function (x, i) {
-    x.cubierto = activo && i + 1 <= plan.cupos;
+  // Los RNM abiertos se cubren por orden de registro hasta el número de cupos del plan; uno ya listo o entregado no ocupa cupo
+  // (igual que en la base de datos).
+  var puesto = 0;
+  r.data.forEach(function (x) {
+    if (!x.cerrado) puesto++;
+    x.cubierto = activo && !x.cerrado && puesto <= plan.cupos;
     x.planVence = plan ? plan.vence_at : null;
     x.tuvoPlan = !!plan;
   });
