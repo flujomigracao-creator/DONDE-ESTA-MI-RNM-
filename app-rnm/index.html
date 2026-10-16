@@ -528,6 +528,21 @@
       <button type="button" class="camara-listo oculto" id="camara-listo">Listo</button>
     </div>
   </div>
+  <div id="modal-corregir" class="modal oculto" role="dialog" aria-modal="true" aria-labelledby="cor-titulo">
+    <div class="modal-caja modal-confirmacion" tabindex="-1">
+      <h3 id="cor-titulo">Corregir tus datos</h3>
+      <p class="sub">Escríbelos tal como figuran en tu carné. Volveremos a consultar sin costo.</p>
+      <label for="cor-rnm">Número de RNM</label>
+      <input type="text" id="cor-rnm" autocapitalize="characters" autocomplete="off" maxlength="12" placeholder="Ej: A123456B">
+      <label for="cor-nac">Fecha de nacimiento</label>
+      <input type="text" id="cor-nac" inputmode="numeric" autocomplete="off" maxlength="10" placeholder="dd/mm/aaaa">
+      <p class="msg" id="msg-corregir" role="alert"></p>
+      <div class="acciones acciones-fin">
+        <button type="button" class="btn sec" id="cor-cancelar">Cancelar</button>
+        <button type="button" class="btn" id="cor-guardar">Guardar y consultar</button>
+      </div>
+    </div>
+  </div>
   <div id="modal-confirmar" class="modal oculto" role="dialog" aria-modal="true" aria-labelledby="confirm-titulo" aria-describedby="confirm-desc">
     <div class="modal-caja modal-confirmacion" tabindex="-1">
       <h3 id="confirm-titulo">¿Confirmar acción?</h3>

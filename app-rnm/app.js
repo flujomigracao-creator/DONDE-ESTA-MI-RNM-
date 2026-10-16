@@ -495,6 +495,12 @@ function irSubPaso(n, dir) {
   var foco = { 1: "rnm", 2: "nac", 3: "consiento" }[n];
   setTimeout(function () { var f = $(foco); if (f && f.offsetParent !== null) f.focus({ preventScroll: true }); }, 60);
 }
+var rnmSoloNumerosAvisado = "";
+function soloNumerosSinAviso(rnm) {
+  if (!/^[0-9]+$/.test(rnm) || rnmSoloNumerosAvisado === rnm) return false;
+  rnmSoloNumerosAvisado = rnm; return true;
+}
+var MSG_SOLO_NUMEROS = "Ese número solo tiene dígitos y un RNM suele llevar letras, por ejemplo A123456B. Revísalo en tu carné; si está bien, pulsa Continuar otra vez.";
 function validarSubPaso(n) {
   var ME = function (id, t) { marcarCampoEn("#form-rnm", id, t, "msg-form"); return false; };
   limpiarErroresEn("#form-rnm");
@@ -502,6 +508,7 @@ function validarSubPaso(n) {
     var rnm = $("rnm").value.toUpperCase().replace(/[^A-Z0-9]/g, "");
     if (!rnm) return ME("rnm", "Escribe tu número de RNM.");
     if (!/^[A-Z0-9]{6,12}$/.test(rnm)) return ME("rnm", "Revisa tu RNM: deben ser entre 6 y 12 letras y números, sin espacios ni símbolos.");
+    if (soloNumerosSinAviso(rnm)) return ME("rnm", MSG_SOLO_NUMEROS);
   } else if (n === 2) {
     var nt = $("nac").value.trim();
     if (!nt) return ME("nac", "Escribe tu fecha de nacimiento (dd/mm/aaaa).");
@@ -827,6 +834,7 @@ $("form-rnm").addEventListener("submit", function (e) {
   var ME = function (id, t) { return marcarCampoEn("#form-rnm", id, t, "msg-form"); };
   if (!rnm) return ME("rnm", "Escribe tu número de RNM.");
   if (!/^[A-Z0-9]{6,12}$/.test(rnm)) return ME("rnm", "Revisa tu RNM: deben ser entre 6 y 12 letras y números, sin espacios ni símbolos.");
+  if (soloNumerosSinAviso(rnm)) return ME("rnm", MSG_SOLO_NUMEROS);
   if (!nacTxt) return ME("nac", "Escribe tu fecha de nacimiento (dd/mm/aaaa).");
   if (!iso) return ME("nac", "Esa fecha no es válida. Usa el formato dd/mm/aaaa, por ejemplo 14/03/1992, y que no sea una fecha futura.");
   if (!$("consiento").checked) return ME("consiento", "Marca la autorización para poder continuar.");
@@ -1408,7 +1416,7 @@ async function cargarRegistros() {
   actualizarAvisoRegistro();
   var q = await Promise.all([
     sb.from("rnm_registros")
-      .select("id, rnm, estado_pago, requiere_pago, estado_pf, unidad_pf, cambio_direccion, ultimo_resultado, ultima_consulta_at, cerrado, created_at, validez, validez_verificada_at, carne_validacion, carne_foto_path, carne_foto_verso_path, carne_cpf, ultima_manual_at")
+      .select("id, rnm, estado_pago, requiere_pago, estado_pf, unidad_pf, cambio_direccion, ultimo_resultado, ultima_consulta_at, cerrado, created_at, validez, validez_verificada_at, carne_validacion, carne_foto_path, carne_foto_verso_path, carne_cpf, ultima_manual_at, fecha_nacimiento, correcciones")
       .order("created_at", { ascending: true }),
     sb.from("rnm_planes").select("cupos, tipo, precio_centavos, vence_at, cancelado_at").maybeSingle()
   ]);
@@ -1952,6 +1960,53 @@ function construirHistorialDetalle(x) {
   return tl;
 }
 
+function abrirCorregir(x) {
+  var m = $("modal-corregir"), iRnm = $("cor-rnm"), iNac = $("cor-nac"), bG = $("cor-guardar"), bC = $("cor-cancelar");
+  if (!m) return;
+  var p = String(x.fecha_nacimiento || "").split("-");
+  iRnm.value = x.rnm; iNac.value = p.length === 3 ? p[2] + "/" + p[1] + "/" + p[0] : "";
+  msg("msg-corregir", "");
+  m.classList.remove("oculto"); document.body.style.overflow = "hidden";
+  setTimeout(function () { try { iRnm.focus(); } catch (e) { /* sin foco */ } }, 60);
+  function cerrar() {
+    m.classList.add("oculto"); document.body.style.overflow = "";
+    bG.onclick = null; bC.onclick = null; iRnm.oninput = null; iNac.oninput = null; document.removeEventListener("keydown", tecla);
+  }
+  function tecla(e) { if (e.key === "Escape") cerrar(); }
+  document.addEventListener("keydown", tecla);
+  iRnm.oninput = function () { iRnm.value = iRnm.value.toUpperCase().replace(/[^A-Z0-9]/g, ""); };
+  iNac.oninput = function () {
+    var d = iNac.value.replace(/[^0-9]/g, "").slice(0, 8), t = d;
+    if (d.length > 4) t = d.slice(0, 2) + "/" + d.slice(2, 4) + "/" + d.slice(4); else if (d.length > 2) t = d.slice(0, 2) + "/" + d.slice(2);
+    iNac.value = t;
+  };
+  bC.onclick = cerrar;
+  bG.onclick = async function () {
+    var rnm = iRnm.value.toUpperCase().replace(/[^A-Z0-9]/g, ""), iso = fechaISO(iNac.value.trim());
+    if (!rnm) return msg("msg-corregir", "Escribe tu número de RNM.");
+    if (!/^[A-Z0-9]{6,12}$/.test(rnm)) return msg("msg-corregir", "Revisa tu RNM: deben ser entre 6 y 12 letras y números, sin espacios ni símbolos.");
+    if (!iso) return msg("msg-corregir", "Esa fecha no es válida. Usa el formato dd/mm/aaaa, por ejemplo 14/03/1992.");
+    if (rnm === x.rnm && iso === x.fecha_nacimiento) return msg("msg-corregir", "No cambiaste nada. Corrige el RNM o la fecha de nacimiento.");
+    if (soloNumerosSinAviso(rnm)) return msg("msg-corregir", MSG_SOLO_NUMEROS);
+    bG.disabled = true;
+    var r = await sb.rpc("rnm_corregir_datos", { p_registro: x.id, p_rnm: rnm, p_nacimiento: iso });
+    bG.disabled = false;
+    if (r.error) {
+      var t = r.error.message || "";
+      return msg("msg-corregir",
+        t.indexOf("rnm_duplicado") >= 0 ? "Ese RNM ya está registrado en otra cuenta. Si es tuyo, escríbenos " + VIA_CONTACTO + "." :
+        t.indexOf("limite_correcciones") >= 0 ? "Ya corregiste tus datos 3 veces. Escríbenos " + VIA_CONTACTO + " y lo revisamos contigo." :
+        t.indexOf("sin_cambios") >= 0 ? "No cambiaste nada. Corrige el RNM o la fecha de nacimiento." :
+        "No pudimos guardar el cambio. Intenta de nuevo.");
+    }
+    cerrar();
+    var idx = x.id;
+    await mostrarConsultando(function () { return cargarRegistros(); });
+    var nuevo = registrosCargados.find(function (r2) { return r2.id === idx; });
+    if (nuevo) abrirDetalleRnm(nuevo.id); else navegarA("inicio");
+  };
+}
+
 function construirDetalle(id) {
   var x = registrosCargados.find(function (r) { return r.id === id; });
   if (!x) { if (seccionActual === "detalle-rnm") navegarA("inicio"); return; }
@@ -1973,6 +2028,19 @@ function construirDetalle(id) {
     cp.appendChild(ol); cont.appendChild(cp);
   }
 
+  if (x.estado_pf === "no_encontrado") {
+    var cc = el("div", "tarjeta corregir-card");
+    cc.appendChild(el("p", "hero-eyebrow", "¿Algún dato está mal?"));
+    if ((x.correcciones || 0) >= 3) {
+      cc.appendChild(el("p", "sub", "Ya usaste las 3 correcciones. Escríbenos " + VIA_CONTACTO + " y lo revisamos contigo."));
+    } else {
+      cc.appendChild(el("p", "sub", "Si te equivocaste al escribir tu RNM o tu fecha de nacimiento, corrígelos y volvemos a consultar, sin costo."));
+      var bcor = el("button", "btn", "Corregir RNM o fecha"); bcor.type = "button";
+      bcor.addEventListener("click", function () { abrirCorregir(x); });
+      cc.appendChild(bcor);
+    }
+    cont.appendChild(cc);
+  }
   var bvah = bloqueVerificarAhora(x); if (bvah) cont.appendChild(bvah);
   // 3. Dónde retirar (una línea) y plan (un enlace)
   if (e.traslado) { /* mientras se traslada no se indica dónde retirar */ }

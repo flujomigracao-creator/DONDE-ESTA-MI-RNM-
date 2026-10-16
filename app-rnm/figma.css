@@ -1033,3 +1033,11 @@ body.escribiendo .app-content { padding-bottom: 24px; }
 .consent-pixel a { color: var(--brand); font-weight: 700; }
 .consent-pixel-acc { display: flex; gap: 8px; }
 .consent-pixel-acc .btn { flex: 1; min-height: 44px; }
+
+/* Corregir RNM o fecha */
+.corregir-card .btn { width: 100%; margin-top: 10px; min-height: 48px; }
+#modal-corregir label { display: block; margin: 12px 0 4px; font-weight: 700; font-size: 0.9rem; }
+#modal-corregir input { width: 100%; }
+
+/* El aviso de medicion no tapa ventanas ni la camara */
+body:has(.modal:not(.oculto)) .consent-pixel, body:has(.camara:not(.oculto)) .consent-pixel { display: none; }
