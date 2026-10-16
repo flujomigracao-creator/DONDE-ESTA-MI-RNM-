@@ -1321,13 +1321,13 @@ function actualizarDashboard(regs, plan) {
         '<div><span class="num-paso">3</span><b>Ves dónde está</b></div>';
       heroCont.appendChild(como);
     } else {
-      var rango = function (x) { return x.estado_pf === "listo" ? 0 : (!x.cerrado ? 1 : 2); };
+      var rango = function (x) { return esListoReal(x) ? 0 : (!x.cerrado || trasladoPendiente(x) ? 1 : 2); };
       var orden = regs.slice().sort(function (a, b) { return rango(a) - rango(b); });
       var pl = planLinea(regs, plan);
       if (pl) heroCont.appendChild(pl);
       if (regs.length > 1) {
-        var nL = regs.filter(function (x) { return x.estado_pf === "listo"; }).length;
-        var nC = regs.filter(function (x) { return !x.cerrado; }).length;
+        var nL = regs.filter(esListoReal).length;
+        var nC = regs.filter(function (x) { return !x.cerrado || trasladoPendiente(x); }).length;
         var nE = regs.filter(function (x) { return x.estado_pf === "entregado"; }).length;
         var partes = [];
         if (nL) partes.push(nL + (nL === 1 ? " listo para retirar" : " listos para retirar"));
@@ -1338,7 +1338,7 @@ function actualizarDashboard(regs, plan) {
       // Tarjeta completa para cada RNM listo (lo más importante) y para el primero en proceso; el resto, en filas compactas.
       var completos = 0, compactos = [];
       orden.forEach(function (x, i) {
-        var completo = x.estado_pf === "listo" || (i === 0) || (!x.cerrado && completos === 0);
+        var completo = esListoReal(x) || !!trasladoPendiente(x) || (i === 0) || (!x.cerrado && completos === 0);
         if (completo && completos < 3) { heroCont.appendChild(rastreador(x, { cta: true, compacto: completos > 0 })); completos++; }
         else compactos.push(x);
       });
@@ -1359,8 +1359,8 @@ function actualizarDashboard(regs, plan) {
 /* ---------- Mis RNM (Pantalla 6) ---------- */
 function renderizarMisRnm(regs, plan) {
   var cTodos = $("count-todos"), cProc = $("count-proceso"), cListos = $("count-listos");
-  var listos = regs.filter(function (x) { return x.estado_pf === "listo"; });
-  var proceso = regs.filter(function (x) { return !x.cerrado && x.estado_pf !== "listo"; });
+  var listos = regs.filter(esListoReal);
+  var proceso = regs.filter(function (x) { return (!x.cerrado && x.estado_pf !== "listo") || trasladoPendiente(x); });
 
   if (cTodos) cTodos.textContent = String(regs.length);
   if (cProc) cProc.textContent = String(proceso.length);
@@ -1482,7 +1482,8 @@ function construirDetalle(id) {
   }
 
   // 3. Dónde retirar (una línea) y plan (un enlace)
-  if (x.unidad_pf && (x.estado_pf === "listo" || e.corto === "Listo")) cont.appendChild(dondeRetirarCompacto(x));
+  if (e.traslado) { /* mientras se traslada no se indica dónde retirar */ }
+  else if (x.unidad_pf && (x.estado_pf === "listo" || e.corto === "Listo")) cont.appendChild(dondeRetirarCompacto(x));
   else if (x.estado_pf === "listo" && WHATSAPP) cont.appendChild(avisoOtraCiudad(x));
   if (!x.cerrado && !x.cubierto && x.ultimo_resultado) {
     var pl = el("button", "enlace-plan", "Activar seguimiento semanal"); pl.type = "button";
@@ -1673,6 +1674,7 @@ function lineasCambio(txt) {
     return {
       fecha: p[0] || "",
       estado: estadoCambio(sit),
+      codigo: codigo,
       destino: ciudad ? ciudad + (uf ? "/" + uf : "") : (uf ? ESTADOS_BR[uf] : codigo)
     };
   });
@@ -1749,6 +1751,7 @@ function fechaCorta(iso) { return new Date(iso).toLocaleDateString("es", { day: 
 
 // Etiqueta corta del estado de vigilancia de un RNM -> [texto, clase de la insignia]
 function etiquetaRnm(x) {
+  if (trasladoPendiente(x)) return ["En traslado", " vigila"];
   if (x.estado_pf === "entregado") return ["Entregado", " ok"];
   if (x.cerrado) return ["Listo", " ok"];
   if (x.cubierto) return ["Vigilando", " vigila"];
@@ -1850,10 +1853,32 @@ function interpretarConsulta(txt) {
   return { tono: regla.tono, badge: regla.badge, corto: regla.corto, t: regla.t, resumen: d.resumen, pasos: d.pasos, detalles: d.detalles || [], ubicacion: d.ubic || "", p: [d.resumen], original: txt };
 }
 // Estado que se muestra para un registro: si todavía no hay resultado, se dice tal cual (nunca "novedad").
+/* Cambio de dirección aprobado hacia otra unidad: el documento sigue donde se hizo y la PF lo traslada.
+   Cuando llega, la PF cambia su texto a "pronto para ser retirado na unidade [la nueva]" y deja de haber traslado pendiente. */
+function trasladoPendiente(x) {
+  if (!x || x.estado_pf !== "listo" || !x.unidad_pf || !x.cambio_direccion) return null;
+  var ufDoc = ufDeUnidad(x.unidad_pf);
+  var aprobados = lineasCambio(x.cambio_direccion).filter(function (l) { return l.estado === "aprobada" && ufDeUnidad(l.codigo); });
+  if (!aprobados.length || !ufDoc) return null;
+  var ult = cambioReciente(aprobados);
+  if (ufDeUnidad(ult.codigo) === ufDoc) return null;
+  return { actual: lugarDeUnidad(x.unidad_pf), destino: lugarDeUnidad(ult.codigo) };
+}
+function esListoReal(x) { return x.estado_pf === "listo" && !trasladoPendiente(x); }
 function estadoPresentacion(x) {
   if (x.ultimo_resultado) {
     var e0 = explicar(x.ultimo_resultado);
     if (!e0.ubicacion && x.unidad_pf) e0.ubicacion = "En la unidad de " + lugarDeUnidad(x.unidad_pf);
+    var tp = trasladoPendiente(x);
+    if (tp && e0.corto === "Listo") {
+      e0.tono = "aviso"; e0.badge = "vigila"; e0.corto = "En traslado"; e0.traslado = true;
+      e0.t = "Tu cambio de dirección fue aprobado";
+      e0.resumen = "Tu RNM sigue en " + tp.actual + " y será trasladado a " + tp.destino + ". Todavía no vayas a retirarlo.";
+      e0.p = [e0.resumen];
+      e0.pasos = ["No tienes que hacer nada por ahora.", "Cuando llegue a " + tp.destino + ", aquí aparecerá como listo para retirar.", "Si necesitas ayuda, escríbenos " + VIA_CONTACTO + "."];
+      e0.detalles = [["Está ahora en", tp.actual], ["Va hacia", tp.destino]];
+      e0.ubicacion = "En camino de " + tp.actual + " a " + tp.destino;
+    }
     if (!e0.ubicacion) e0.ubicacion = "La PF todavía no indica en qué unidad está";
     return e0;
   }
