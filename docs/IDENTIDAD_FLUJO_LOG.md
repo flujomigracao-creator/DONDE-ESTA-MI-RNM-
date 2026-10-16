@@ -33,3 +33,12 @@ Recorrido de 18 pantallas/estados con datos y servicios simulados en **360×800,
 - Todo respeta `prefers-reduced-motion`.
 - **Bug encontrado en la prueba y corregido:** un `$$` mal escapado hacía fallar el temporizador de seguridad (error de JavaScript al cambiar de pantalla).
 **Probado:** 19 pantallas × 6 tamaños (360–1440 px, datos simulados): 0 errores JS, popup cabe; un botón "Quitar este RNM" medía 39,6 px → 44 px. **No probado:** dispositivos reales, vibración, rendimiento en móviles lentos.
+
+## Lo importante primero + onboarding por pasos (16-oct-2026, sw v46)
+Pensado para el cliente con prisa que solo quiere saber **dónde está su RNM**.
+- **Rastreador del RNM** (Inicio y detalle): titular grande "Tu RNM está en Salvador/BA" + "Listo para retirar" (o "está en camino", "sigue en trámite", "se está confeccionando"), línea de recorrido de 4 estaciones con **marcador animado**, color por estado (verde/azul/ámbar/rojo) y **una sola acción** ("Cómo retirarlo").
+- **Inicio con RNM**: saludo + botón "Agregar" + **una línea de plan** (ámbar si falta activarlo) + el rastreador + filas compactas de los demás. Se quitaron: subtítulos, tarjeta de plan, "Otros RNM / Ver todos", notas legales y el pie.
+- **Detalle**: rastreador → "Qué hacer ahora" (máx. 3 pasos) → "Retira en … / es tu ciudad o no" (con botón de cambio de dirección solo si hace falta) → **"Más detalles"** plegado (última revisión, plan, unidad con código, historial, cambios de dirección, texto original, aviso orientativo, quitar RNM).
+- **Onboarding guiado**: una pregunta por pantalla (RNM → fecha de nacimiento → autorización) con puntos de progreso, transiciones deslizantes, check animado al validar y botón "Atrás"; luego la revisión de datos y una **pantalla de progreso** (RNM registrado → en cola para consultar la PF → aquí verás dónde está) antes de abrir el detalle. Es honesta: no dice que ya consultó la PF.
+- Planes/Historial/Mis RNM: se ocultan textos de ayuda repetidos.
+**Probado** (22 pantallas × 6 tamaños, datos simulados): 0 desbordes, 0 controles < 40 px, 0 errores JS, popup cabe; onboarding completo (validaciones, Atrás, formato de fecha, progreso) y pantalla de progreso. **No probado:** registro/consulta/pagos reales, dispositivos reales.

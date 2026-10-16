@@ -257,8 +257,6 @@
             <div id="paso-consulta-1">
               <div class="page-header page-header-compacto">
                 <div class="page-header-text">
-                  <h2>Agregar RNM</h2>
-                  <p class="sub">Paso 1 de 2 · Escribe los datos como aparecen en tu documento. Antes de registrar podrás revisarlos.</p>
                   <p id="reg-gratis" class="aviso-coste gratis"><b>Primera consulta gratis.</b> Después, con un plan, la revisamos cada semana.</p>
                   <p id="reg-cubierto" class="aviso-coste cubierto oculto"><b>Cubierto por tu plan.</b> Este RNM entra en tu seguimiento semanal.</p>
                   <p id="reg-adicional" class="aviso-coste plan oculto"><b>RNM adicional.</b> Requiere un plan mensual (desde R$ 4,99) con revisión semanal.</p>
@@ -267,6 +265,8 @@
               </div>
 
               <form id="form-rnm" autocomplete="off" novalidate>
+                <div class="wiz-puntos" id="wiz-puntos" role="progressbar" aria-label="Pasos para registrar tu RNM" aria-valuemin="1" aria-valuemax="3" aria-valuenow="1"><i class="on"></i><i></i><i></i></div>
+                <h2 class="wiz-titulo" id="wiz-titulo">¿Cuál es tu número de RNM?</h2>
                 <div class="form-field">
                   <label for="rnm">Número de RNM</label>
                   <input type="text" id="rnm" autocapitalize="characters" placeholder="Ej: A123456B" maxlength="12" required>
@@ -281,8 +281,9 @@
                   <input type="checkbox" id="consiento" required>
                   <span><b>Para qué usamos estos datos:</b> Autorizo a FLUJO a resguardar mi RNM y fecha de nacimiento y consultarlos ante la Policía Federal únicamente para informarme sobre mi documento.</span>
                 </label>
-                <div class="acciones">
-                  <button type="submit" id="btn-registrar">Continuar a revisión</button>
+                <div class="acciones wiz-acciones">
+                  <button type="submit" id="btn-registrar">Continuar</button>
+                  <button type="button" class="sec oculto" id="btn-wiz-atras">Atrás</button>
                 </div>
                 <p class="msg" id="msg-form" role="alert"></p>
               </form>
@@ -457,6 +458,19 @@
       </button>
     </nav>
 
+  </div>
+
+  <!-- PANTALLA DE PROGRESO AL REGISTRAR UN RNM -->
+  <div id="consultando" class="consultando oculto" role="status" aria-live="polite">
+    <div class="cons-caja">
+      <img src="logo-marca.png" alt="" width="84" height="55" class="cons-logo">
+      <h2>Preparando tu seguimiento</h2>
+      <ol class="cons-pasos">
+        <li data-p="1"><span class="cons-ico"></span><b>RNM registrado</b></li>
+        <li data-p="2"><span class="cons-ico"></span><b>En cola para consultar la Policía Federal</b></li>
+        <li data-p="3"><span class="cons-ico"></span><b>Aquí verás dónde está tu RNM</b></li>
+      </ol>
+    </div>
   </div>
 
   <!-- MODAL DE PLANES Y PAGO DE MERCADO PAGO -->

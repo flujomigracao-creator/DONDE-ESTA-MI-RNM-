@@ -124,6 +124,7 @@ function mostrarSeccion(id) {
 
   // Sincronizar contenidos específicos
   if (id === "planes") renderizarPlanes(registrosCargados, planCargado);
+  if (id === "nueva-consulta" && typeof irSubPaso === "function") irSubPaso(1);
   if (id === "historial") {
     cargarHistorialConsultas();
   }
@@ -373,6 +374,7 @@ var consultaPendiente = { rnm: "", iso: "", nacTexto: "" };
 
 function irAPasoConsulta(n) {
   var p1 = $("paso-consulta-1"), p2 = $("paso-consulta-2");
+  if (n === 1 && typeof irSubPaso === "function") irSubPaso(1);
   if (p1) p1.classList.toggle("oculto", n !== 1);
   if (p2) p2.classList.toggle("oculto", n !== 2);
 
@@ -387,8 +389,52 @@ function irAPasoConsulta(n) {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
+/* Onboarding guiado: una pregunta por pantalla (RNM -> fecha -> autorización), con animación */
+var subPaso = 1;
+var SUB_TITULOS = { 1: "¿Cuál es tu número de RNM?", 2: "¿Cuál es tu fecha de nacimiento?", 3: "Última cosa: tu autorización" };
+function irSubPaso(n, dir) {
+  subPaso = n;
+  var campos = document.querySelectorAll("#form-rnm .form-field, #form-rnm label.check");
+  campos.forEach(function (c, i) {
+    var mostrar = i + 1 === n;
+    c.classList.toggle("oculto", !mostrar);
+    if (mostrar) { c.classList.remove("wiz-der", "wiz-izq"); void c.offsetWidth; c.classList.add(dir < 0 ? "wiz-izq" : "wiz-der"); }
+  });
+  var pts = document.querySelectorAll("#wiz-puntos i");
+  pts.forEach(function (p, i) { p.classList.toggle("on", i < n); });
+  var barra = $("wiz-puntos"); if (barra) barra.setAttribute("aria-valuenow", String(n));
+  var t = $("wiz-titulo"); if (t) t.textContent = SUB_TITULOS[n];
+  var at = $("btn-wiz-atras"); if (at) at.classList.toggle("oculto", n === 1);
+  var go = $("btn-registrar"); if (go) go.textContent = n < 3 ? "Continuar" : "Revisar mis datos";
+  limpiarErroresEn("#form-rnm"); msg("msg-form", "");
+  var foco = { 1: "rnm", 2: "nac", 3: "consiento" }[n];
+  setTimeout(function () { var f = $(foco); if (f && f.offsetParent !== null) f.focus({ preventScroll: true }); }, 60);
+}
+function validarSubPaso(n) {
+  var ME = function (id, t) { marcarCampoEn("#form-rnm", id, t, "msg-form"); return false; };
+  limpiarErroresEn("#form-rnm");
+  if (n === 1) {
+    var rnm = $("rnm").value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+    if (!rnm) return ME("rnm", "Escribe tu número de RNM.");
+    if (!/^[A-Z0-9]{6,12}$/.test(rnm)) return ME("rnm", "Revisa tu RNM: deben ser entre 6 y 12 letras y números, sin espacios ni símbolos.");
+  } else if (n === 2) {
+    var nt = $("nac").value.trim();
+    if (!nt) return ME("nac", "Escribe tu fecha de nacimiento (dd/mm/aaaa).");
+    if (!fechaISO(nt)) return ME("nac", "Esa fecha no es válida. Usa el formato dd/mm/aaaa, por ejemplo 14/03/1992, y que no sea una fecha futura.");
+  }
+  return true;
+}
+$("rnm").addEventListener("input", function (e) {
+  e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+  e.target.parentNode.classList.toggle("valido", /^[A-Z0-9]{6,12}$/.test(e.target.value));
+});
+$("nac").addEventListener("input", function (e) { e.target.parentNode.classList.toggle("valido", !!fechaISO(e.target.value.trim())); });
+var btnWizAtras = $("btn-wiz-atras");
+if (btnWizAtras) btnWizAtras.addEventListener("click", function () { if (subPaso > 1) irSubPaso(subPaso - 1, -1); });
+
 $("form-rnm").addEventListener("submit", function (e) {
   e.preventDefault();
+  if (subPaso < 3) { if (validarSubPaso(subPaso)) irSubPaso(subPaso + 1, 1); return; }
   msg("msg-form", "");
   var rnm = $("rnm").value.toUpperCase().replace(/[^A-Z0-9]/g, "");
   var nacTxt = $("nac").value.trim();
@@ -458,12 +504,27 @@ if (btnConfEnviar) {
     }
 
     $("form-rnm").reset();
-    if (window.toast) toast("RNM registrado. Preparando tu consulta…", "ok");
-    await cargarRegistros();
+    await mostrarConsultando(function () { return cargarRegistros(); });
     irAPasoConsulta(1);
     var nuevo = registrosCargados.find(function (x) { return x.rnm === consultaPendiente.rnm; });
     if (nuevo) abrirDetalleRnm(nuevo.id); else navegarA("inicio");
   });
+}
+
+/* Pantalla de progreso: pasos que se marcan uno a uno mientras se carga el seguimiento */
+async function mostrarConsultando(trabajo) {
+  var ov = $("consultando");
+  if (!ov) { await trabajo(); return; }
+  var pasos = ov.querySelectorAll(".cons-pasos li");
+  pasos.forEach(function (l) { l.classList.remove("hecho", "activo"); });
+  ov.classList.remove("oculto"); document.body.style.overflow = "hidden";
+  var dormir = function (ms) { return new Promise(function (r2) { setTimeout(r2, ms); }); };
+  var t0 = Date.now();
+  var marcar = async function (i) { pasos[i].classList.add("activo"); await dormir(i === 2 ? 600 : 750); pasos[i].classList.remove("activo"); pasos[i].classList.add("hecho"); };
+  var anim = (async function () { for (var i = 0; i < pasos.length; i++) await marcar(i); })();
+  try { await trabajo(); } catch (e) { /* si falla la carga, el detalle mostrará lo que haya */ }
+  await anim; await dormir(350);
+  ov.classList.add("oculto"); document.body.style.overflow = "";
 }
 
 /* ---------- Lista de RNM ---------- */
@@ -1111,6 +1172,70 @@ async function cargarHistorialConsultas() {
   });
 }
 
+/* ---------- Rastreador del RNM (como el seguimiento de un paquete) ---------- */
+var SVG_PIN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s7-6 7-12a7 7 0 10-14 0c0 6 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>';
+var SVG_OK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+function titularRastreador(e) {
+  var ciudad = (/unidad de ([^,]+)/.exec(e.ubicacion || "") || [])[1];
+  switch (e.corto) {
+    case "Listo": return { t: "Tu RNM está en " + (ciudad || "la unidad indicada"), s: "Listo para retirar" };
+    case "En traslado": return { t: "Tu RNM está en camino", s: (e.ubicacion || "").replace(/^En camino /, "") };
+    case "Entregado": return { t: "Tu RNM ya fue entregado", s: "Ya está contigo" };
+    case "En trámite": return { t: "Tu RNM sigue en trámite", s: ciudad ? "En la unidad de " + ciudad : "La Policía Federal lo está procesando" };
+    case "En confección": return { t: "Tu RNM se está confeccionando", s: "Aún no hay novedades de la Policía Federal" };
+    default: return { t: e.t, s: e.resumen };
+  }
+}
+function rastreador(x, opciones) {
+  opciones = opciones || {};
+  var e = estadoPresentacion(x), tt = titularRastreador(e);
+  var idx = { "En confección": 0, "En trámite": 0, "En traslado": 1, "Listo": 2, "Entregado": 3 }[e.corto];
+  var c = el("div", "rastreador " + e.tono + (e.corto === "Listo" ? " listo" : ""));
+  var top = el("div", "rt-top");
+  top.appendChild(el("span", "rt-rnm", "RNM " + x.rnm));
+  top.appendChild(el("span", "rt-fecha", x.ultima_consulta_at ? "Revisado " + new Date(x.ultima_consulta_at).toLocaleDateString("es", { day: "numeric", month: "short" }).replace(".", "") : "Sin revisión aún"));
+  c.appendChild(top);
+  c.appendChild(el("h2", "rt-titular", tt.t));
+  var sub = el("p", "rt-sub"); sub.innerHTML = (e.tono === "ok" ? SVG_OK : (e.tono === "mal" || e.corto === "Falta algo" || e.corto === "No encontrado" ? "" : SVG_PIN)); sub.appendChild(document.createTextNode(tt.s)); c.appendChild(sub);
+  if (idx !== undefined) {
+    var pista = el("div", "rt-pista");
+    pista.style.setProperty("--idx", "0");
+    pista.innerHTML = '<div class="rt-linea"><i class="rt-relleno"></i></div><span class="rt-marcador">' + SVG_PIN + '</span>';
+    var ol = el("ol", "rt-estaciones");
+    ["En trámite", "En traslado", "Listo para retirar", "Entregado"].forEach(function (n, i) {
+      var li = el("li", i < idx ? "hecha" : (i === idx ? "actual" : ""));
+      var pt = el("span", "rt-punto"); if (i < idx) pt.innerHTML = SVG_OK;
+      li.appendChild(pt); li.appendChild(el("b", "", n));
+      if (i === idx) li.setAttribute("aria-current", "step");
+      ol.appendChild(li);
+    });
+    pista.appendChild(ol);
+    c.appendChild(pista);
+    requestAnimationFrame(function () { requestAnimationFrame(function () { pista.style.setProperty("--idx", String(idx)); }); });
+  }
+  if (opciones.cta) {
+    var b = el("button", "rt-cta", e.corto === "Listo" ? "Cómo retirarlo" : "Ver detalle"); b.type = "button";
+    b.addEventListener("click", function (ev) { ev.stopPropagation(); abrirDetalleRnm(x.id); });
+    c.appendChild(b);
+    c.classList.add("clic"); c.tabIndex = 0; c.setAttribute("role", "button");
+    c.addEventListener("click", function () { abrirDetalleRnm(x.id); });
+    c.addEventListener("keydown", function (ev) { if (ev.key === "Enter") abrirDetalleRnm(x.id); });
+  }
+  return c;
+}
+function planLinea(regs, plan) {
+  var activo = !!plan && new Date(plan.vence_at) > new Date();
+  var sinCubrir = regs.some(function (x) { return !x.cerrado && !x.cubierto && (!!x.ultimo_resultado || x.requiere_pago); });
+  if (sinCubrir) {
+    var b = el("button", "plan-linea aviso", ""); b.type = "button";
+    b.innerHTML = '<span>Activa un plan para que se actualice cada semana</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
+    b.addEventListener("click", function () { navegarA("planes"); });
+    return b;
+  }
+  if (activo) { var d = el("div", "plan-linea ok", ""); d.innerHTML = SVG_OK + "<span>Seguimiento semanal activo · hasta " + fechaCorta(plan.vence_at) + "</span>"; return d; }
+  return null;
+}
+
 /* ---------- Dashboard (Pantalla 5, diseño Figma) ---------- */
 function enmascarar(r) { r = r || ""; return r.length > 2 ? r.charAt(0) + "••••••" + r.charAt(r.length - 1) : r; }
 function estadoCorto(x) {
@@ -1118,15 +1243,19 @@ function estadoCorto(x) {
 }
 
 function actualizarDashboard(regs, plan) {
-  // 1. Saludo
+  // 1. Saludo mínimo (+ botón para agregar otro RNM)
   var saludoCont = $("dashboard-saludo");
   if (saludoCont) {
     saludoCont.textContent = "";
     var nombre = (perfilActual && perfilActual.nombre) ? perfilActual.nombre.split(" ")[0] : "";
-    var cab = el("div", "saludo-fig");
-    cab.appendChild(el("p", "eyebrow-fig", "Tu seguimiento"));
+    var cab = el("div", "saludo-fig saludo-fila-min");
     cab.appendChild(el("h2", "", nombre ? "Hola, " + nombre : "Hola"));
-    cab.appendChild(el("p", "", regs.length ? "Aquí está lo último sobre tu documento." : "Tu perfil está listo. Ahora podemos empezar con tu documento."));
+    if (regs.length && regs.length < 4) {
+      var mas = el("button", "btn-mas", ""); mas.type = "button"; mas.setAttribute("aria-label", "Agregar otro RNM");
+      mas.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Agregar</span>';
+      mas.addEventListener("click", function () { navegarA("nueva-consulta"); });
+      cab.appendChild(mas);
+    }
     saludoCont.appendChild(cab);
   }
 
@@ -1144,71 +1273,21 @@ function actualizarDashboard(regs, plan) {
       heroCont.appendChild(bien);
       $("btn-hero-empty-registrar").addEventListener("click", function () { navegarA("nueva-consulta"); });
 
-      var como = el("div", "como-funciona");
+      var como = el("div", "como-linea");
       como.innerHTML =
-        '<h3>Cómo funciona</h3>' +
-        '<ol>' +
-          '<li><span class="num-paso">1</span><div><b>Registras tu RNM</b><span>Número y fecha de nacimiento, como figuran en tu documento.</span></div></li>' +
-          '<li><span class="num-paso">2</span><div><b>Consultamos por ti</b><span>Revisamos la Policía Federal y, con un plan, lo repetimos cada semana.</span></div></li>' +
-          '<li><span class="num-paso">3</span><div><b>Entiendes tu estado</b><span>Te decimos en qué etapa está, dónde está y qué puedes hacer.</span></div></li>' +
-        '</ol>' +
-        '<p class="nota-fig">Hasta 4 RNM por cuenta. Planes desde R$ 4,99 al mes para seguir el avance cada semana.</p>';
+        '<div><span class="num-paso">1</span><b>Registras tu RNM</b></div><i></i>' +
+        '<div><span class="num-paso">2</span><b>Consultamos</b></div><i></i>' +
+        '<div><span class="num-paso">3</span><b>Ves dónde está</b></div>';
       heroCont.appendChild(como);
     } else {
-      var p = regs.find(function (x) { return x.estado_pf === "listo"; }) || regs.find(function (x) { return !x.cerrado; }) || regs[0];
-      var e = estadoPresentacion(p);
-
-      var hero = el("div", "hero-fig" + (e.tono === "ok" ? " hero-listo" : ""));
-      var top = el("div", "hero-fig-top");
-      top.appendChild(el("span", "", "RNM " + p.rnm));
-      var ico = el("span", "");
-      ico.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h4M14 3l5 5v3"/><circle cx="17" cy="17" r="4"/><path d="M17 15v2l1 1"/></svg>';
-      top.appendChild(ico);
-      hero.appendChild(top);
-      hero.appendChild(el("h3", "", estadoCorto(p)));
-      hero.appendChild(el("p", "", e.p[0] || e.t));
-      if (e.ubicacion) { var hu = el("p", "hero-ubic", ""); hu.innerHTML = '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s7-6 7-12a7 7 0 10-14 0c0 6 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>'; hu.appendChild(document.createTextNode(e.ubicacion)); hero.appendChild(hu); }
-      hero.appendChild(el("small", "", p.ultima_consulta_at ? "Consultado el " + fechaHora(p.ultima_consulta_at) : "Aún sin resultado"));
-      var bv = el("button", "", "Ver detalle de mi RNM"); bv.type = "button";
-      bv.addEventListener("click", function () { abrirDetalleRnm(p.id); });
-      hero.appendChild(bv);
-      heroCont.appendChild(hero);
-
-      // Plan: aviso insistente si ya hubo primera consulta sin plan; si no, estado del plan
-      var av = avisoPlan(regs);
-      if (av) heroCont.appendChild(av);
-      else {
-        var activo = !!plan && new Date(plan.vence_at) > new Date();
-        var cp = el("div", "tarjeta plan-fig");
-        cp.appendChild(el("span", "insignia" + (activo ? "" : " "), activo ? "Plan activo" : "Sin plan activo"));
-        cp.appendChild(el("h3", "", activo ? "Activo hasta el " + fechaCorta(plan.vence_at) : "Tu primera consulta es gratis"));
-        cp.appendChild(el("p", "", activo
-          ? "Mientras el plan esté activo, revisamos cada 7 días hasta que el documento esté listo."
-          : "Para seguir revisando cada 7 días, elige un plan."));
-        if (!activo) {
-          var bp = el("button", "sec btn-ancho", "Ver planes"); bp.type = "button"; bp.style.marginTop = "12px";
-          bp.addEventListener("click", function () { navegarA("planes"); });
-          cp.appendChild(bp);
-        }
-        heroCont.appendChild(cp);
-      }
-
-      var otros = regs.filter(function (x) { return x !== p; });
-      if (otros.length) {
-        var ts = el("div", "titulo-sec");
-        ts.appendChild(el("h3", "", "Otros RNM"));
-        var verTodos = el("button", "", "Ver todos (" + regs.length + ")"); verTodos.type = "button";
-        verTodos.addEventListener("click", function () { navegarA("mis-rnm"); });
-        ts.appendChild(verTodos);
-        heroCont.appendChild(ts);
-        otros.forEach(function (x) { heroCont.appendChild(tarjeta(x)); });
-      }
-      if (regs.length < 4) {
-        var ba = el("button", "sec btn-ancho", "+ Agregar RNM"); ba.type = "button";
-        ba.addEventListener("click", function () { navegarA("nueva-consulta"); });
-        heroCont.appendChild(ba);
-      }
-      heroCont.appendChild(el("p", "nota-fig", "Actualiza lo que ves; no inicia una nueva consulta ante la PF. El seguimiento no es en tiempo real."));
+      var rango = function (x) { return x.estado_pf === "listo" ? 0 : (!x.cerrado ? 1 : 2); };
+      var orden = regs.slice().sort(function (a, b) { return rango(a) - rango(b); });
+      var pl = planLinea(regs, plan);
+      if (pl) heroCont.appendChild(pl);
+      orden.forEach(function (x, i) {
+        if (i === 0) heroCont.appendChild(rastreador(x, { cta: true }));
+        else heroCont.appendChild(tarjeta(x));
+      });
     }
   }
 
@@ -1280,117 +1359,105 @@ async function cargarConsultasDe(id, box) {
   });
 }
 
-function construirDetalle(id) {
-  var x = registrosCargados.find(function (r) { return r.id === id; });
-  if (!x) { if (seccionActual === "detalle-rnm") navegarA("inicio"); return; }
-  detalleActual = id;
-
-  var cont = $("contenedor-detalle-rnm");
-  if (!cont) return;
-  cont.textContent = "";
-
-  // 1. Cabecera: RNM, estado en una etiqueta, última revisión y plan
-  var ep = estadoPresentacion(x);
-  var cab = el("div", "detalle-cab");
-  var fila = el("div", "fila");
-  fila.appendChild(el("h2", "", "RNM " + x.rnm));
-  fila.appendChild(el("span", "insignia" + (ep.badge ? " " + ep.badge : ""), ep.corto));
-  cab.appendChild(fila);
-  var metas = [];
-  metas.push(x.ultima_consulta_at ? "Última revisión: " + fechaHora(x.ultima_consulta_at) : "Aún sin revisión");
-  metas.push(x.cubierto ? "Seguimiento semanal activo hasta " + fechaCorta(x.planVence) : "Sin seguimiento semanal");
-  cab.appendChild(el("p", "detalle-meta", metas.join(" · ")));
-  cont.appendChild(cab);
-
-  // 1b. Estado, dónde está y qué hacer
-  cont.appendChild(cajaResultado(x));
-  var consultado = !!x.ultimo_resultado;
-  if (!x.cerrado && !x.cubierto && consultado) cont.appendChild(avisoPlan([x]));
-  var cardPasos = tarjetaPasos(x);
-  if (cardPasos) cont.appendChild(cardPasos);
-
-  // 2. Información policial y delegacia
-  if (x.unidad_pf) {
-    cont.appendChild(cajaUnidad(x));
-  } else if (x.estado_pf === "listo" && WHATSAPP) {
-    cont.appendChild(avisoOtraCiudad(x));
+function dondeRetirarCompacto(x) {
+  var uf = ufDeUnidad(x.unidad_pf), ciudadU = ciudadDeUnidad(x.unidad_pf);
+  var miCiudad = perfilActual && perfilActual.ciudad, miUF = perfilActual && perfilActual.estado;
+  var lugar = ciudadU ? ciudadU + (uf ? "/" + uf : "") : (uf ? ESTADOS_BR[uf] : x.unidad_pf);
+  var otra, misma = false, sabe = !!((ciudadU && miCiudad) || (uf && miUF));
+  if (ciudadU && miCiudad) { misma = normalizar(ciudadU) === normalizar(miCiudad); otra = !misma; } else { otra = !!(uf && miUF && uf !== miUF); }
+  var c = el("div", "donde-retirar " + (otra ? "otra" : (sabe ? "misma" : "")));
+  c.innerHTML = '<span class="dr-ico">' + SVG_PIN + '</span>';
+  var t = el("div", ""); t.appendChild(el("b", "", "Retira en " + lugar));
+  t.appendChild(el("span", "", misma ? "Es tu ciudad" : (otra ? "No es tu ciudad" + (miCiudad ? " (" + miCiudad + ")" : "") : "Confirma que te queda cerca")));
+  c.appendChild(t);
+  if (otra || !sabe || x.cambio_direccion) {
+    var msj = "Hola, mi RNM " + x.rnm + " está listo en " + x.unidad_pf + (ciudadU ? " (" + ciudadU + ")" : "") + " y quiero cambiar la dirección de entrega.";
+    if (WHATSAPP) { var a = enlaceWhatsapp(x, msj); a.className = "dr-btn"; a.textContent = "Pedir cambio de dirección"; c.appendChild(a); }
+    else { var m = el("a", "dr-btn", "Pedir cambio de dirección"); m.href = "mailto:" + CONTACTO_EMAIL + "?subject=" + encodeURIComponent("Cambio de dirección RNM " + x.rnm) + "&body=" + encodeURIComponent(msj); c.appendChild(m); }
   }
+  return c;
+}
 
-  // 3. Línea de tiempo vertical (RnmTimeline con datos reales)
-  var cardTime = el("details", "tarjeta historial");
-  cardTime.appendChild(el("summary", "", "Historial del trámite"));
-
+function construirHistorialDetalle(x) {
   var tl = el("div", "timeline");
-  var hayEventos = false;
-
   if (x.cambio_direccion) {
-    var lineas = lineasCambio(x.cambio_direccion);
-    lineas.forEach(function (l) {
-      hayEventos = true;
+    lineasCambio(x.cambio_direccion).forEach(function (l) {
       var item = el("div", "timeline-item");
       item.appendChild(el("div", "timeline-dot" + (l.estado === "aprobada" ? " ok" : (l.estado === "desaprobada" ? " mal" : ""))));
       var tCont = el("div", "timeline-content");
       if (l.fecha) tCont.appendChild(el("div", "timeline-date", l.fecha));
-      var tt = el("h4", "timeline-title", "Cambio de dirección ");
-      tt.appendChild(insigniaCambio(l.estado));
-      tCont.appendChild(tt);
+      var tt = el("h4", "timeline-title", "Cambio de dirección "); tt.appendChild(insigniaCambio(l.estado)); tCont.appendChild(tt);
       if (l.destino) tCont.appendChild(el("p", "timeline-desc", "Hacia " + l.destino));
-      item.appendChild(tCont);
-      tl.appendChild(item);
+      item.appendChild(tCont); tl.appendChild(item);
     });
   }
-
-  var consultasBox = el("div", "");
-  tl.appendChild(consultasBox);
-  cargarConsultasDe(x.id, consultasBox);
-
+  var consultasBox = el("div", ""); tl.appendChild(consultasBox); cargarConsultasDe(x.id, consultasBox);
   if (x.created_at) {
-    hayEventos = true;
-    var itemAlta = el("div", "timeline-item");
-    itemAlta.appendChild(el("div", "timeline-dot"));
+    var itemAlta = el("div", "timeline-item"); itemAlta.appendChild(el("div", "timeline-dot"));
     var aCont = el("div", "timeline-content");
     aCont.appendChild(el("div", "timeline-date", new Date(x.created_at).toLocaleDateString("es")));
     aCont.appendChild(el("h4", "timeline-title", "RNM registrado"));
-    itemAlta.appendChild(aCont);
-    tl.appendChild(itemAlta);
+    itemAlta.appendChild(aCont); tl.appendChild(itemAlta);
+  }
+  return tl;
+}
+
+function construirDetalle(id) {
+  var x = registrosCargados.find(function (r) { return r.id === id; });
+  if (!x) { if (seccionActual === "detalle-rnm") navegarA("inicio"); return; }
+  detalleActual = id;
+  var cont = $("contenedor-detalle-rnm");
+  if (!cont) return;
+  cont.textContent = "";
+  var e = estadoPresentacion(x);
+
+  // 1. Lo importante: dónde está y en qué estado
+  cont.appendChild(rastreador(x, {}));
+
+  // 2. Qué hacer (máximo 3 pasos)
+  var pasos = (e.pasos || []).slice(0, 3);
+  if (pasos.length) {
+    var cp = el("div", "tarjeta pasos-card");
+    cp.appendChild(el("p", "hero-eyebrow", "Qué hacer ahora"));
+    var ol = el("ol", "pasos-num"); pasos.forEach(function (p2) { ol.appendChild(el("li", "", p2)); });
+    cp.appendChild(ol); cont.appendChild(cp);
   }
 
-  if (!hayEventos) {
-    tl.appendChild(el("p", "sub", "No hay eventos históricos previos para este documento."));
+  // 3. Dónde retirar (una línea) y plan (un enlace)
+  if (x.unidad_pf && (x.estado_pf === "listo" || e.corto === "Listo")) cont.appendChild(dondeRetirarCompacto(x));
+  else if (x.estado_pf === "listo" && WHATSAPP) cont.appendChild(avisoOtraCiudad(x));
+  if (!x.cerrado && !x.cubierto && x.ultimo_resultado) {
+    var pl = el("button", "enlace-plan", "Activar seguimiento semanal"); pl.type = "button";
+    pl.addEventListener("click", function () { navegarA("planes"); });
+    cont.appendChild(pl);
   }
 
-  cardTime.appendChild(tl);
-  cont.appendChild(cardTime);
-
-  cont.appendChild(pieOriginal(x));
-
-  // 4. Acciones del detalle (Eliminar / Quitar RNM con ConfirmDialog)
+  // 4. Todo lo demás, a un toque
+  var mas = el("details", "mas-detalles");
+  mas.appendChild(el("summary", "", "Más detalles"));
+  var cuerpo = el("div", "md-cuerpo");
+  var datos = el("div", "review-summary-card");
+  var filas = [["Última revisión", x.ultima_consulta_at ? fechaHora(x.ultima_consulta_at) : "Aún sin revisión"], ["Seguimiento semanal", x.cubierto ? "Activo hasta " + fechaCorta(x.planVence) : "No activo"]];
+  if (x.unidad_pf) filas.push(["Unidad de la PF", etiquetaUnidad(x.unidad_pf)]);
+  (e.detalles || []).forEach(function (d) { filas.push(d); });
+  filas.forEach(function (d) { var f = el("div", "review-row"); f.appendChild(el("span", "", d[0] + ":")); f.appendChild(el("b", "", d[1])); datos.appendChild(f); });
+  cuerpo.appendChild(datos);
+  cuerpo.appendChild(el("h4", "titulo-sub", "Historial"));
+  cuerpo.appendChild(construirHistorialDetalle(x));
+  cuerpo.appendChild(pieOriginal(x));
   if (!x.cerrado) {
-    var cardAcc = el("div", "");
-    var q = el("div", "acciones");
     var avisoBorrar = el("p", "msg", "");
-    var borrar = el("button", "btn-quitar", "Quitar este RNM");
-    borrar.type = "button";
+    var borrar = el("button", "btn-quitar", "Quitar este RNM"); borrar.type = "button";
     borrar.addEventListener("click", async function () {
-      var ok = await mostrarConfirmacion({
-        titulo: "¿Quitar RNM " + x.rnm + "?",
-        desc: "Se eliminarán los datos de seguimiento de este documento de tu cuenta. Esta acción no se puede deshacer.",
-        accionTexto: "Quitar documento",
-        esPeligroso: true
-      });
+      var ok = await mostrarConfirmacion({ titulo: "¿Quitar RNM " + x.rnm + "?", desc: "Se eliminarán los datos de seguimiento de este documento de tu cuenta. Esta acción no se puede deshacer.", accionTexto: "Quitar documento", esPeligroso: true });
       if (!ok) return;
       var borrado = await sb.from("rnm_registros").delete().eq("id", x.id);
       if (borrado.error) { avisoBorrar.textContent = "No pudimos quitar este RNM. Intenta de nuevo."; return; }
-      detalleActual = null;
-      await cargarRegistros();
-      navegarA("inicio");
+      detalleActual = null; await cargarRegistros(); navegarA("inicio");
     });
-    q.appendChild(borrar);
-    cardAcc.appendChild(q);
-    cardAcc.appendChild(avisoBorrar);
-    cont.appendChild(cardAcc);
+    cuerpo.appendChild(borrar); cuerpo.appendChild(avisoBorrar);
   }
-
+  mas.appendChild(cuerpo); cont.appendChild(mas);
 }
 
 /* El estado lo actualiza el equipo de FLUJO: la app se refresca sola cada minuto mientras está visible. */
