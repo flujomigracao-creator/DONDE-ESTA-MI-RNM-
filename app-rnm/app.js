@@ -1201,6 +1201,10 @@ function rastreador(x, opciones) {
   c.appendChild(top);
   c.appendChild(el("h2", "rt-titular", tt.t));
   var sub = el("p", "rt-sub"); sub.innerHTML = (e.tono === "ok" ? SVG_OK : (e.tono === "mal" || e.corto === "Falta algo" || e.corto === "No encontrado" ? "" : SVG_PIN)); sub.appendChild(document.createTextNode(tt.s)); c.appendChild(sub);
+  var lc = x.cambio_direccion ? lineasCambio(x.cambio_direccion) : [];
+  if (lc.length) {
+    var cd = el("p", "rt-cambio", ""); cd.appendChild(el("b", "", "Cambio de dirección")); cd.appendChild(insigniaCambio(lc[0].estado)); c.appendChild(cd);
+  }
   if (idx !== undefined) {
     var pista = el("div", "rt-pista");
     pista.style.setProperty("--idx", "0");
@@ -1288,10 +1292,27 @@ function actualizarDashboard(regs, plan) {
       var orden = regs.slice().sort(function (a, b) { return rango(a) - rango(b); });
       var pl = planLinea(regs, plan);
       if (pl) heroCont.appendChild(pl);
+      if (regs.length > 1) {
+        var nL = regs.filter(function (x) { return x.estado_pf === "listo"; }).length;
+        var nC = regs.filter(function (x) { return !x.cerrado; }).length;
+        var nE = regs.filter(function (x) { return x.estado_pf === "entregado"; }).length;
+        var partes = [];
+        if (nL) partes.push(nL + (nL === 1 ? " listo para retirar" : " listos para retirar"));
+        if (nC) partes.push(nC + " en proceso");
+        if (nE) partes.push(nE + (nE === 1 ? " entregado" : " entregados"));
+        if (partes.length) heroCont.appendChild(el("p", "resumen-rnm", partes.join(" · ")));
+      }
+      // Tarjeta completa para cada RNM listo (lo más importante) y para el primero en proceso; el resto, en filas compactas.
+      var completos = 0, compactos = [];
       orden.forEach(function (x, i) {
-        if (i === 0) heroCont.appendChild(rastreador(x, { cta: true }));
-        else heroCont.appendChild(tarjeta(x));
+        var completo = x.estado_pf === "listo" || (i === 0) || (!x.cerrado && completos === 0);
+        if (completo && completos < 3) { heroCont.appendChild(rastreador(x, { cta: true })); completos++; }
+        else compactos.push(x);
       });
+      if (compactos.length) {
+        heroCont.appendChild(el("h3", "titulo-otros", "Otros RNM"));
+        compactos.forEach(function (x) { heroCont.appendChild(tarjeta(x)); });
+      }
     }
   }
 
@@ -1695,6 +1716,7 @@ function fechaCorta(iso) { return new Date(iso).toLocaleDateString("es", { day: 
 
 // Etiqueta corta del estado de vigilancia de un RNM -> [texto, clase de la insignia]
 function etiquetaRnm(x) {
+  if (x.estado_pf === "entregado") return ["Entregado", " ok"];
   if (x.cerrado) return ["Listo", " ok"];
   if (x.cubierto) return ["Vigilando", " vigila"];
   if (x.ultimo_resultado) return x.tuvoPlan ? ["Sin cobertura", ""] : ["Activa un plan", ""];

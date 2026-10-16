@@ -783,3 +783,9 @@ button.sec:hover:not(:disabled) { border-color: var(--brand-line); background: v
   .fila-rnm .insignia { display: none; }
   .fila-rnm-info span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
 }
+
+/* Inicio: resumen de RNM y cambio de dirección dentro del rastreador */
+.resumen-rnm { margin: 0 0 12px; font-size: 0.9rem; font-weight: 700; color: var(--brand); }
+.titulo-otros { margin: 18px 0 8px; font-size: 0.95rem; color: var(--ink-soft, #5B6B86); font-weight: 700; }
+.rt-cambio { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 12px 0 0; padding: 8px 12px; border-radius: 12px; background: #F4F7FB; font-size: 0.85rem; }
+.rt-cambio b { font-weight: 700; }
