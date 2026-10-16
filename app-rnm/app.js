@@ -10,6 +10,29 @@ var CONTACTO_EMAIL = "flujoescalaempresas@gmail.com";
 var VIA_CONTACTO = WHATSAPP ? "por WhatsApp" : "a " + CONTACTO_EMAIL;
 
 var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+/* Enlace directo desde un aviso de WhatsApp: ?plan=2&pago=pix abre el pago de ese plan con el método ya elegido.
+   Se guarda unos días porque el inicio de sesión con Google no conserva la dirección. */
+(function () {
+  try {
+    var q = new URLSearchParams(location.search), cupos = Number(q.get("plan")), metodo = q.get("pago");
+    if (cupos >= 1 && cupos <= 4) {
+      localStorage.setItem("rnm_ir_pago", JSON.stringify({ cupos: cupos, metodo: metodo === "boleto" ? "boleto" : "pix", t: Date.now() }));
+      history.replaceState(null, "", location.pathname + location.hash);
+    }
+  } catch (e) { /* sin almacenamiento: simplemente no se abre el pago solo */ }
+})();
+function consumirIrAPago() {
+  var d;
+  try { d = JSON.parse(localStorage.getItem("rnm_ir_pago") || "null"); localStorage.removeItem("rnm_ir_pago"); } catch (e) { return; }
+  if (!d || Date.now() - d.t > 7 * 24 * 3600 * 1000 || !d.cupos) return;
+  navegarA("planes");
+  setTimeout(function () {
+    mostrarPago(d.cupos);
+    var b = document.querySelector('.metodo[data-m="' + d.metodo + '"]');
+    if (b) b.click();
+  }, 400);
+}
 var $ = function (id) { return document.getElementById(id); };
 
 function msg(id, texto, bien) {
@@ -1015,6 +1038,7 @@ async function cargarRegistros() {
 
   if (seccionActual === "planes") renderizarPlanes(r.data, plan);
   if (seccionActual === "detalle-rnm" && detalleActual) construirDetalle(detalleActual);
+  consumirIrAPago();
 }
 
 /* ---------- Planes y pagos (Pantalla 13 y 16) ---------- */
