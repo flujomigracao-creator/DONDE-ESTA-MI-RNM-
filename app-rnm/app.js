@@ -137,6 +137,16 @@ function vista(nombre) { // "login" | "perfil" | "app"
   });
 }
 
+function actualizarResumenPerfil() {
+  var n = $("perfil-n-rnm"); if (n) n.textContent = String(registrosCargados.length);
+  var activo = !!planCargado && new Date(planCargado.vence_at) > new Date();
+  var p = $("perfil-plan"), ps = $("perfil-plan-sub");
+  if (p) p.textContent = activo ? "Plan de " + planCargado.cupos + " RNM" : "Sin plan";
+  if (ps) ps.textContent = activo ? "Activo hasta " + fechaCorta(planCargado.vence_at) : "Ver planes";
+  var del = $("perfil-eliminar");
+  if (del) del.href = WHATSAPP ? "https://wa.me/" + WHATSAPP + "?text=" + encodeURIComponent("Hola, quiero solicitar la eliminación de mi cuenta y mis datos en ¿Dónde está mi RNM?") : "mailto:" + CONTACTO_EMAIL + "?subject=" + encodeURIComponent("Eliminar mi cuenta");
+}
+
 function actualizarInfoUsuario(user, perfil) {
   var email = (user && user.email) || "";
   var meta = (user && user.user_metadata) || {};
@@ -148,6 +158,7 @@ function actualizarInfoUsuario(user, perfil) {
   var nd = $("perfil-nombre-display"); if (nd) nd.textContent = nombre;
   var ed = $("perfil-email-display"); if (ed) ed.textContent = email;
   var pt = $("perfil-tel-display"); if (pt) pt.textContent = (perfil && perfil.telefono) ? "+" + perfil.telefono : "—";
+  actualizarResumenPerfil();
   var pd = $("perfil-dir-display"); if (pd) pd.textContent = (perfil && perfil.direccion) ? perfil.direccion + (perfil.cep ? " · CEP " + perfil.cep.slice(0, 5) + "-" + perfil.cep.slice(5) : "") : "—";
   var pc = $("perfil-ciudad-display"); if (pc) pc.textContent = perfil && perfil.ciudad ? perfil.ciudad + (perfil.estado ? " / " + perfil.estado : "") : "—";
 }
@@ -932,6 +943,7 @@ async function cargarRegistros() {
   mostrarCosteAplicable();
   actualizarDashboard(r.data, plan);
   renderizarMisRnm(r.data, plan);
+  actualizarResumenPerfil();
   cartelPlanes(r.data, plan);
   actualizarPlanes(r.data, plan);
 
@@ -1122,21 +1134,25 @@ function actualizarDashboard(regs, plan) {
   if (heroCont) {
     heroCont.textContent = "";
     if (!regs.length) {
-      var emp = el("div", "empty-state");
-      emp.innerHTML =
-        '<div class="empty-state-icon">' +
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8l-5-5zM14 3v5h5M12 12v6M9 15h6"/></svg>' +
-        '</div>' +
-        '<h3>Todavía no tienes RNM</h3>' +
-        '<p>Añade el número de tu documento y tu fecha de nacimiento para solicitar la primera consulta.</p>' +
-        '<button type="button" class="btn" id="btn-hero-empty-registrar">+ Agregar mi primer RNM</button>';
-      heroCont.appendChild(emp);
+      var bien = el("div", "bienvenida-card");
+      bien.innerHTML =
+        '<span class="chip-gratis">Primera consulta gratis</span>' +
+        '<h3>Empecemos con tu primer RNM</h3>' +
+        '<p>Escribe el número de tu documento y tu fecha de nacimiento. Nosotros revisamos la Policía Federal y te explicamos dónde está y qué hacer.</p>' +
+        '<button type="button" class="btn-claro" id="btn-hero-empty-registrar">+ Agregar mi primer RNM</button>';
+      heroCont.appendChild(bien);
       $("btn-hero-empty-registrar").addEventListener("click", function () { navegarA("nueva-consulta"); });
-      var gratis = el("div", "tarjeta");
-      gratis.appendChild(el("p", "eyebrow-fig", "Tu primera consulta es gratis"));
-      gratis.appendChild(el("p", "", "Para el primer RNM de tu cuenta. Los RNM adicionales requieren un plan mensual desde R$ 4,99."));
-      gratis.appendChild(el("p", "nota-fig", "Máximo 4 RNM por cuenta."));
-      heroCont.appendChild(gratis);
+
+      var como = el("div", "como-funciona");
+      como.innerHTML =
+        '<h3>Cómo funciona</h3>' +
+        '<ol>' +
+          '<li><span class="num-paso">1</span><div><b>Registras tu RNM</b><span>Número y fecha de nacimiento, como figuran en tu documento.</span></div></li>' +
+          '<li><span class="num-paso">2</span><div><b>Consultamos por ti</b><span>Revisamos la Policía Federal y, con un plan, lo repetimos cada semana.</span></div></li>' +
+          '<li><span class="num-paso">3</span><div><b>Entiendes tu estado</b><span>Te decimos en qué etapa está, dónde está y qué puedes hacer.</span></div></li>' +
+        '</ol>' +
+        '<p class="nota-fig">Hasta 4 RNM por cuenta. Planes desde R$ 4,99 al mes para seguir el avance cada semana.</p>';
+      heroCont.appendChild(como);
     } else {
       var p = regs.find(function (x) { return x.estado_pf === "listo"; }) || regs.find(function (x) { return !x.cerrado; }) || regs[0];
       var e = estadoPresentacion(p);

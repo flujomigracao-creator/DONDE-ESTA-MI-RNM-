@@ -27,10 +27,12 @@
 html, body { font-family: var(--font-family); background: var(--canvas); color: var(--text-main); }
 
 /* ---------- Estructura: una sola columna, sin barra lateral ---------- */
-.app-sidebar { display: none !important; }
+@media (max-width: 1023px) { .app-sidebar { display: none !important; } }
 .app-main { margin-left: 0 !important; max-width: 560px; width: 100%; margin: 0 auto !important; }
+@media (min-width: 1024px) { .app-main { margin-left: var(--sidebar-w) !important; max-width: none; width: auto; } }
 .app-shell { justify-content: center; }
 .app-content { padding: 20px 20px calc(var(--bottom-nav-h) + 40px) !important; max-width: 560px; }
+@media (min-width: 1024px) { .app-content { padding: 32px 40px 56px !important; max-width: 1080px; } }
 
 /* Barra superior */
 .app-header { height: auto; min-height: 64px; padding: 12px 20px !important; box-shadow: none; background: #fff; border-bottom: 1px solid var(--line); backdrop-filter: none; }
@@ -45,6 +47,7 @@ html, body { font-family: var(--font-family); background: var(--canvas); color: 
 #btn-actualizar svg { width: 18px; height: 18px; }
 
 /* Barra inferior con píldora */
+@media (min-width: 1024px) { .app-bottom-nav { display: none !important; } }
 .app-bottom-nav { display: flex !important; max-width: 560px; left: 50%; right: auto; width: 100%; transform: translateX(-50%); height: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom, 0px)); border-radius: 22px 22px 0 0; border: 1px solid var(--line); border-bottom: 0; box-shadow: 0 -6px 24px rgba(18, 60, 138, 0.08); padding: 6px 8px env(safe-area-inset-bottom, 0px); }
 .bottom-nav-item { gap: 3px; font-size: 0.72rem; font-weight: 600; }
 .bottom-nav-item svg { margin: 0; width: 22px; height: 22px; padding: 0; box-sizing: content-box; padding: 5px 20px; border-radius: 99px; transition: background .15s; }
@@ -469,3 +472,106 @@ button, .btn, .btn-enlace, .filter-pill, .nav-item, .bottom-nav-item, summary { 
 .quienes-somos img { flex: none; width: 64px; height: auto; }
 .quienes-somos b { display: block; font-size: 1.05rem; color: var(--navy); }
 .quienes-somos span { font-size: 0.88rem; color: var(--text-muted); line-height: 1.45; }
+
+/* ==========================================================================
+   ESTILO INTERIOR PROFESIONAL Y MODERNO — responsive de verdad
+   Móvil: barra inferior · Escritorio (≥1024 px): barra lateral con la marca + contenido en rejilla
+   ========================================================================== */
+:root {
+  --sombra-1: 0 1px 2px rgba(10, 42, 94, 0.05), 0 6px 20px rgba(10, 42, 94, 0.05);
+  --sombra-2: 0 2px 4px rgba(10, 42, 94, 0.06), 0 14px 36px rgba(10, 42, 94, 0.10);
+}
+body { background: radial-gradient(1200px 500px at 50% -120px, #E3EBF8 0%, rgba(245, 247, 251, 0) 70%), var(--canvas); background-attachment: fixed; }
+.tarjeta, .panel-card, .fila-rnm, .history-card, .plan-card { box-shadow: var(--sombra-1); border-color: rgba(10, 42, 94, 0.08); }
+.fila-rnm:hover, .history-card:hover, .plan-card:hover { box-shadow: var(--sombra-2); transform: translateY(-1px); transition: box-shadow .18s ease, transform .18s ease; }
+.page-header-text h2 { color: var(--navy); }
+.app-header { background: rgba(255, 255, 255, 0.88); backdrop-filter: saturate(160%) blur(10px); }
+@media (prefers-reduced-motion: no-preference) {
+  .seccion-app:not(.oculto) { animation: entra-seccion .28s ease both; }
+  @keyframes entra-seccion { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+}
+
+/* Bienvenida del Inicio vacío */
+.bienvenida-card { position: relative; overflow: hidden; margin: 18px 0 14px; padding: 26px 22px 24px; border-radius: 24px; color: #fff; background: radial-gradient(520px 220px at 100% 0, rgba(247, 198, 0, 0.18), rgba(247, 198, 0, 0) 60%), linear-gradient(135deg, #0A2A5E 0%, #0E3F8E 100%); box-shadow: var(--sombra-2); }
+.bienvenida-card::after { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 5px; background: linear-gradient(90deg, var(--verde-marca) 0 55%, var(--amarillo-marca) 55% 100%); }
+.bienvenida-card h3 { margin: 14px 0 8px; font-size: 1.55rem; line-height: 1.15; font-weight: 800; letter-spacing: -0.02em; color: #fff; }
+.bienvenida-card p { margin: 0 0 18px; color: #D6E0F5; font-size: 0.97rem; line-height: 1.5; max-width: 34em; }
+.chip-gratis { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 99px; background: rgba(255, 255, 255, 0.14); border: 1px solid rgba(255, 255, 255, 0.22); font-size: 0.78rem; font-weight: 700; color: #fff; }
+.chip-gratis::before { content: "★"; color: var(--amarillo-marca); }
+.btn-claro { background: #fff !important; color: var(--navy) !important; min-height: 52px; padding: 0 22px; border-radius: 14px; font-weight: 800; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18); }
+@media (max-width: 640px) { .btn-claro { width: 100%; } }
+.como-funciona { padding: 20px; border-radius: 20px; background: #fff; border: 1px solid rgba(10, 42, 94, 0.08); box-shadow: var(--sombra-1); }
+.como-funciona h3 { margin: 0 0 14px; font-size: 1.1rem; color: var(--navy); }
+.como-funciona ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 16px; }
+.como-funciona li { display: flex; gap: 14px; align-items: flex-start; }
+.num-paso { flex: none; width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; background: var(--brand-soft); color: var(--brand); font-weight: 800; }
+.como-funciona li b { display: block; font-size: 0.98rem; color: var(--text-main); }
+.como-funciona li span:not(.num-paso) { display: block; font-size: 0.86rem; color: var(--text-muted); line-height: 1.45; }
+
+/* Barra lateral de escritorio (marca real) */
+.app-sidebar { background: linear-gradient(185deg, #0A2A5E 0%, #081F47 100%); box-shadow: 4px 0 24px rgba(10, 42, 94, 0.18); }
+.app-sidebar .sidebar-brand { flex-direction: column; align-items: flex-start; gap: 10px; padding: 22px 20px 14px; }
+.sidebar-logo { width: 120px; height: auto; background: #fff; border-radius: 16px; padding: 8px 10px; }
+.sidebar-brand .brand-title { font-size: 1rem; }
+.app-sidebar .nav-item { min-height: 46px; border-radius: 12px; color: #C9D6EF; }
+.app-sidebar .nav-item.active { background: rgba(255, 255, 255, 0.14); color: #fff; box-shadow: inset 3px 0 0 var(--amarillo-marca); }
+.app-sidebar .nav-item.active svg { color: var(--amarillo-marca); }
+
+/* Escritorio: el contenido deja de ser una columna estrecha */
+@media (min-width: 1024px) {
+  .app-header { padding: 0 40px !important; min-height: 72px; }
+  .header-title-box::before { display: none; }
+  .header-title-box h1 { font-size: 1.25rem; }
+  #btn-actualizar { width: auto; height: 44px; padding: 0 16px !important; border-radius: 12px !important; font-size: 0.9rem !important; gap: 8px; }
+  #dashboard-hero-container { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 20px; align-items: start; }
+  #dashboard-hero-container > * { margin: 0; }
+  #dashboard-hero-container > .hero-fig, #dashboard-hero-container > .bienvenida-card, #dashboard-hero-container > .titulo-sec, #dashboard-hero-container > .btn-ancho, #dashboard-hero-container > .nota-fig, #dashboard-hero-container > .aviso-plan { grid-column: 1 / -1; }
+  #contenedor-detalle-rnm { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 16px 24px; align-items: start; }
+  #contenedor-detalle-rnm > .detalle-cab, #contenedor-detalle-rnm > .pie-detalle, #contenedor-detalle-rnm > .historial, #contenedor-detalle-rnm > div:last-child { grid-column: 1 / -1; }
+  .plan-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .bienvenida-card { padding: 34px 36px; }
+  .bienvenida-card h3 { font-size: 2rem; }
+}
+@media (min-width: 1280px) { .fig-login { max-width: 560px; } }
+
+/* ==========================================================================
+   MI CUENTA: resumida y funcional (cabecera, cifras, listas de ajustes)
+   ========================================================================== */
+.perfil-head { display: flex; align-items: center; gap: 14px; padding: 18px; border-radius: 22px; background: #fff; border: 1px solid rgba(10, 42, 94, 0.08); box-shadow: var(--sombra-1); }
+.perfil-head .avatar-grande { width: 60px; height: 60px; font-size: 1.4rem; background: linear-gradient(135deg, #0A2A5E, #0E3F8E); color: #fff; border-radius: 18px; flex: none; }
+.perfil-id { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.perfil-id .cuenta-nombre { font-size: 1.15rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.perfil-id .cuenta-email { font-size: 0.84rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.perfil-google { margin-top: 6px; justify-self: start; font-size: 0.7rem; }
+.btn-editar-chico { flex: none; min-height: 40px; padding: 0 16px; border-radius: 12px; background: var(--brand-soft) !important; color: var(--brand) !important; font-weight: 700; box-shadow: none; }
+.perfil-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 14px 0 6px; }
+.perfil-stats .stat { text-align: left; padding: 16px; border-radius: 18px; background: #fff !important; color: var(--text-main) !important; border: 1px solid rgba(10, 42, 94, 0.08); box-shadow: var(--sombra-1); display: grid; gap: 2px; min-height: 0; }
+.perfil-stats .stat b { font-size: 1.25rem; font-weight: 800; color: var(--navy); letter-spacing: -0.01em; }
+.perfil-stats .stat span { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; }
+.ajustes-titulo { margin: 22px 4px 8px; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
+.lista-ajustes { border-radius: 20px; background: #fff; border: 1px solid rgba(10, 42, 94, 0.08); box-shadow: var(--sombra-1); overflow: hidden; }
+.fila-aj { display: flex; align-items: center; gap: 14px; width: 100%; padding: 14px 16px; min-height: 56px; text-align: left; background: transparent !important; color: var(--text-main) !important; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; box-shadow: none; text-decoration: none; font: inherit; }
+.fila-aj:last-child { border-bottom: 0; }
+.fila-aj .ico-aj { flex: none; width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; background: var(--brand-soft); color: var(--brand); }
+.fila-aj .ico-aj svg { width: 20px; height: 20px; }
+.fila-aj small { display: block; font-size: 0.74rem; color: var(--text-muted); font-weight: 600; }
+.fila-aj b { display: block; font-size: 0.95rem; font-weight: 700; overflow-wrap: anywhere; }
+.fila-aj > div { min-width: 0; flex: 1; }
+.fila-aj .txt-aj { flex: 1; font-weight: 600; font-size: 0.97rem; }
+.fila-aj .der { flex: none; width: 18px; height: 18px; color: var(--text-subtle); }
+.fila-aj.enlace:hover { background: var(--surface-alt) !important; }
+.btn-cerrar-sesion { margin-top: 22px; gap: 10px; color: var(--danger) !important; border-color: rgba(179, 38, 30, 0.25) !important; }
+.btn-cerrar-sesion svg { width: 20px; height: 20px; }
+.nota-cuenta-chica.centrado { text-align: center; margin-top: 14px; line-height: 1.5; }
+.enlace-peligro { color: var(--text-muted); text-decoration: underline; text-underline-offset: 2px; }
+@media (min-width: 1024px) {
+  #seccion-perfil { max-width: 720px; }
+}
+
+/* Escritorio: sin barra inferior (se usa la lateral); "Cómo funciona" en 3 columnas a todo el ancho */
+@media (min-width: 1024px) {
+  .app-bottom-nav { display: none !important; }
+  .como-funciona { grid-column: 1 / -1; }
+  .como-funciona ol { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+  #seccion-perfil, #seccion-ayuda, #seccion-historial { max-width: 760px; }
+}

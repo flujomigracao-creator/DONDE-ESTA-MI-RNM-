@@ -16,3 +16,12 @@ Rama `redesign/identidad-flujo` (sobre `redesign/premium-ui`). Solo presentació
 ## Prueba (15-oct-2026)
 Recorrido de 18 pantallas/estados con datos y servicios simulados en **360×800, 390×844, 768×1024, 1280×800 y 1440×900** (marcos de distinto ancho dentro de una pestaña): 0 desbordes horizontales, 0 controles menores de 40 px, 0 imágenes rotas, 0 errores de JavaScript, popup de planes cabe en pantalla. Contraste de la paleta nueva: todos los pares ≥ 4,5:1 salvo verde sobre verde claro (4,48) → se eliminó ese ajuste y vuelve al verde anterior (4,74).
 **No probado:** login real, registro, consultas y pagos reales; dispositivos reales; icono PWA instalado.
+
+## Estilo interior, responsive y Mi cuenta (15-oct-2026)
+- **Lo que el dueño veía** (captura) era la **versión publicada antigua** (`rnm-v29`): "Hola, Flujo", "Todavía no tienes RNM registrados". Los cambios están en las ramas, **no publicados**.
+- **Responsive real**: móvil/tablet (<1024 px) → barra inferior; **escritorio (≥1024 px) → barra lateral navy con el logo de FLUJO**, contenido de hasta 1080 px y rejillas (Inicio en 2 columnas, detalle en 2 columnas, planes en 4).
+- **Inicio vacío**: tarjeta de bienvenida navy con franja verde/amarilla, "Primera consulta gratis" y botón claro; sección **Cómo funciona** (3 pasos) en vez del bloque genérico.
+- **Pulido general**: sombras suaves, fondo con degradado, tarjetas elevables al pasar el cursor, animación de entrada (respeta `prefers-reduced-motion`), cabecera translúcida.
+- **Mi cuenta resumida y funcional**: cabecera con avatar y "Editar", dos cifras (RNM registrados y plan actual con fecha), lista "Tus datos" (teléfono, dirección, ciudad) y lista "Cuenta y ayuda" con accesos directos (Mis RNM, Planes y pagos, Ayuda, Privacidad, Términos), "Cerrar sesión" con confirmación y enlace discreto a soporte para eliminar la cuenta.
+- sw v44.
+**Probado** (19 pantallas × 6 tamaños: 360, 390, 768, 1024, 1280, 1440; datos simulados): 0 desbordes, 0 controles < 40 px, 0 imágenes rotas, 0 errores JS, popup cabe. **No probado:** login/registro/pagos reales, dispositivos reales.
