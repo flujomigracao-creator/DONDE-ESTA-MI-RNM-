@@ -43,8 +43,8 @@ html, body { font-family: var(--font-family); background: var(--canvas); color: 
   background-repeat: no-repeat; background-position: center; background-size: 22px;
 }
 .header-title-box h1 { font-size: 1.02rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-#btn-actualizar { width: 40px; min-height: 40px !important; height: 40px; padding: 0 !important; border-radius: 50% !important; font-size: 0; gap: 0; justify-content: center; }
-#btn-actualizar svg { width: 18px; height: 18px; }
+#btn-soporte { width: 40px; min-height: 40px !important; height: 40px; padding: 0 !important; border-radius: 50% !important; font-size: 0; gap: 0; justify-content: center; }
+#btn-soporte svg { width: 18px; height: 18px; }
 
 /* Barra inferior con píldora */
 @media (min-width: 1024px) { .app-bottom-nav { display: none !important; } }
@@ -144,7 +144,7 @@ body { overscroll-behavior-y: none; }
 
 @media (prefers-color-scheme: dark) { html, body { color-scheme: light; } }
 .bottom-nav-item { background: none !important; border-radius: 0; box-shadow: none; min-height: 0; }
-#btn-actualizar { font-size: 0 !important; }
+#btn-soporte { font-size: 0 !important; }
 .saludo-fig p.eyebrow-fig { color: var(--brand); font-size: 0.72rem; margin: 0 0 4px; }
 .insignia { border: 0; }
 
@@ -522,7 +522,7 @@ body { background: radial-gradient(1200px 500px at 50% -120px, #E3EBF8 0%, rgba(
   .app-header { padding: 0 40px !important; min-height: 72px; }
   .header-title-box::before { display: none; }
   .header-title-box h1 { font-size: 1.25rem; }
-  #btn-actualizar { width: auto; height: 44px; padding: 0 16px !important; border-radius: 12px !important; font-size: 0.9rem !important; gap: 8px; }
+  #btn-soporte { width: auto; height: 44px; padding: 0 16px !important; border-radius: 12px !important; font-size: 0.9rem !important; gap: 8px; }
   #dashboard-hero-container { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 20px; align-items: start; }
   #dashboard-hero-container > * { margin: 0; }
   #dashboard-hero-container > .hero-fig, #dashboard-hero-container > .bienvenida-card, #dashboard-hero-container > .titulo-sec, #dashboard-hero-container > .btn-ancho, #dashboard-hero-container > .nota-fig, #dashboard-hero-container > .aviso-plan { grid-column: 1 / -1; }
@@ -1062,5 +1062,19 @@ body:has(.modal:not(.oculto)) .consent-pixel, body:has(.camara:not(.oculto)) .co
 .chat-envio .btn { min-height: 48px; }
 
 /* Punto verde en el botón Actualizar cuando la app recibe los cambios en vivo */
-#btn-actualizar { position: relative; }
-#btn-actualizar.en-vivo::after { content: ""; position: absolute; top: 4px; right: 4px; width: 9px; height: 9px; border-radius: 50%; background: #13a04b; box-shadow: 0 0 0 2px #fff; }
+#btn-soporte { position: relative; }
+
+/* Atención al cliente */
+#btn-soporte.con-aviso::after { content: ""; position: absolute; top: 4px; right: 4px; width: 10px; height: 10px; border-radius: 50%; background: #B3261E; box-shadow: 0 0 0 2px #fff; }
+.chat-modo { margin: 2px 0 6px; font-size: 0.82rem; color: var(--text-muted); font-weight: 600; }
+.chat-burbuja.bot { align-self: flex-start; background: #EAF7EE; color: #123B22; border-bottom-left-radius: 4px; }
+.chat-burbuja.escribiendo { opacity: 0.7; font-style: italic; }
+.chat-opciones { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 2px; }
+.chat-opciones:empty { display: none; }
+.chip-faq { min-height: 38px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); background: #fff; color: var(--brand); font: inherit; font-size: 0.84rem; font-weight: 700; text-align: left; cursor: pointer; }
+.chip-faq.humano { border-color: #B3261E; color: #B3261E; }
+
+/* Las preguntas frecuentes del chat: claras y legibles (ganan al estilo general de botones) */
+#modal-chat .chip-faq { background: #fff !important; background-image: none !important; color: #0E3F8E !important; border: 1.5px solid #C9D6EE !important; box-shadow: none !important; min-height: 38px !important; width: auto !important; padding: 7px 12px !important; border-radius: 999px !important; font-size: 0.84rem !important; font-weight: 700 !important; text-align: left; }
+#modal-chat .chip-faq.humano { color: #B3261E !important; border-color: #B3261E !important; }
+#modal-chat .chat-envio .btn { min-height: 48px !important; }

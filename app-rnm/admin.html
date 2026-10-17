@@ -81,6 +81,9 @@
   .burbuja p { margin: 0; white-space: pre-wrap; } .burbuja small { display: block; margin-top: 3px; font-size: 0.72rem; opacity: 0.7; }
   .burbuja.cliente { align-self: flex-start; background: var(--linea); color: var(--texto); border-bottom-left-radius: 4px; }
   .burbuja.equipo { align-self: flex-end; background: var(--azul); color: #fff; border-bottom-right-radius: 4px; }
+  .burbuja.bot { align-self: flex-start; background: #EAF7EE; color: #123B22; border-bottom-left-radius: 4px; }
+  @media (prefers-color-scheme: dark) { .burbuja.bot { background: #14391F; color: #CFF5DC; } }
+  .persona .pide { background: var(--rojo); color: #fff; border-radius: 999px; padding: 2px 9px; font-size: 0.74rem; font-weight: 800; }
   @media (prefers-color-scheme: dark) { .burbuja.equipo { color: #0B1220; } }
   .dialogo textarea { width: 100%; min-height: 84px; margin-top: 8px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--linea); background: var(--fondo); color: var(--texto); font: inherit; font-size: 16px; resize: vertical; }
   .dialogo .botones { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
@@ -247,7 +250,7 @@
         var abajo = hilo.scrollHeight - hilo.scrollTop - hilo.clientHeight < 80;
         hilo.textContent = "";
         if (!x.data.length) hilo.appendChild(e("p", "vacio", "Todavía no hay mensajes con este cliente."));
-        x.data.forEach(function (m) { var b = e("div", "burbuja " + m.de); b.appendChild(e("p", "", m.cuerpo)); b.appendChild(e("small", "", (m.de === "cliente" ? "Cliente · " : "Tú · ") + fecha(m.creado_at))); hilo.appendChild(b); });
+        x.data.forEach(function (m) { var b = e("div", "burbuja " + m.de); b.appendChild(e("p", "", m.cuerpo)); b.appendChild(e("small", "", (m.de === "cliente" ? "Cliente · " : (m.de === "bot" ? "Asistente · " : "Tú · ")) + fecha(m.creado_at))); hilo.appendChild(b); });
         if (abajo || !hilo.dataset.v) { hilo.scrollTop = hilo.scrollHeight; hilo.dataset.v = "1"; }
       });
     }
@@ -273,6 +276,11 @@
         area.dispatchEvent(new Event("input")); area.focus();
       }, true); pl.className = "plantilla"; bot.appendChild(pl);
     }
+    if (c.pide_humano) {
+      bot.appendChild(btn("Cerrar caso (vuelve al asistente)", function () {
+        sb.rpc("rnm_admin_cerrar_caso", { p_user: c.user_id }).then(function (x) { if (x.error) { estado.textContent = "No se pudo cerrar el caso."; return; } c.pide_humano = false; estado.textContent = "Caso cerrado: el asistente vuelve a atender a este cliente."; });
+      }, true));
+    }
     bot.appendChild(btn("Cerrar", cerrar, true));
     fondo.addEventListener("click", function (ev) { if (ev.target === fondo) cerrar(); });
     document.body.appendChild(fondo); document.body.style.overflow = "hidden";
@@ -283,6 +291,7 @@
     cont.textContent = "";
     var q = sinAcento(estadoClientes.busca);
     var lista = clientesCargados.filter(function (c) {
+      if (estadoClientes.filtro === "humano" && !c.pide_humano) return false;
       if (estadoClientes.filtro === "sin_leer" && !c.sin_leer) return false;
       if (estadoClientes.filtro === "no_enc" && !c.rnm_no_encontrado) return false;
       return !q || sinAcento(c.nombre + " " + c.email + " " + c.telefono + " " + c.ciudad).indexOf(q) >= 0;
@@ -291,7 +300,7 @@
     lista.forEach(function (c) {
       var t = e("div", "persona"), cab = e("div", "cab"), tit = e("div");
       tit.appendChild(e("b", "", c.nombre)); tit.appendChild(e("br")); tit.appendChild(e("small", "", c.email || "")); cab.appendChild(tit);
-      if (c.sin_leer) cab.appendChild(e("span", "sinleer", c.sin_leer + " sin leer")); else cab.appendChild(e("span", "insignia " + (c.plan_estado === "activo" ? "activo" : c.plan_estado === "cancelado" ? "cancelado" : c.plan_estado === "vencido" ? "vencido" : ""), c.plan_estado));
+      if (c.pide_humano) cab.appendChild(e("span", "pide", "Pide una persona")); else if (c.sin_leer) cab.appendChild(e("span", "sinleer", c.sin_leer + " sin leer")); else cab.appendChild(e("span", "insignia " + (c.plan_estado === "activo" ? "activo" : c.plan_estado === "cancelado" ? "cancelado" : c.plan_estado === "vencido" ? "vencido" : ""), c.plan_estado));
       t.appendChild(cab);
       var d = e("div", "datos");
       [["Teléfono", c.telefono ? "+" + soloDigitos(c.telefono) : "—"], ["Ciudad", c.ciudad ? c.ciudad + (c.uf ? " / " + c.uf : "") : "—"], ["RNM", num(c.n_rnm)], ["Se registró", new Date(c.creado_at).toLocaleDateString("es", { day: "2-digit", month: "short" })]].forEach(function (par) { var w = e("div"); w.appendChild(e("span", "", par[0])); w.appendChild(e("br")); w.appendChild(e("b", "", par[1])); d.appendChild(w); });
@@ -307,9 +316,10 @@
     seccion("Clientes y mensajes");
     var sin = clientesCargados.filter(function (c) { return c.sin_leer > 0; }).length;
     var noEnc = clientesCargados.filter(function (c) { return c.rnm_no_encontrado > 0; }).length;
-    if (estadoClientes.filtro === "todos" && !estadoClientes.tocado) estadoClientes.filtro = sin ? "sin_leer" : (noEnc ? "no_enc" : "todos");
+    var hum = clientesCargados.filter(function (c) { return c.pide_humano; }).length;
+    if (estadoClientes.filtro === "todos" && !estadoClientes.tocado) estadoClientes.filtro = hum ? "humano" : (sin ? "sin_leer" : (noEnc ? "no_enc" : "todos"));
     var barra = e("div", "barra"), cont = e("div", "personas");
-    var chips = [["sin_leer", "Sin leer (" + sin + ")"], ["no_enc", "RNM no encontrado (" + noEnc + ")"], ["todos", "Todos (" + clientesCargados.length + ")"]];
+    var chips = [["humano", "Piden persona (" + hum + ")"], ["sin_leer", "Sin leer (" + sin + ")"], ["no_enc", "RNM no encontrado (" + noEnc + ")"], ["todos", "Todos (" + clientesCargados.length + ")"]];
     var botones = chips.map(function (c) {
       var b = e("button", "chip" + (estadoClientes.filtro === c[0] ? " on" : ""), c[1]); b.type = "button";
       b.addEventListener("click", function () { estadoClientes.filtro = c[0]; estadoClientes.tocado = true; botones.forEach(function (x, i) { x.className = "chip" + (chips[i][0] === c[0] ? " on" : ""); }); pintarClientes(cont); });
@@ -338,6 +348,8 @@
     if (r.sin_consultar > 0) alerta(num(r.sin_consultar) + " RNM todavía sin ninguna consulta.", "");
     if (m.ultimo_dato && (Date.now() - new Date(m.ultimo_dato).getTime()) / 86400000 > 3) alerta("Los datos de gasto de Meta están atrasados (último: " + m.ultimo_dato + ").", "");
     var sinLeerTot = clientesCargados.reduce(function (a, c) { return a + (c.sin_leer || 0); }, 0);
+    var cHum = clientesCargados.filter(function (c) { return c.pide_humano; }).length;
+    if (cHum) alerta(cHum + " cliente(s) piden hablar con una persona (atención al cliente de la app).", "mal");
     var cSin = clientesCargados.filter(function (c) { return c.sin_leer > 0; }).length;
     if (cSin) alerta(cSin + " cliente(s) te escribieron (" + sinLeerTot + " mensajes) y esperan respuesta.", "mal");
     var cNoEnc = clientesCargados.filter(function (c) { return c.rnm_no_encontrado > 0; }).length;

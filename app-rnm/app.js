@@ -1644,11 +1644,19 @@ function construirHistorialDetalle(x) {
   return tl;
 }
 
-/* ---------- Chat con el equipo ---------- */
-var mensajesSinLeer = 0, pollChat = null;
+/* ---------- Atención al cliente: preguntas frecuentes → asistente virtual → persona ---------- */
+var mensajesSinLeer = 0, pollChat = null, modoSoporte = "bot", pendientesChat = [], esperandoBot = false, localesChat = [];
+var FAQ_RAPIDAS = [
+  ["¿Cada cuánto se revisa mi RNM?", "Una vez por semana (cada 7 días) mientras tengas un plan activo. La primera verificación de cada RNM es gratis. La revisión no es en tiempo real: si el estado cambia entre una y otra, lo verás en la siguiente. La app se actualiza sola, no tienes que hacer nada."],
+  ["Mi RNM dice «No encontrado»", "Casi siempre es que el RNM o la fecha están mal escritos. Abre ese RNM y toca «Corregir RNM o fecha» (hasta 3 veces, sin costo): se vuelve a consultar al instante. Recuerda que el RNM suele llevar letras, por ejemplo A123456B."],
+  ["¿Cuánto cuesta y cómo pago?", "Hay dos planes: Semanal R$ 9,99 al mes (revisión cada 7 días) y Manual R$ 19,99 al mes (lo mismo, más el botón «Verificar ahora»). Cubren hasta 4 RNM. Entra en Planes, elige uno y paga con Pix, boleto o tarjeta."],
+  ["¿Cómo cancelo mi plan?", "En Perfil toca «Cancelar plan» (o entra en Planes). No se vuelve a cobrar y tu plan sigue activo hasta la fecha ya pagada."],
+  ["Mi documento está listo en otra ciudad", "En el detalle del RNM ves en qué unidad de la Policía Federal está. El cambio de unidad lo decide la Policía Federal; si necesitas orientación, escríbenos por aquí."]
+];
 function pintarAvisoMensajes() {
   var b = $("chat-badge"); if (b) { b.textContent = String(mensajesSinLeer); b.classList.toggle("oculto", !mensajesSinLeer); }
   var nav = document.querySelector('.bottom-nav-item[data-seccion="perfil"]'); if (nav) nav.classList.toggle("con-aviso", mensajesSinLeer > 0);
+  var sp = $("btn-soporte"); if (sp) sp.classList.toggle("con-aviso", mensajesSinLeer > 0);
   var a = $("aviso-mensaje");
   if (a) {
     a.classList.toggle("oculto", !mensajesSinLeer);
@@ -1661,49 +1669,119 @@ async function cargarMensajes() {
   if (r.error) return;
   mensajesSinLeer = r.count || 0; pintarAvisoMensajes();
 }
+function burbujaChat(lista, clase, etiqueta, texto, hora) {
+  var b = el("div", "chat-burbuja " + clase);
+  b.appendChild(el("p", "", texto)); b.appendChild(el("small", "", (etiqueta ? etiqueta + " · " : "") + (hora ? fechaHora(hora) : "")));
+  lista.appendChild(b); return b;
+}
+function pintarOpcionesChat() {
+  var box = $("chat-opciones"); if (!box) return;
+  box.textContent = "";
+  var modo = $("chat-modo");
+  if (modoSoporte === "humano") {
+    if (modo) modo.textContent = "Te atiende una persona del equipo · te responde aquí mismo";
+    return;
+  }
+  if (modo) modo.textContent = "Asistente virtual · responde al instante";
+  FAQ_RAPIDAS.forEach(function (f) {
+    var c = el("button", "chip-faq", f[0]); c.type = "button";
+    c.addEventListener("click", function () {
+      localesChat.push({ ts: Date.now(), clase: "yo", etiqueta: "", texto: f[0] });
+      localesChat.push({ ts: Date.now() + 1, clase: "bot", etiqueta: "Asistente", texto: f[1] });
+      pintarChat();
+    });
+    box.appendChild(c);
+  });
+  var h = el("button", "chip-faq humano", "🙋 Hablar con una persona"); h.type = "button";
+  h.addEventListener("click", pedirPersona);
+  box.appendChild(h);
+}
 async function pintarChat() {
   var lista = $("chat-lista"); if (!lista) return;
-  var r = await sb.from("rnm_mensajes").select("de, cuerpo, creado_at").order("creado_at", { ascending: true }).limit(100);
-  if (r.error) return;
+  var q = await Promise.all([
+    sb.from("rnm_mensajes").select("de, cuerpo, creado_at").order("creado_at", { ascending: true }).limit(100),
+    sb.from("rnm_soporte").select("modo, actualizado_at").maybeSingle()
+  ]);
+  if (q[0].error) return;
+  var s = q[1] && q[1].data;
+  modoSoporte = (s && s.modo === "humano" && Date.now() - new Date(s.actualizado_at).getTime() < 12 * 3600 * 1000) ? "humano" : "bot";
   var abajo = lista.scrollHeight - lista.scrollTop - lista.clientHeight < 80;
   lista.textContent = "";
-  if (!r.data.length) lista.appendChild(el("p", "chat-vacio", "Escríbenos aquí tu duda o lo que necesitas. Te respondemos en esta misma conversación."));
-  r.data.forEach(function (m) {
-    var b = el("div", "chat-burbuja " + (m.de === "equipo" ? "equipo" : "yo"));
-    b.appendChild(el("p", "", m.cuerpo)); b.appendChild(el("small", "", (m.de === "equipo" ? "Equipo · " : "") + fechaHora(m.creado_at)));
-    lista.appendChild(b);
+  if (modoSoporte === "bot") burbujaChat(lista, "bot", "Asistente", "¡Hola! Soy el asistente de «¿Dónde está mi RNM?». Elige una pregunta frecuente o escríbeme la tuya. Si no puedo ayudarte, te paso con una persona del equipo.", null);
+  else burbujaChat(lista, "bot", "", "Una persona del equipo te va a responder aquí mismo. Mientras tanto, puedes escribir tu problema con todos los detalles.", null);
+  var todos = q[0].data.filter(function (m) { return String(m.cuerpo).indexOf("🙋") !== 0; }).map(function (m) {
+    return { ts: new Date(m.creado_at).getTime(), clase: m.de === "equipo" ? "equipo" : (m.de === "bot" ? "bot" : "yo"), etiqueta: m.de === "equipo" ? "Equipo" : (m.de === "bot" ? "Asistente" : ""), texto: m.cuerpo, hora: m.creado_at };
   });
+  if (modoSoporte === "bot") todos = todos.concat(localesChat);
+  todos = todos.concat(pendientesChat).sort(function (a, b) { return a.ts - b.ts; });
+  todos.forEach(function (m) { var b = burbujaChat(lista, m.clase, m.etiqueta, m.texto, m.hora); if (m.escribiendo) b.classList.add("escribiendo"); });
+  pintarOpcionesChat();
   if (abajo || !lista.dataset.visto) { lista.scrollTop = lista.scrollHeight; lista.dataset.visto = "1"; }
 }
 async function abrirChat() {
   var m = $("modal-chat"); if (!m) return;
-  msg("msg-chat", ""); $("chat-lista").dataset.visto = "";
+  msg("msg-chat", ""); $("chat-lista").dataset.visto = ""; localesChat = [];
   m.classList.remove("oculto"); document.body.style.overflow = "hidden";
   await pintarChat();
   await sb.rpc("rnm_mensajes_leer"); mensajesSinLeer = 0; pintarAvisoMensajes();
   if (pollChat) clearInterval(pollChat);
-  pollChat = setInterval(function () { if (!document.hidden) { pintarChat(); sb.rpc("rnm_mensajes_leer"); } }, 15000);
+  pollChat = setInterval(function () { if (!document.hidden && !esperandoBot) { pintarChat(); sb.rpc("rnm_mensajes_leer"); } }, 15000);
 }
 function cerrarChat() {
   var m = $("modal-chat"); if (!m) return;
   m.classList.add("oculto"); document.body.style.overflow = "";
   if (pollChat) { clearInterval(pollChat); pollChat = null; }
 }
+async function pedirPersona() {
+  var r = await sb.rpc("rnm_soporte_pedir_humano", { p_motivo: null });
+  if (r.error) return msg("msg-chat", "No pudimos pasarte con una persona ahora. Intenta de nuevo en un momento.");
+  modoSoporte = "humano"; msg("msg-chat", ""); if (window.toast) toast("Listo: una persona del equipo te responderá aquí", "ok");
+  await pintarChat();
+}
+async function preguntarAlAsistente(texto) {
+  var s = await sb.auth.getSession();
+  var token = s.data.session && s.data.session.access_token;
+  var r = await fetch(SUPABASE_URL + "/functions/v1/rnm-asistente", {
+    method: "POST", headers: { "Content-Type": "application/json", apikey: SUPABASE_KEY, Authorization: "Bearer " + token },
+    body: JSON.stringify({ texto: texto })
+  });
+  var j = await r.json().catch(function () { return {}; });
+  return { ok: r.ok, status: r.status, j: j };
+}
+async function enviarChat() {
+  var txt = $("chat-texto"), env = $("chat-enviar"); if (!txt || esperandoBot) return;
+  var t = txt.value.trim(); if (!t) return;
+  txt.value = ""; msg("msg-chat", "");
+  if (modoSoporte === "humano") {
+    env.disabled = true;
+    var r0 = await sb.rpc("rnm_mensaje_enviar", { p_cuerpo: t });
+    env.disabled = false;
+    if (r0.error) { txt.value = t; return msg("msg-chat", (r0.error.message || "").indexOf("demasiados") >= 0 ? "Enviaste muchos mensajes seguidos. Espera un rato y vuelve a intentar." : "No pudimos enviar tu mensaje. Intenta de nuevo."); }
+    return pintarChat();
+  }
+  esperandoBot = true; env.disabled = true;
+  pendientesChat = [{ ts: Date.now(), clase: "yo", etiqueta: "", texto: t }, { ts: Date.now() + 1, clase: "bot", etiqueta: "Asistente", texto: "Escribiendo…", escribiendo: true }];
+  await pintarChat();
+  var resp = null;
+  try { resp = await preguntarAlAsistente(t); } catch (e) { resp = { ok: false, j: {} }; }
+  pendientesChat = []; esperandoBot = false; env.disabled = false;
+  if (!resp.ok) {
+    if (resp.status === 429) msg("msg-chat", "Enviaste muchos mensajes seguidos. Espera un rato y vuelve a intentar.");
+    else { txt.value = t; msg("msg-chat", "No pudimos responderte ahora. Intenta de nuevo o toca «Hablar con una persona»."); }
+    return pintarChat();
+  }
+  await pintarChat();
+}
 (function () {
   var a = $("btn-chat-perfil"); if (a) a.addEventListener("click", abrirChat);
   var b = $("aviso-mensaje"); if (b) b.addEventListener("click", abrirChat);
+  var sp = $("btn-soporte"); if (sp) sp.addEventListener("click", abrirChat);
   var c = $("chat-cerrar"); if (c) c.addEventListener("click", cerrarChat);
   var m = $("modal-chat"); if (m) m.addEventListener("click", function (e) { if (e.target === m) cerrarChat(); });
   document.addEventListener("keydown", function (e) { if (e.key === "Escape" && m && !m.classList.contains("oculto")) cerrarChat(); });
   var env = $("chat-enviar"), txt = $("chat-texto");
-  if (env && txt) env.addEventListener("click", async function () {
-    var t = txt.value.trim(); if (!t) return;
-    env.disabled = true;
-    var r = await sb.rpc("rnm_mensaje_enviar", { p_cuerpo: t });
-    env.disabled = false;
-    if (r.error) return msg("msg-chat", (r.error.message || "").indexOf("demasiados") >= 0 ? "Enviaste muchos mensajes seguidos. Espera un rato y vuelve a intentar." : "No pudimos enviar tu mensaje. Intenta de nuevo.");
-    txt.value = ""; msg("msg-chat", ""); await pintarChat();
-  });
+  if (env) env.addEventListener("click", enviarChat);
+  if (txt) txt.addEventListener("keydown", function (e) { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); enviarChat(); } });
 })();
 
 function abrirCorregir(x) {
@@ -1841,11 +1919,7 @@ function construirDetalle(id) {
   mas.appendChild(cuerpo); cont.appendChild(mas);
 }
 
-/* El estado lo actualiza el equipo de FLUJO y la app se actualiza sola (ver «Actualización automática»); este botón queda como respaldo. */
-$("btn-actualizar").addEventListener("click", function () {
-  var b = this; b.disabled = true;
-  cargarRegistros().then(function () { setTimeout(function () { b.disabled = false; }, 800); ultimaActualizacion = Date.now(); if (window.toast) toast("Pantalla actualizada", "ok"); });
-});
+/* El estado lo actualiza el equipo de FLUJO y la app se actualiza sola (ver «Actualización automática»): el cliente no tiene que pulsar nada. */
 setInterval(function () { // mientras se confirma un cobro, revisa cada 8 segundos
   if (esperandoPago && Date.now() - esperandoPago < 180000 && usuarioActual) cargarRegistros();
 }, 8000);
@@ -1873,7 +1947,6 @@ function programarRefresco() { clearTimeout(retrasoVivo); retrasoVivo = setTimeo
 function detenerTiempoReal() {
   clearTimeout(retrasoVivo);
   if (canalVivo) { try { sb.removeChannel(canalVivo); } catch (e) { /* ya cerrado */ } canalVivo = null; }
-  var b = $("btn-actualizar"); if (b) b.classList.remove("en-vivo");
 }
 function iniciarTiempoReal() {
   detenerTiempoReal();
@@ -1884,7 +1957,6 @@ function iniciarTiempoReal() {
     .on("postgres_changes", { event: "*", schema: "public", table: "rnm_planes", filter: filtro }, programarRefresco)
     .on("postgres_changes", { event: "INSERT", schema: "public", table: "rnm_mensajes", filter: filtro }, function () { cargarMensajes(); })
     .subscribe(function (estado) {
-      var b = $("btn-actualizar"); if (b) b.classList.toggle("en-vivo", estado === "SUBSCRIBED");
       if (estado === "SUBSCRIBED") programarRefresco(); // recupera lo que pudo pasar mientras no estaba conectado
     });
 }
