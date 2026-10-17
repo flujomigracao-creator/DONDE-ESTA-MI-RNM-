@@ -163,7 +163,7 @@
   var planesCargados = [];
   var FUNCION_CANCELAR = "https://rumpfqevyspdmhaggxtq.supabase.co/functions/v1/mp-cancelar-plan";
   var CLAVE = "sb_publishable_7znj3ENrTWXDE2dibUzv_A_a7HUoud_";
-  var etiquetaPlan = function (t) { return t === "manual" ? "Plan manual" : "Plan semanal"; };
+  var etiquetaPlan = function (t) { return t === "manual" ? "Plan manual" : (t === "quincenal" ? "Plan quincenal" : "Plan semanal"); };
   var soloDigitos = function (t) { return String(t || "").replace(/[^0-9]/g, ""); };
   var wa = function (tel) { var n = soloDigitos(tel); if (n.length === 10 || n.length === 11) n = "55" + n; return n.length >= 12 ? "https://wa.me/" + n : ""; };
   var sinAcento = function (t) { return String(t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase(); };
@@ -438,7 +438,7 @@
     var costoReg = c.ultimos_30d ? (Number(m.gasto_30d) / c.ultimos_30d) : null;
     rejilla([
       cifra("Clientes", num(c.total), "+" + num(c.hoy) + " hoy · +" + num(c.ultimos_7d) + " en 7 días"),
-      cifra("Suscripciones activas", num(s.activas), num(s.semanal) + " semanal · " + num(s.manual) + " manual", s.activas ? "ok" : ""),
+      cifra("Suscripciones activas", num(s.activas), num(s.activas - s.semanal - s.manual) + " quincenal · " + num(s.semanal) + " semanal · " + num(s.manual) + " manual", s.activas ? "ok" : ""),
       cifra("Ingreso mensual recurrente", reales(s.mrr_centavos), "planes activos sin cancelar"),
       cifra("Vendido (30 días)", reales(v.bruto_30d_centavos), num(v.pagos) + " pagos en total"),
       cifra("Gasto en anuncios (30 días)", realesU(m.gasto_30d), "7 días: " + realesU(m.gasto_7d)),
@@ -467,7 +467,7 @@
     // Suscripciones y compras
     seccion("Suscripciones y compras");
     rejilla([
-      cifra("Activas", num(s.activas), "semanal " + num(s.semanal) + " · manual " + num(s.manual), s.activas ? "ok" : ""),
+      cifra("Activas", num(s.activas), "quincenal " + num(s.activas - s.semanal - s.manual) + " · semanal " + num(s.semanal) + " · manual " + num(s.manual), s.activas ? "ok" : ""),
       cifra("Canceladas (aún activas)", num(s.canceladas_aun_activas), "no se renuevan", s.canceladas_aun_activas ? "aviso" : ""),
       cifra("Vencen en 7 días", num(s.vencen_7d), "", s.vencen_7d ? "aviso" : ""),
       cifra("Vencidas", num(s.vencidas), "dejaron de pagar"),

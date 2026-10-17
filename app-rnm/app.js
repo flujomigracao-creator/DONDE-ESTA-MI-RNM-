@@ -68,6 +68,14 @@ async function iniciar() {
 }
 
 var usuarioActual = null;
+window.rnmMetaServidor = async function (cuerpo) {
+  try {
+    var ses = await sb.auth.getSession();
+    var tk = ses && ses.data && ses.data.session && ses.data.session.access_token;
+    if (!tk) return;
+    fetch(SUPABASE_URL + "/functions/v1/meta-capi-web", { method: "POST", keepalive: true, headers: { "Content-Type": "application/json", "Authorization": "Bearer " + tk, "apikey": SUPABASE_KEY }, body: JSON.stringify(cuerpo) }).catch(function () { /* sin red */ });
+  } catch (e) { /* sin sesión */ }
+};
 var perfilActual = null;
 var seccionActual = "inicio";
 var registrosCargados = [];
@@ -221,6 +229,7 @@ async function mostrar(session) {
   var r = await sb.from("rnm_perfiles").select("*").eq("user_id", session.user.id).maybeSingle();
   perfilActual = r.data || null;
   actualizarInfoUsuario(session.user, perfilActual);
+  if (window.rnmIdentificar) rnmIdentificar(session.user, perfilActual);
   if (!perfilActual) { abrirPerfil(false); }
   else { vista("app"); navegarA(seccionInicial()); cargarRegistros(); iniciarTiempoReal(); setTimeout(revisarOpinionPendiente, 6000); }
 }
@@ -366,6 +375,7 @@ $("form-perfil").addEventListener("submit", async function (e) {
   btn.disabled = false;
   if (r.error) return msg("msg-perfil", "No pudimos guardar tus datos. Intenta de nuevo.");
   perfilActual = r.data;
+  if (window.rnmIdentificar && usuarioActual) rnmIdentificar(usuarioActual, perfilActual);
   vista("app");
   cargarRegistros();
 });
@@ -629,16 +639,21 @@ async function actualizarAvisoRegistro() {
   mostrarCosteAplicable();
 }
 
-/* Dos planes, ambos de hasta 4 RNM: Semanal (revisión automática) y Manual (todo lo del semanal + "Verificar ahora"). */
-var PRECIOS = { semanal: 999, manual: 1999 }; // centavos al mes
+/* Tres planes, todos de hasta 4 RNM: Quincenal (revisión cada 15 días), Semanal (cada 7 días) y Manual (todo lo del semanal + "Verificar ahora"). */
+var PRECIOS = { quincenal: 499, semanal: 999, manual: 1999 }; // centavos al mes
+var ORDEN_PLAN = { quincenal: 1, semanal: 2, manual: 3 };
+function planSuperior(tipo) { return tipo === "quincenal" ? "semanal" : (tipo === "semanal" ? "manual" : null); }
 function reales(c) { return "R$ " + (c / 100).toFixed(2).replace(".", ","); }
 var PLANES = {
+  quincenal: { nombre: "Quincenal", etiqueta: "Plan quincenal", insignia: "Más económico", lema: "Actualización automática cada 15 días",
+    puntos: ["Hasta 4 RNM en una sola cuenta", "Revisión automática cada 15 días", "Ves dónde está tu RNM y qué hacer", "Primera verificación gratis en cada RNM"] },
   semanal: { nombre: "Semanal", etiqueta: "Plan semanal", insignia: "Más elegido", lema: "Lo revisamos por ti, cada semana",
     puntos: ["Hasta 4 RNM en una sola cuenta", "Revisión automática cada 7 días", "Ves dónde está tu RNM y qué hacer", "Primera verificación gratis en cada RNM"] },
   manual: { nombre: "Manual", etiqueta: "Plan manual", insignia: "Control total", lema: "Verifica tú, el día que quieras",
     puntos: ["Todo lo del plan semanal", "Botón «Verificar ahora» en cada RNM", "1 verificación por día y por RNM", "Ideal si estás por retirar tu documento"] }
 };
 function nombrePlan(tipo) { return (PLANES[tipo] || PLANES.semanal).etiqueta; }
+function frecuenciaPlan(tipo) { return tipo === "quincenal" ? "cada 15 días" : "cada semana"; }
 var ICO_CHECK_PLAN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
 function tarjetaPlan(tipo, o) {
   var p = PLANES[tipo], b = el("button", "plan-op " + tipo + (o.sel ? " sel" : "") + (o.actual ? " actual" : ""));
@@ -752,7 +767,7 @@ function mostrarPago(tipo) {
   c.innerHTML =
     '<div class="pay-top"><button type="button" class="sec" id="btn-volver-planes"><svg class=\"ic\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M19 12H5M11 6l-6 6 6 6\"/></svg> Cambiar plan</button><span class="pay-paso">Paso 2 de 2</span></div>' +
     '<h2 class="pay-titulo">Finaliza tu suscripción</h2>' +
-    '<div class="pay-resumen"><div><b>' + nombrePlan(tipo) + '</b><span>' + (tipo === "manual" ? "Hasta 4 RNM · revisión semanal + Verificar ahora" : "Hasta 4 RNM · revisión automática cada 7 días") + '</span></div>' +
+    '<div class="pay-resumen"><div><b>' + nombrePlan(tipo) + '</b><span>' + (tipo === "manual" ? "Hasta 4 RNM · revisión semanal + Verificar ahora" : (tipo === "quincenal" ? "Hasta 4 RNM · revisión automática cada 15 días" : "Hasta 4 RNM · revisión automática cada 7 días")) + '</span></div>' +
       '<div class="pay-precio"><b>' + precio + '</b><span>por mes</span></div></div>' +
     '<p class="pay-sub">Elige cómo quieres pagar</p>' +
     '<div class="metodos" role="radiogroup" aria-label="Forma de pago">' +
@@ -947,16 +962,16 @@ function mostrarCodigoPago(tipo, d) {
 
 // Aviso insistente: la primera consulta ya se hizo y sin plan el estado no se actualiza.
 function avisoPlan(regs) {
-  var sinPlan = regs.filter(function (x) { return !x.cerrado && !x.cubierto && !!x.ultimo_resultado; });
+  var sinPlan = regs.filter(function (x) { return !x.cerrado && !x.cubierto && (!!x.ultimo_resultado || x.requiere_pago); });
   if (!sinPlan.length) return null;
   var d = el("div", "aviso-plan");
   d.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v5M12 16.5v.01"/><circle cx="12" cy="12" r="9"/></svg>';
   var cuerpo = el("div", "");
   var p = el("p", "", "");
-  p.innerHTML = "<b>Tu primera consulta ya está lista.</b> Para saber dónde está tu RNM, activa un plan: así el estado se actualiza <b>cada semana</b>. Sin plan, lo que ves no se vuelve a actualizar.";
+  p.innerHTML = "<b>Tu RNM no se actualizará.</b> Lo que ves es de la última consulta. Sin un plan activo el estado <b>no se vuelve a actualizar</b>: activa uno desde <b>R$ 4,99 al mes</b> y lo revisamos por ti.";
   cuerpo.appendChild(p);
-  var b = el("button", "", "Activar un plan"); b.type = "button";
-  b.addEventListener("click", abrirModalPlanes);
+  var b = el("button", "", "Ver planes desde R$ 4,99"); b.type = "button";
+  b.addEventListener("click", function () { navegarA("planes"); });
   cuerpo.appendChild(b);
   d.appendChild(cuerpo);
   return d;
@@ -967,7 +982,7 @@ function notaSemanal() {
   var n = el("div", "nota-semanal");
   n.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>';
   var t = el("p", "", "");
-  t.innerHTML = "<b>Revisión semanal.</b> Con cualquier plan revisamos cada RNM una vez por semana (cada 7 días) hasta que el documento esté listo. Con el plan manual, además, puedes pedir una verificación el día que quieras.";
+  t.innerHTML = "<b>Revisión automática.</b> Con el plan quincenal revisamos cada RNM cada 15 días; con el semanal y el manual, cada 7 días, hasta que el documento esté listo. Con el plan manual, además, puedes pedir una verificación el día que quieras.";
   n.appendChild(t);
   return n;
 }
@@ -996,36 +1011,38 @@ function cartelPlanes(regs, plan) {
     ok.innerHTML = '<div class="pay-icono ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>';
     ok.appendChild(el("h2", "pay-titulo", nombrePlan(plan.tipo) + " activo"));
     ok.appendChild(el("p", "sub", "Cubre hasta 4 RNM (" + reales(plan.precio_centavos) + " al mes) y está pagado hasta el " + fechaCorta(plan.vence_at) + "."));
-    if (plan.tipo !== "manual") {
-      var aManual = el("button", "", "Pasar al plan manual · " + reales(PRECIOS.manual)); aManual.type = "button";
-      aManual.addEventListener("click", function () { ampliando = true; planElegido = "manual"; cartelPlanes(regs, plan); });
-      ok.appendChild(aManual);
+    var sup = planSuperior(plan.tipo);
+    if (sup) {
+      var aSup = el("button", "", "Pasar al " + PLANES[sup].etiqueta.toLowerCase() + " · " + reales(PRECIOS[sup])); aSup.type = "button";
+      aSup.addEventListener("click", function () { ampliando = true; planElegido = sup; cartelPlanes(regs, plan); });
+      ok.appendChild(aSup);
     }
-    var cerrarOk = el("button", plan.tipo !== "manual" ? "sec" : "", "Entendido"); cerrarOk.type = "button";
+    var cerrarOk = el("button", sup ? "sec" : "", "Entendido"); cerrarOk.type = "button";
     cerrarOk.addEventListener("click", cerrarModalPlanes);
     ok.appendChild(cerrarOk);
     cont.appendChild(ok);
     return;
   }
   if (!PLANES[planElegido]) planElegido = "semanal";
-  if (activo && ampliando) planElegido = "manual";
+  if (activo && ampliando && !(ORDEN_PLAN[planElegido] > ORDEN_PLAN[plan.tipo])) planElegido = planSuperior(plan.tipo) || plan.tipo;
   var c = el("div", "pay");
   c.appendChild(el("span", "pay-paso", "Paso 1 de 2"));
   var primeraHecha = regs.some(function (r) { return !r.cerrado && !r.cubierto && !!r.ultimo_resultado; });
-  c.appendChild(el("h2", "pay-titulo", activo ? "Pasa al plan manual" : (primeraHecha ? "Activa un plan para seguir tus RNM" : "Elige tu plan")));
+  c.appendChild(el("h2", "pay-titulo", activo ? "Pasa a un plan superior" : (primeraHecha ? "Activa un plan para seguir tus RNM" : "Elige tu plan")));
   c.appendChild(el("p", "sub", activo
-    ? "Pagas el plan manual completo y reemplaza al semanal durante 1 mes desde hoy."
+    ? "Pagas el nuevo plan completo y reemplaza al actual durante 1 mes desde hoy."
     : "Cada RNM ya tuvo su primera verificación gratis. Con un plan, lo seguimos por ti."));
   var grid = el("div", "planes-op");
-  ["semanal", "manual"].forEach(function (tipo) {
+  ["quincenal", "semanal", "manual"].forEach(function (tipo) {
     var esActual = activo && plan.tipo === tipo;
-    grid.appendChild(tarjetaPlan(tipo, { sel: tipo === planElegido && !esActual, actual: esActual, off: esActual,
+    var inferior = activo && ORDEN_PLAN[tipo] < ORDEN_PLAN[plan.tipo];
+    grid.appendChild(tarjetaPlan(tipo, { sel: tipo === planElegido && !esActual && !inferior, actual: esActual, off: esActual || inferior,
       onClick: function () { planElegido = tipo; cartelPlanes(regs, plan); } }));
   });
   c.appendChild(grid);
   if (activo) {
     var nota = el("p", "nota-ampliar");
-    nota.innerHTML = "<b>Cómo funciona el cambio:</b> pagas el plan manual completo (" + reales(PRECIOS.manual) + ") y reemplaza a tu plan semanal. Dura 1 mes desde hoy; los días que te quedaban del plan anterior no se suman.";
+    nota.innerHTML = "<b>Cómo funciona el cambio:</b> pagas el plan nuevo completo (" + reales(PRECIOS[planElegido]) + ") y reemplaza a tu plan actual. Dura 1 mes desde hoy; los días que te quedaban del plan anterior no se suman.";
     c.appendChild(nota);
   }
   var acc = el("div", "acciones");
@@ -1147,18 +1164,18 @@ function renderizarPlanes(regs, plan) {
   cont.textContent = "";
   var activo = !!plan && new Date(plan.vence_at) > new Date();
   var abiertos = regs.filter(function (x) { return !x.cerrado; }).length;
-  var tipoActual = activo ? (plan.tipo === "manual" ? "manual" : "semanal") : null;
+  var tipoActual = activo ? (PLANES[plan.tipo] ? plan.tipo : "semanal") : null;
 
   var estado = el("div", "tarjeta plan-estado");
   estado.appendChild(el("p", "hero-eyebrow", "Tu plan actual"));
   if (activo) {
     estado.appendChild(el("h3", "", nombrePlan(tipoActual) + (plan.cancelado_at ? " · cancelado" : " activo")));
-    if (plan.cancelado_at) estado.appendChild(el("p", "sub", "No se renovará ni se volverá a cobrar. Sigues con todo activo hasta el " + fechaCorta(plan.vence_at) + "; después tus RNM dejan de revisarse cada semana."));
+    if (plan.cancelado_at) estado.appendChild(el("p", "sub", "No se renovará ni se volverá a cobrar. Sigues con todo activo hasta el " + fechaCorta(plan.vence_at) + "; después tus RNM dejan de revisarse " + frecuenciaPlan(tipoActual) + "."));
     var filas = el("div", "review-summary-card");
     [["Precio mensual", reales(plan.precio_centavos)],
      ["Pagado hasta", fechaCorta(plan.vence_at)],
      ["RNM incluidos", "hasta 4"],
-     ["Revisión automática", "1 vez por semana"],
+     ["Revisión automática", tipoActual === "quincenal" ? "1 vez cada 15 días" : "1 vez por semana"],
      ["Verificar ahora", tipoActual === "manual" ? "Incluido (1 por día y por RNM)" : "Solo en el plan manual"],
      ["RNM en seguimiento", String(abiertos) + " de 4"]
     ].forEach(function (par) {
@@ -1175,13 +1192,13 @@ function renderizarPlanes(regs, plan) {
       : "Cada RNM tiene su primera verificación gratis (hasta 4). Para seguir vigilándolos después necesitas un plan mensual."));
   }
   var acc = el("div", "acciones");
-  var ver = el("button", "btn", activo ? (tipoActual === "semanal" ? "Pasar al plan manual" : "Ver detalles del plan") : "Elegir un plan");
+  var ver = el("button", "btn", activo ? (planSuperior(tipoActual) ? "Pasar al " + PLANES[planSuperior(tipoActual)].etiqueta.toLowerCase() : "Ver detalles del plan") : "Elegir un plan");
   ver.type = "button";
   if (!abiertos) {
     ver.disabled = true;
     estado.appendChild(el("p", "sub", "Cuando tengas un RNM en seguimiento podrás elegir un plan."));
   }
-  ver.addEventListener("click", function () { ampliando = tipoActual === "semanal"; planElegido = ampliando ? "manual" : planElegido; cartelPlanes(regs, plan); abrirModalPlanes(); });
+  ver.addEventListener("click", function () { ampliando = !!(activo && planSuperior(tipoActual)); planElegido = ampliando ? planSuperior(tipoActual) : planElegido; cartelPlanes(regs, plan); abrirModalPlanes(); });
   if (!(activo && plan.cancelado_at && tipoActual === "manual")) acc.appendChild(ver);
   if (activo && !plan.cancelado_at) {
     var canc = el("button", "btn sec btn-cancelar-plan", "Cancelar plan");
@@ -1195,14 +1212,15 @@ function renderizarPlanes(regs, plan) {
 
   var precios = el("div", "tarjeta");
   precios.appendChild(el("h3", "", "Elige tu plan"));
-  precios.appendChild(el("p", "sub", "Los dos incluyen hasta 4 RNM y la primera verificación gratis de cada uno."));
+  precios.appendChild(el("p", "sub", "Los tres incluyen hasta 4 RNM y la primera verificación gratis de cada uno."));
   var grid = el("div", "planes-op");
-  ["semanal", "manual"].forEach(function (tipo) {
+  ["quincenal", "semanal", "manual"].forEach(function (tipo) {
     var esActual = tipoActual === tipo;
-    grid.appendChild(tarjetaPlan(tipo, { sel: !esActual && planElegido === tipo, actual: esActual,
+    var inferior = !!tipoActual && ORDEN_PLAN[tipo] < ORDEN_PLAN[tipoActual];
+    grid.appendChild(tarjetaPlan(tipo, { sel: !esActual && !inferior && planElegido === tipo, actual: esActual, off: esActual || inferior,
       onClick: function () {
         if (!abiertos) return navegarA("nueva-consulta");
-        planElegido = tipo; ampliando = tipoActual === "semanal" && tipo === "manual";
+        planElegido = tipo; ampliando = !!tipoActual && ORDEN_PLAN[tipo] > ORDEN_PLAN[tipoActual];
         cartelPlanes(regs, plan); abrirModalPlanes();
       } }));
   });
@@ -1398,14 +1416,9 @@ function rastreador(x, opciones) {
 }
 function planLinea(regs, plan) {
   var activo = !!plan && new Date(plan.vence_at) > new Date();
-  var sinCubrir = regs.some(function (x) { return !x.cerrado && !x.cubierto && (!!x.ultimo_resultado || x.requiere_pago); });
-  if (sinCubrir) {
-    var b = el("button", "plan-linea aviso", ""); b.type = "button";
-    b.innerHTML = '<span>Activa un plan para que se actualice cada semana</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
-    b.addEventListener("click", function () { navegarA("planes"); });
-    return b;
-  }
-  if (activo) { var d = el("div", "plan-linea ok", ""); d.innerHTML = SVG_OK + "<span>Seguimiento semanal activo · hasta " + fechaCorta(plan.vence_at) + "</span>"; return d; }
+  var alerta = avisoPlan(regs);
+  if (alerta) return alerta;
+  if (activo) { var d = el("div", "plan-linea ok", ""); d.innerHTML = SVG_OK + "<span>Seguimiento " + (plan.tipo === "quincenal" ? "quincenal" : "semanal") + " activo · hasta " + fechaCorta(plan.vence_at) + "</span>"; return d; }
   return null;
 }
 
@@ -1979,18 +1992,15 @@ function construirDetalle(id) {
   if (e.traslado) { /* mientras se traslada no se indica dónde retirar */ }
   else if (x.unidad_pf && (x.estado_pf === "listo" || e.corto === "Listo")) cont.appendChild(dondeRetirarCompacto(x));
   else if (x.estado_pf === "listo" && WHATSAPP) cont.appendChild(avisoOtraCiudad(x));
-  if (!x.cerrado && !x.cubierto && x.ultimo_resultado) {
-    var pl = el("button", "enlace-plan", "Activar seguimiento semanal"); pl.type = "button";
-    pl.addEventListener("click", function () { navegarA("planes"); });
-    cont.appendChild(pl);
-  }
+  var alertaDetalle = (!x.cerrado && !x.cubierto && x.ultimo_resultado) ? avisoPlan([x]) : null;
+  if (alertaDetalle) cont.appendChild(alertaDetalle);
 
   // 4. Todo lo demás, a un toque
   var mas = el("details", "mas-detalles");
   mas.appendChild(el("summary", "", "Más detalles"));
   var cuerpo = el("div", "md-cuerpo");
   var datos = el("div", "review-summary-card");
-  var filas = [["Última revisión", x.ultima_consulta_at ? fechaHora(x.ultima_consulta_at) : "Aún sin revisión"], ["Seguimiento semanal", x.cubierto ? "Activo hasta " + fechaCorta(x.planVence) : "No activo"]];
+  var filas = [["Última revisión", x.ultima_consulta_at ? fechaHora(x.ultima_consulta_at) : "Aún sin revisión"], ["Seguimiento automático", x.cubierto ? "Activo hasta " + fechaCorta(x.planVence) : "No activo"]];
   if (x.unidad_pf) filas.push(["Unidad de la PF", etiquetaUnidad(x.unidad_pf)]);
   if (x.validez) { var vf = x.validez.split("-"); filas.push(["Validez del carné", vf[2] + "/" + vf[1] + "/" + vf[0] + (x.carne_validacion === "autentico" ? " ✓ verificada en la PF" : "")]); }
   if (x.carne_validacion === "no_valido") filas.push(["Carné", "La PF no lo reconoce: revisa tus datos o escríbenos"]);
