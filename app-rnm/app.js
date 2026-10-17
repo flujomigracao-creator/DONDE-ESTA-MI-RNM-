@@ -595,6 +595,7 @@ if (btnConfEnviar) {
     irAPasoConsulta(1);
     var nuevo = registrosCargados.find(function (x) { return x.rnm === consultaPendiente.rnm; });
     if (nuevo) abrirDetalleRnm(nuevo.id); else navegarA("inicio");
+    opinionPendienteMostrada = false; setTimeout(function () { revisarOpinionPendiente("registro"); }, 30000); // respaldo: lo normal es pedirla al cerrar el aviso del plan
   });
 }
 
@@ -1066,7 +1067,7 @@ function cerrarModalPlanes() {
   $("modal-planes").classList.add("oculto");
   document.body.style.overflow = "";
   if (estabaAbierto && focoAntesModal && document.contains(focoAntesModal)) { try { focoAntesModal.focus(); } catch (e) { /* sin foco */ } }
-  if (estabaAbierto) focoAntesModal = null;
+  if (estabaAbierto) { focoAntesModal = null; setTimeout(function () { revisarOpinionPendiente("registro"); }, 1200); }
 }
 $("modal-cerrar").addEventListener("click", cerrarModalPlanes);
 $("modal-planes").addEventListener("click", function (e) { if (e.target === this && !pagandoPlan) cerrarModalPlanes(); });
@@ -1802,8 +1803,8 @@ function pintarEstrellas(n) {
 function abrirOpinion(tipo, registroId, rnmFin) {
   var m = $("modal-opinion"); if (!m) return;
   opinionActual = { tipo: tipo, registroId: registroId || null }; opinionEstrellas = 0;
-  var tit = tipo === "rnm" ? "¿Qué tal te fue con el seguimiento de tu RNM" + (rnmFin ? " terminado en " + rnmFin : "") + "?" : (tipo === "atencion" ? "¿Te ayudó nuestra atención al cliente?" : "¿Cómo calificas la app?");
-  var sub = tipo === "rnm" ? "Tu opinión nos ayuda a mejorar y a que otras personas confíen." : (tipo === "atencion" ? "Cuéntanos cómo te atendimos." : "Valora tu experiencia con «¿Dónde está mi RNM?».");
+  var tit = tipo === "rnm" ? "¿Qué tal te fue con el seguimiento de tu RNM" + (rnmFin ? " terminado en " + rnmFin : "") + "?" : (tipo === "atencion" ? "¿Te ayudó nuestra atención al cliente?" : (tipo === "registro" ? "¿Qué tal fue registrar tu RNM?" : "¿Cómo calificas la app?"));
+  var sub = tipo === "rnm" ? "Tu opinión nos ayuda a mejorar y a que otras personas confíen." : (tipo === "atencion" ? "Cuéntanos cómo te atendimos." : (tipo === "registro" ? "Cuéntanos si fue fácil y claro. Así mejoramos la app para quien viene detrás." : "Valora tu experiencia con «¿Dónde está mi RNM?»."));
   $("op-titulo").textContent = tit; $("op-sub").textContent = sub;
   var box = $("op-estrellas");
   if (!box.children.length) {
@@ -1854,12 +1855,13 @@ async function enviarOpinion() {
   }
   mostrarGraciasOpinion(opinionEstrellas);
 }
-async function revisarOpinionPendiente() {
+async function revisarOpinionPendiente(soloTipo) {
   if (opinionPendienteMostrada || !usuarioActual) return;
   try { if (Number(localStorage.getItem("rnm_opinion_snooze") || 0) > Date.now()) return; } catch (e) { /* sin almacenamiento */ }
   if (document.querySelector(".modal:not(.oculto), .camara:not(.oculto)")) return; // no interrumpe un pago ni una conversación
   var r = await sb.rpc("rnm_opinion_pendiente");
   if (r.error || !r.data) return;
+  if (soloTipo && r.data.tipo !== soloTipo) return;
   opinionPendienteMostrada = true;
   abrirOpinion(r.data.tipo, r.data.registro_id, r.data.rnm_fin);
 }
