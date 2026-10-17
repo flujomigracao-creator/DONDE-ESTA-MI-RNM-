@@ -1113,7 +1113,7 @@ body:has(.modal:not(.oculto)) .consent-pixel, body:has(.camara:not(.oculto)) .co
 .op-pub-caja figcaption { font-size: 0.8rem; font-weight: 700; color: var(--text-muted); }
 
 /* Login: mapa estilizado de Brasil (Boa Vista, Brasília, São Paulo, Curitiba…) de fondo, con velo claro para leer el texto */
-#vista-login { background: linear-gradient(180deg, rgba(244,248,255,.30) 0%, rgba(244,248,255,.58) 40%, rgba(244,248,255,.84) 100%), url("fondo-brasil.jpg") center top / cover no-repeat; background-color: var(--canvas); }
-#vista-login .fig-barra { background: rgba(255,255,255,.82); }
-#vista-login .fig-hero-marca { background: rgba(255,255,255,.7); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+#vista-login { background: linear-gradient(180deg, rgba(120,170,235,.10) 0%, rgba(150,195,245,.38) 40%, rgba(190,218,252,.72) 100%), url("fondo-brasil.jpg") center top / cover no-repeat; background-color: var(--canvas); }
+#vista-login .fig-barra { background: rgba(255,255,255,.88); }
+#vista-login .fig-hero-marca { background: rgba(255,255,255,.62); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
 #vista-login .fig-bene, #vista-login .fig-confianza { text-shadow: 0 0 10px rgba(244,248,255,.9); }
