@@ -1060,3 +1060,7 @@ body:has(.modal:not(.oculto)) .consent-pixel, body:has(.camara:not(.oculto)) .co
 .chat-envio { display: flex; gap: 8px; align-items: flex-end; margin-top: 6px; }
 .chat-envio textarea { flex: 1; min-height: 48px; max-height: 120px; resize: none; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); font: inherit; font-size: 16px; }
 .chat-envio .btn { min-height: 48px; }
+
+/* Punto verde en el botón Actualizar cuando la app recibe los cambios en vivo */
+#btn-actualizar { position: relative; }
+#btn-actualizar.en-vivo::after { content: ""; position: absolute; top: 4px; right: 4px; width: 9px; height: 9px; border-radius: 50%; background: #13a04b; box-shadow: 0 0 0 2px #fff; }

@@ -213,6 +213,7 @@ async function mostrar(session) {
     perfilActual = null;
     if (habiaSesion && !salidaManual) msg("msg-login", "Tu sesión necesita actualizarse. Inicia sesión de nuevo.");
     salidaManual = false;
+    detenerTiempoReal();
     return vista("login");
   }
   asignarAliado();
@@ -221,7 +222,7 @@ async function mostrar(session) {
   perfilActual = r.data || null;
   actualizarInfoUsuario(session.user, perfilActual);
   if (!perfilActual) { abrirPerfil(false); }
-  else { vista("app"); navegarA(seccionInicial()); cargarRegistros(); }
+  else { vista("app"); navegarA(seccionInicial()); cargarRegistros(); iniciarTiempoReal(); }
 }
 
 /* ---------- Onboarding / perfil ---------- */
@@ -1090,7 +1091,8 @@ function actualizarPlanes(regs, plan) {
   if (nuevos.length && cerrada) { marcarVistos(nuevos.map(function (x) { return x.id; })); abrirModalPlanes(); }
 }
 
-async function cargarRegistros() {
+var firmaRegistros = ""; // huella de lo último que se dibujó: el refresco automático solo redibuja si cambió algo
+async function cargarRegistros(soloSiCambia) {
   actualizarAvisoRegistro();
   var q = await Promise.all([
     sb.from("rnm_registros")
@@ -1102,6 +1104,9 @@ async function cargarRegistros() {
   if (r.error || !r.data) return;
   var plan = q[1].data || null;
   var activo = !!plan && new Date(plan.vence_at) > new Date();
+  var firma = JSON.stringify([r.data, plan, activo]);
+  if (soloSiCambia && firma === firmaRegistros) return;
+  firmaRegistros = firma;
   // Los RNM abiertos se cubren por orden de registro hasta el número de cupos del plan; uno ya listo o entregado no ocupa cupo
   // (igual que en la base de datos).
   var puesto = 0;
@@ -1836,17 +1841,58 @@ function construirDetalle(id) {
   mas.appendChild(cuerpo); cont.appendChild(mas);
 }
 
-/* El estado lo actualiza el equipo de FLUJO: la app se refresca sola cada minuto mientras está visible. */
+/* El estado lo actualiza el equipo de FLUJO y la app se actualiza sola (ver «Actualización automática»); este botón queda como respaldo. */
 $("btn-actualizar").addEventListener("click", function () {
   var b = this; b.disabled = true;
-  cargarRegistros().then(function () { setTimeout(function () { b.disabled = false; }, 800); if (window.toast) toast("Pantalla actualizada", "ok"); });
+  cargarRegistros().then(function () { setTimeout(function () { b.disabled = false; }, 800); ultimaActualizacion = Date.now(); if (window.toast) toast("Pantalla actualizada", "ok"); });
 });
 setInterval(function () { // mientras se confirma un cobro, revisa cada 8 segundos
   if (esperandoPago && Date.now() - esperandoPago < 180000 && usuarioActual) cargarRegistros();
 }, 8000);
-setInterval(function () {
-  if (document.visibilityState === "visible" && usuarioActual && !$("vista-app").classList.contains("oculto")) cargarRegistros();
-}, 60000);
+/* ---------- Actualización automática (sin tocar «Actualizar») ----------
+   1) Tiempo real: la base avisa al instante cuando cambia uno de TUS RNM, tu plan o un mensaje del equipo.
+   2) Al volver a la app (abrirla de nuevo, recuperar internet): se actualiza enseguida.
+   3) Respaldo: cada 30 s mientras la pantalla está visible. */
+var canalVivo = null, retrasoVivo = null, refrescando = false, ultimaActualizacion = Date.now();
+function foto(regs) { var m = {}; (regs || []).forEach(function (r) { m[r.id] = [r.estado_pf, r.unidad_pf, r.cambio_direccion, r.cerrado].join("|"); }); return m; }
+function aplicacionVisible() { return !!usuarioActual && !$("vista-app").classList.contains("oculto"); }
+async function refrescarSilencioso() {
+  if (!aplicacionVisible() || refrescando) return;
+  refrescando = true;
+  var antes = foto(registrosCargados);
+  try { await cargarRegistros(true); cargarMensajes(); } catch (e) { /* sin conexión: se reintenta solo */ }
+  refrescando = false; ultimaActualizacion = Date.now();
+  // Aviso discreto si algún RNM cambió de estado mientras mirabas la pantalla.
+  var despues = foto(registrosCargados), cambiados = registrosCargados.filter(function (r) { return antes[r.id] !== undefined && antes[r.id] !== despues[r.id]; });
+  if (cambiados.length && window.toast) {
+    var e1 = estadoPresentacion(cambiados[0]);
+    toast("Novedad en tu RNM " + cambiados[0].rnm + ": " + (e1.corto || "estado actualizado"), "ok");
+  }
+}
+function programarRefresco() { clearTimeout(retrasoVivo); retrasoVivo = setTimeout(refrescarSilencioso, 700); }
+function detenerTiempoReal() {
+  clearTimeout(retrasoVivo);
+  if (canalVivo) { try { sb.removeChannel(canalVivo); } catch (e) { /* ya cerrado */ } canalVivo = null; }
+  var b = $("btn-actualizar"); if (b) b.classList.remove("en-vivo");
+}
+function iniciarTiempoReal() {
+  detenerTiempoReal();
+  if (!usuarioActual || typeof sb.channel !== "function") return;
+  var filtro = "user_id=eq." + usuarioActual.id;
+  canalVivo = sb.channel("vivo-" + usuarioActual.id)
+    .on("postgres_changes", { event: "*", schema: "public", table: "rnm_registros", filter: filtro }, programarRefresco)
+    .on("postgres_changes", { event: "*", schema: "public", table: "rnm_planes", filter: filtro }, programarRefresco)
+    .on("postgres_changes", { event: "INSERT", schema: "public", table: "rnm_mensajes", filter: filtro }, function () { cargarMensajes(); })
+    .subscribe(function (estado) {
+      var b = $("btn-actualizar"); if (b) b.classList.toggle("en-vivo", estado === "SUBSCRIBED");
+      if (estado === "SUBSCRIBED") programarRefresco(); // recupera lo que pudo pasar mientras no estaba conectado
+    });
+}
+document.addEventListener("visibilitychange", function () { if (document.visibilityState === "visible" && Date.now() - ultimaActualizacion > 10000) refrescarSilencioso(); });
+window.addEventListener("focus", function () { if (Date.now() - ultimaActualizacion > 10000) refrescarSilencioso(); });
+window.addEventListener("online", function () { refrescarSilencioso(); iniciarTiempoReal(); });
+window.addEventListener("pageshow", function (e) { if (e.persisted) refrescarSilencioso(); });
+setInterval(function () { if (document.visibilityState === "visible") refrescarSilencioso(); }, 30000);
 
 function el(tag, cls, texto) {
   var n = document.createElement(tag);
