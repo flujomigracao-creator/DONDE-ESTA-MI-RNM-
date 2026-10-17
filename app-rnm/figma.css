@@ -1090,3 +1090,24 @@ body:has(.modal:not(.oculto)) .consent-pixel, body:has(.camara:not(.oculto)) .co
 #modal-chat .chat-envio textarea { min-height: 54px; font-size: 16px; }
 #modal-chat .chat-opciones { flex: none; max-height: 34%; overflow-y: auto; }
 #modal-chat .chip-faq { font-size: 0.92rem !important; padding: 9px 14px !important; min-height: 42px !important; }
+
+/* Opiniones y valoraciones */
+#modal-opinion .op-caja { max-width: 440px; text-align: center; }
+#modal-opinion h3 { margin: 4px 24px 4px; font-size: 1.2rem; }
+.op-estrellas { display: flex; justify-content: center; gap: 4px; margin: 14px 0 4px; }
+#modal-opinion .op-estrella { background: transparent !important; background-image: none !important; box-shadow: none !important; color: #D5DCE8 !important; border: 0 !important; width: 52px !important; min-height: 52px !important; height: 52px; padding: 0 !important; font-size: 2.6rem !important; line-height: 1; border-radius: 12px !important; cursor: pointer; transition: transform .12s ease, color .12s ease; }
+#modal-opinion .op-estrella.on { color: #F5B301 !important; }
+#modal-opinion .op-estrella:active { transform: scale(1.15); }
+.op-etiqueta { margin: 0 0 10px; font-weight: 800; color: #0A2A5E; min-height: 1.4em; }
+#modal-opinion textarea { width: 100%; min-height: 84px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); font: inherit; font-size: 16px; resize: vertical; }
+.op-publicar { display: flex; gap: 8px; align-items: flex-start; text-align: left; margin: 10px 0 0; font-size: 0.86rem; color: var(--text-muted); }
+.op-publicar.oculto { display: none; }
+.op-publicar input { width: 20px; height: 20px; margin-top: 2px; flex: none; }
+.opiniones-publicas { margin: 14px 0 6px; display: grid; gap: 8px; text-align: left; }
+.opiniones-publicas.oculto { display: none; }
+.op-pub-resumen { margin: 0; text-align: center; font-size: 0.92rem; color: var(--text-muted); }
+.op-pub-resumen b { color: #F5B301; font-size: 1.05rem; }
+.op-pub-caja { margin: 0; padding: 12px 14px; border-radius: 14px; background: #fff; border: 1px solid var(--line); }
+.op-pub-estrellas { color: #F5B301; letter-spacing: 2px; font-size: 0.95rem; }
+.op-pub-caja blockquote { margin: 4px 0; font-size: 0.92rem; line-height: 1.35; color: var(--text-main); }
+.op-pub-caja figcaption { font-size: 0.8rem; font-weight: 700; color: var(--text-muted); }

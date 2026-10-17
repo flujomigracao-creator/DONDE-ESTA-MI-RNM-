@@ -222,7 +222,7 @@ async function mostrar(session) {
   perfilActual = r.data || null;
   actualizarInfoUsuario(session.user, perfilActual);
   if (!perfilActual) { abrirPerfil(false); }
-  else { vista("app"); navegarA(seccionInicial()); cargarRegistros(); iniciarTiempoReal(); }
+  else { vista("app"); navegarA(seccionInicial()); cargarRegistros(); iniciarTiempoReal(); setTimeout(revisarOpinionPendiente, 6000); }
 }
 
 /* ---------- Onboarding / perfil ---------- */
@@ -1737,7 +1737,7 @@ async function abrirChat() {
 }
 function cerrarChat() {
   var m = $("modal-chat"); if (!m) return;
-  m.classList.add("oculto"); document.body.style.overflow = "";
+  m.classList.add("oculto"); document.body.style.overflow = ""; setTimeout(revisarOpinionPendiente, 900);
   if (pollChat) { clearInterval(pollChat); pollChat = null; }
 }
 async function pedirPersona() {
@@ -1790,6 +1790,105 @@ async function enviarChat() {
   var env = $("chat-enviar"), txt = $("chat-texto");
   if (env) env.addEventListener("click", enviarChat);
   if (txt) txt.addEventListener("keydown", function (e) { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); enviarChat(); } });
+})();
+
+/* ---------- Opiniones y valoraciones ---------- */
+var ETIQUETAS_ESTRELLAS = ["Muy mala", "Mala", "Regular", "Buena", "Excelente"];
+var opinionActual = null, opinionEstrellas = 0, opinionPendienteMostrada = false;
+function pintarEstrellas(n) {
+  document.querySelectorAll("#op-estrellas .op-estrella").forEach(function (b, i) { b.classList.toggle("on", i < n); b.setAttribute("aria-checked", i === n - 1 ? "true" : "false"); });
+  var e = $("op-etiqueta"); if (e) e.textContent = n ? ETIQUETAS_ESTRELLAS[n - 1] : "Toca las estrellas";
+}
+function abrirOpinion(tipo, registroId, rnmFin) {
+  var m = $("modal-opinion"); if (!m) return;
+  opinionActual = { tipo: tipo, registroId: registroId || null }; opinionEstrellas = 0;
+  var tit = tipo === "rnm" ? "¿Qué tal te fue con el seguimiento de tu RNM" + (rnmFin ? " terminado en " + rnmFin : "") + "?" : (tipo === "atencion" ? "¿Te ayudó nuestra atención al cliente?" : "¿Cómo calificas la app?");
+  var sub = tipo === "rnm" ? "Tu opinión nos ayuda a mejorar y a que otras personas confíen." : (tipo === "atencion" ? "Cuéntanos cómo te atendimos." : "Valora tu experiencia con «¿Dónde está mi RNM?».");
+  $("op-titulo").textContent = tit; $("op-sub").textContent = sub;
+  var box = $("op-estrellas");
+  if (!box.children.length) {
+    for (var i = 1; i <= 5; i++) (function (n) {
+      var b = el("button", "op-estrella", "★"); b.type = "button"; b.setAttribute("role", "radio"); b.setAttribute("aria-label", n + (n === 1 ? " estrella" : " estrellas"));
+      b.addEventListener("click", function () { opinionEstrellas = n; pintarEstrellas(n); msg("msg-opinion", ""); });
+      box.appendChild(b);
+    })(i);
+  }
+  pintarEstrellas(0);
+  $("op-comentario").value = ""; $("op-publicar").checked = false; $("op-publicar-fila").classList.add("oculto"); msg("msg-opinion", "");
+  $("op-formulario").classList.remove("oculto"); $("op-gracias").classList.add("oculto");
+  m.classList.remove("oculto"); document.body.style.overflow = "hidden";
+}
+function cerrarOpinion() { var m = $("modal-opinion"); if (!m) return; m.classList.add("oculto"); document.body.style.overflow = ""; }
+function posponerOpinion() {
+  try { localStorage.setItem("rnm_opinion_snooze", String(Date.now() + 7 * 86400000)); } catch (e) { /* sin almacenamiento */ }
+  cerrarOpinion();
+}
+function mostrarGraciasOpinion(estrellas) {
+  $("op-formulario").classList.add("oculto"); $("op-gracias").classList.remove("oculto");
+  var acc = $("op-gracias-acc"); acc.textContent = "";
+  if (estrellas >= 4) {
+    $("op-gracias-titulo").textContent = "¡Gracias! Nos alegra mucho 🙌";
+    $("op-gracias-texto").textContent = "Si conoces a alguien que está esperando su RNM, compárteles la app: es gratis y les muestra en qué estado está.";
+    var c = el("button", "btn", "Compartir por WhatsApp"); c.type = "button";
+    c.addEventListener("click", function () { window.open("https://wa.me/?text=" + encodeURIComponent("Mira esta app gratis para ver en qué estado está tu RNM: " + location.origin), "_blank", "noopener"); });
+    acc.appendChild(c);
+  } else {
+    $("op-gracias-titulo").textContent = "Gracias por contarnos";
+    $("op-gracias-texto").textContent = "Vamos a revisarlo para mejorar. Si necesitas ayuda ahora mismo, escríbenos en Atención al cliente.";
+    var h = el("button", "btn", "Atención al cliente"); h.type = "button";
+    h.addEventListener("click", function () { cerrarOpinion(); abrirChat(); });
+    acc.appendChild(h);
+  }
+  var ok = el("button", "btn sec", "Cerrar"); ok.type = "button"; ok.addEventListener("click", cerrarOpinion); acc.appendChild(ok);
+}
+async function enviarOpinion() {
+  if (!opinionActual) return;
+  if (!opinionEstrellas) return msg("msg-opinion", "Toca las estrellas para valorar.");
+  var btn = $("op-enviar"); btn.disabled = true;
+  var texto = $("op-comentario").value.trim();
+  var r = await sb.rpc("rnm_opinion_enviar", { p_tipo: opinionActual.tipo, p_estrellas: opinionEstrellas, p_comentario: texto || null, p_publicar: !!texto && $("op-publicar").checked, p_registro: opinionActual.registroId });
+  btn.disabled = false;
+  if (r.error) {
+    if ((r.error.message || "").indexOf("ya_opinaste") >= 0) { msg("msg-opinion", "Ya diste tu opinión sobre esto. ¡Gracias!"); return; }
+    return msg("msg-opinion", "No pudimos guardar tu opinión. Intenta de nuevo.");
+  }
+  mostrarGraciasOpinion(opinionEstrellas);
+}
+async function revisarOpinionPendiente() {
+  if (opinionPendienteMostrada || !usuarioActual) return;
+  try { if (Number(localStorage.getItem("rnm_opinion_snooze") || 0) > Date.now()) return; } catch (e) { /* sin almacenamiento */ }
+  if (document.querySelector(".modal:not(.oculto), .camara:not(.oculto)")) return; // no interrumpe un pago ni una conversación
+  var r = await sb.rpc("rnm_opinion_pendiente");
+  if (r.error || !r.data) return;
+  opinionPendienteMostrada = true;
+  abrirOpinion(r.data.tipo, r.data.registro_id, r.data.rnm_fin);
+}
+async function cargarOpinionesPublicas() {
+  var box = $("opiniones-publicas"); if (!box) return;
+  var r = await sb.rpc("rnm_opiniones_publicas");
+  if (r.error || !r.data) return;
+  var res = r.data.resumen, lista = r.data.opiniones || [];
+  if (!res && !lista.length) return;
+  box.textContent = "";
+  if (res) {
+    var cab = el("p", "op-pub-resumen"); cab.appendChild(el("b", "op-pub-estrellas", "★ " + String(res.promedio).replace(".", ",")));
+    cab.appendChild(document.createTextNode(" · " + res.total + " opiniones de clientes")); box.appendChild(cab);
+  }
+  lista.slice(0, 3).forEach(function (o) {
+    var c = el("figure", "op-pub-caja");
+    c.appendChild(el("div", "op-pub-estrellas", "★★★★★".slice(0, o.estrellas)));
+    c.appendChild(el("blockquote", "", "«" + o.comentario + "»")); c.appendChild(el("figcaption", "", o.nombre));
+    box.appendChild(c);
+  });
+  box.classList.remove("oculto");
+}
+(function () {
+  var c = $("op-cerrar"); if (c) c.addEventListener("click", posponerOpinion);
+  var d = $("op-despues"); if (d) d.addEventListener("click", posponerOpinion);
+  var e = $("op-enviar"); if (e) e.addEventListener("click", enviarOpinion);
+  var t = $("op-comentario"); if (t) t.addEventListener("input", function () { $("op-publicar-fila").classList.toggle("oculto", !t.value.trim()); });
+  var p = $("btn-opinion-perfil"); if (p) p.addEventListener("click", function () { abrirOpinion("app"); });
+  cargarOpinionesPublicas();
 })();
 
 function abrirCorregir(x) {

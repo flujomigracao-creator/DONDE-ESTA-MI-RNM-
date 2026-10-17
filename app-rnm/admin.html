@@ -83,6 +83,10 @@
   .burbuja.equipo { align-self: flex-end; background: var(--azul); color: #fff; border-bottom-right-radius: 4px; }
   .burbuja.bot { align-self: flex-start; background: #EAF7EE; color: #123B22; border-bottom-left-radius: 4px; }
   @media (prefers-color-scheme: dark) { .burbuja.bot { background: #14391F; color: #CFF5DC; } }
+  .estrellas { color: #F5B301; letter-spacing: 2px; font-size: 1.05rem; white-space: nowrap; }
+  .etiqueta { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 0.72rem; font-weight: 800; background: var(--linea); color: var(--suave); margin-right: 4px; }
+  .etiqueta.ok { background: #DDF3E4; color: #13803D; } .etiqueta.aviso { background: #FFF0CC; color: #8A5200; }
+  .persona .comentario { margin: 0; font-size: 0.94rem; line-height: 1.4; overflow-wrap: anywhere; }
   .persona .pide { background: var(--rojo); color: #fff; border-radius: 999px; padding: 2px 9px; font-size: 0.74rem; font-weight: 800; }
   @media (prefers-color-scheme: dark) { .burbuja.equipo { color: #0B1220; } }
   .dialogo textarea { width: 100%; min-height: 84px; margin-top: 8px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--linea); background: var(--fondo); color: var(--texto); font: inherit; font-size: 16px; resize: vertical; }
@@ -228,6 +232,74 @@
     app.appendChild(barra); app.appendChild(cont); pintarPersonas(cont);
   }
 
+  var opinionesCargadas = { resumen: null, lista: [] };
+  var estadoOpiniones = { filtro: null };
+  var TIPO_OPINION = { rnm: "Seguimiento del RNM", atencion: "Atención al cliente", app: "La app" };
+  var estrellasTxt = function (n) { return "★★★★★".slice(0, n) + "☆☆☆☆☆".slice(0, 5 - n); };
+  function accionOpinion(id, accion, boton) {
+    boton.disabled = true;
+    sb.rpc("rnm_admin_opinion_accion", { p_id: id, p_accion: accion }).then(function (x) {
+      if (x.error) { boton.disabled = false; window.alert("No se pudo hacer: " + (x.error.message || "error")); return; }
+      cargar();
+    });
+  }
+  function pintarOpiniones(cont) {
+    cont.textContent = "";
+    var f = estadoOpiniones.filtro;
+    var lista = opinionesCargadas.lista.filter(function (o) {
+      if (f === "atender") return o.estrellas <= 2 && !o.atendida_at;
+      if (f === "aprobar") return o.publicar_autorizado && o.estado === "nueva";
+      if (f === "aprobadas") return o.estado === "aprobada";
+      return true;
+    });
+    if (!lista.length) { cont.appendChild(e("p", "vacio", "No hay opiniones en este filtro.")); return; }
+    lista.forEach(function (o) {
+      var t = e("div", "persona"), cab = e("div", "cab"), tit = e("div");
+      tit.appendChild(e("b", "", o.cliente)); tit.appendChild(e("br")); tit.appendChild(e("small", "", (TIPO_OPINION[o.tipo] || o.tipo) + " · " + fecha(o.creado_at)));
+      cab.appendChild(tit); cab.appendChild(e("span", "estrellas", estrellasTxt(o.estrellas))); t.appendChild(cab);
+      if (o.comentario) t.appendChild(e("p", "comentario", "«" + o.comentario + "»")); else t.appendChild(e("p", "vacio", "Sin comentario."));
+      var et = e("div");
+      if (o.publicar_autorizado) et.appendChild(e("span", "etiqueta ok", "Autoriza mostrarla"));
+      if (o.estado === "aprobada") et.appendChild(e("span", "etiqueta ok", "Se muestra en la app"));
+      if (o.estado === "oculta") et.appendChild(e("span", "etiqueta", "Oculta"));
+      if (o.estrellas <= 2) et.appendChild(e("span", "etiqueta aviso", o.atendida_at ? "Atendida" : "Por atender"));
+      t.appendChild(et);
+      var acc = e("div", "acc");
+      if (o.publicar_autorizado && o.estado !== "aprobada") { var a = e("button", "msg", "Aprobar y mostrar"); a.type = "button"; a.addEventListener("click", function () { accionOpinion(o.id, "aprobar", a); }); acc.appendChild(a); }
+      if (o.estado === "aprobada") { var q = e("button", "peligro", "Dejar de mostrar"); q.type = "button"; q.addEventListener("click", function () { accionOpinion(o.id, "ocultar", q); }); acc.appendChild(q); }
+      if (o.estrellas <= 2 && !o.atendida_at) { var m = e("button", "", "Marcar atendida"); m.type = "button"; m.addEventListener("click", function () { accionOpinion(o.id, "atendida", m); }); acc.appendChild(m); }
+      var cli = clientesCargados.filter(function (c) { return c.user_id === o.user_id; })[0];
+      if (cli) { var w = e("button", "", "Escribir al cliente"); w.type = "button"; w.addEventListener("click", function () { abrirHilo(cli); }); acc.appendChild(w); }
+      var link = wa(o.telefono); if (link) { var l = e("a", "", "WhatsApp"); l.href = link; l.target = "_blank"; l.rel = "noopener"; acc.appendChild(l); }
+      t.appendChild(acc); cont.appendChild(t);
+    });
+  }
+  function dibujarOpiniones() {
+    seccion("Opiniones y valoraciones");
+    var r = opinionesCargadas.resumen || {}, lista = opinionesCargadas.lista || [];
+    rejilla([
+      cifra("Valoración media", r.total ? String(r.promedio).replace(".", ",") + " ★" : "—", num(r.total) + " opiniones", r.total && r.promedio >= 4 ? "ok" : ""),
+      cifra("Positivas (4-5 ★)", pct(r.positivas, r.total), num(r.positivas) + " opiniones"),
+      cifra("Últimos 30 días", num(r.ultimos_30d), "opiniones nuevas"),
+      cifra("Bajas por atender", num(r.bajas_sin_atender), "1-2 estrellas sin atender", r.bajas_sin_atender ? "mal" : "ok")
+    ]);
+    var dist = e("div", "caja"); dist.style.marginTop = "10px"; dist.appendChild(e("b", "", "Reparto por estrellas"));
+    var d = r.distribucion || {};
+    filas(dist, [5, 4, 3, 2, 1].map(function (n) { return [n + " ★", Number(d[String(n)] || 0), n >= 4 ? "var(--verde)" : (n === 3 ? "var(--ambar)" : "var(--rojo)")]; }), r.total || 1);
+    app.appendChild(dist);
+    var porAtender = lista.filter(function (o) { return o.estrellas <= 2 && !o.atendida_at; }).length;
+    var porAprobar = lista.filter(function (o) { return o.publicar_autorizado && o.estado === "nueva"; }).length;
+    if (!estadoOpiniones.filtro) estadoOpiniones.filtro = porAtender ? "atender" : (porAprobar ? "aprobar" : "todas");
+    var barra = e("div", "barra"); barra.style.marginTop = "10px"; var cont = e("div", "personas");
+    var chips = [["atender", "Por atender (" + porAtender + ")"], ["aprobar", "Para aprobar (" + porAprobar + ")"], ["aprobadas", "Se muestran"], ["todas", "Todas (" + lista.length + ")"]];
+    var botones = chips.map(function (c) {
+      var b = e("button", "chip" + (estadoOpiniones.filtro === c[0] ? " on" : ""), c[1]); b.type = "button";
+      b.addEventListener("click", function () { estadoOpiniones.filtro = c[0]; botones.forEach(function (x, i) { x.className = "chip" + (chips[i][0] === c[0] ? " on" : ""); }); pintarOpiniones(cont); });
+      barra.appendChild(b); return b;
+    });
+    app.appendChild(barra); app.appendChild(cont); pintarOpiniones(cont);
+  }
+
   var clientesCargados = [];
   var estadoClientes = { filtro: "todos", busca: "" };
   var FUNCION_SIN = 0;
@@ -354,6 +426,10 @@
     if (cSin) alerta(cSin + " cliente(s) te escribieron (" + sinLeerTot + " mensajes) y esperan respuesta.", "mal");
     var cNoEnc = clientesCargados.filter(function (c) { return c.rnm_no_encontrado > 0; }).length;
     if (cNoEnc) alerta(cNoEnc + " cliente(s) tienen un RNM que la PF no encontró (probable error al escribirlo): avísales desde «Clientes y mensajes».", "");
+    var oBajas = (opinionesCargadas.resumen && opinionesCargadas.resumen.bajas_sin_atender) || 0;
+    if (oBajas) alerta(oBajas + " opinión(es) de 1-2 estrellas sin atender: conviene escribirle al cliente.", "mal");
+    var oAprobar = (opinionesCargadas.lista || []).filter(function (o) { return o.publicar_autorizado && o.estado === "nueva"; }).length;
+    if (oAprobar) alerta(oAprobar + " opinión(es) esperan tu aprobación para mostrarse en la app.", "");
     if (!hayAlerta) alerta("Todo en orden: sin alertas.", "ok");
     app.appendChild(al);
 
@@ -386,6 +462,7 @@
     dos.appendChild(emb);
 
     dibujarClientes();
+    dibujarOpiniones();
 
     // Suscripciones y compras
     seccion("Suscripciones y compras");
@@ -436,8 +513,8 @@
   }
 
   function cargar() {
-    Promise.all([sb.rpc("rnm_admin_resumen"), sb.rpc("rnm_admin_planes"), sb.rpc("rnm_admin_clientes")]).then(function (rs) {
-      var x = rs[0]; planesCargados = (rs[1] && rs[1].data) || []; clientesCargados = (rs[2] && rs[2].data) || [];
+    Promise.all([sb.rpc("rnm_admin_resumen"), sb.rpc("rnm_admin_planes"), sb.rpc("rnm_admin_clientes"), sb.rpc("rnm_admin_opiniones")]).then(function (rs) {
+      var x = rs[0]; planesCargados = (rs[1] && rs[1].data) || []; clientesCargados = (rs[2] && rs[2].data) || []; opinionesCargadas = (rs[3] && rs[3].data) || { resumen: null, lista: [] };
       if (x.error) {
         if (x.error.code === "42501" || /no_autorizado/.test(x.error.message || "")) return pantalla("Sin acceso", "Esta cuenta no tiene permiso para ver el panel.", [btn("Salir", function () { sb.auth.signOut().then(function () { location.reload(); }); })]);
         return pantalla("No se pudo cargar", "Revisa tu conexión e inténtalo de nuevo.", [btn("Reintentar", cargar)]);
