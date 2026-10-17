@@ -1078,3 +1078,15 @@ body:has(.modal:not(.oculto)) .consent-pixel, body:has(.camara:not(.oculto)) .co
 #modal-chat .chip-faq { background: #fff !important; background-image: none !important; color: #0E3F8E !important; border: 1.5px solid #C9D6EE !important; box-shadow: none !important; min-height: 38px !important; width: auto !important; padding: 7px 12px !important; border-radius: 999px !important; font-size: 0.84rem !important; font-weight: 700 !important; text-align: left; }
 #modal-chat .chip-faq.humano { color: #B3261E !important; border-color: #B3261E !important; }
 #modal-chat .chat-envio .btn { min-height: 48px !important; }
+
+/* Atención al cliente: ventana grande (casi pantalla completa en el celular), letra más cómoda */
+#modal-chat .modal-caja.chat-caja { width: 100%; max-width: 560px; height: 92dvh !important; max-height: 92dvh !important; padding: 18px 16px calc(14px + env(safe-area-inset-bottom, 0px)); }
+@media (min-width: 700px) { #modal-chat .modal-caja.chat-caja { height: min(88vh, 760px) !important; max-height: none !important; } }
+#modal-chat .chat-lista { flex: 1 1 auto; min-height: 0; gap: 10px; }
+#modal-chat .chat-burbuja { font-size: 1.02rem; padding: 11px 14px; max-width: 90%; }
+#modal-chat #chat-titulo { font-size: 1.25rem; margin: 0; }
+#modal-chat .chat-modo { font-size: 0.9rem; }
+#modal-chat .chat-envio { flex: none; margin-top: 8px; }
+#modal-chat .chat-envio textarea { min-height: 54px; font-size: 16px; }
+#modal-chat .chat-opciones { flex: none; max-height: 34%; overflow-y: auto; }
+#modal-chat .chip-faq { font-size: 0.92rem !important; padding: 9px 14px !important; min-height: 42px !important; }

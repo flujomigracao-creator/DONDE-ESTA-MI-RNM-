@@ -1645,7 +1645,7 @@ function construirHistorialDetalle(x) {
 }
 
 /* ---------- Atención al cliente: preguntas frecuentes → asistente virtual → persona ---------- */
-var mensajesSinLeer = 0, pollChat = null, modoSoporte = "bot", pendientesChat = [], esperandoBot = false, localesChat = [];
+var mensajesSinLeer = 0, pollChat = null, modoSoporte = "bot", pendientesChat = [], esperandoBot = false, localesChat = [], faqAbiertas = false;
 var FAQ_RAPIDAS = [
   ["¿Cada cuánto se revisa mi RNM?", "Una vez por semana (cada 7 días) mientras tengas un plan activo. La primera verificación de cada RNM es gratis. La revisión no es en tiempo real: si el estado cambia entre una y otra, lo verás en la siguiente. La app se actualiza sola, no tienes que hacer nada."],
   ["Mi RNM dice «No encontrado»", "Casi siempre es que el RNM o la fecha están mal escritos. Abre ese RNM y toca «Corregir RNM o fecha» (hasta 3 veces, sin costo): se vuelve a consultar al instante. Recuerda que el RNM suele llevar letras, por ejemplo A123456B."],
@@ -1674,7 +1674,7 @@ function burbujaChat(lista, clase, etiqueta, texto, hora) {
   b.appendChild(el("p", "", texto)); b.appendChild(el("small", "", (etiqueta ? etiqueta + " · " : "") + (hora ? fechaHora(hora) : "")));
   lista.appendChild(b); return b;
 }
-function pintarOpcionesChat() {
+function pintarOpcionesChat(hayConversacion) {
   var box = $("chat-opciones"); if (!box) return;
   box.textContent = "";
   var modo = $("chat-modo");
@@ -1683,15 +1683,23 @@ function pintarOpcionesChat() {
     return;
   }
   if (modo) modo.textContent = "Asistente virtual · responde al instante";
-  FAQ_RAPIDAS.forEach(function (f) {
-    var c = el("button", "chip-faq", f[0]); c.type = "button";
-    c.addEventListener("click", function () {
-      localesChat.push({ ts: Date.now(), clase: "yo", etiqueta: "", texto: f[0] });
-      localesChat.push({ ts: Date.now() + 1, clase: "bot", etiqueta: "Asistente", texto: f[1] });
-      pintarChat();
+  if (hayConversacion) {
+    var t = el("button", "chip-faq", faqAbiertas ? "Ocultar preguntas frecuentes ▴" : "Preguntas frecuentes ▾"); t.type = "button";
+    t.addEventListener("click", function () { faqAbiertas = !faqAbiertas; pintarOpcionesChat(true); });
+    box.appendChild(t);
+  }
+  if (!hayConversacion || faqAbiertas) {
+    FAQ_RAPIDAS.forEach(function (f) {
+      var c = el("button", "chip-faq", f[0]); c.type = "button";
+      c.addEventListener("click", function () {
+        faqAbiertas = false;
+        localesChat.push({ ts: Date.now(), clase: "yo", etiqueta: "", texto: f[0] });
+        localesChat.push({ ts: Date.now() + 1, clase: "bot", etiqueta: "Asistente", texto: f[1] });
+        pintarChat();
+      });
+      box.appendChild(c);
     });
-    box.appendChild(c);
-  });
+  }
   var h = el("button", "chip-faq humano", "🙋 Hablar con una persona"); h.type = "button";
   h.addEventListener("click", pedirPersona);
   box.appendChild(h);
@@ -1715,12 +1723,12 @@ async function pintarChat() {
   if (modoSoporte === "bot") todos = todos.concat(localesChat);
   todos = todos.concat(pendientesChat).sort(function (a, b) { return a.ts - b.ts; });
   todos.forEach(function (m) { var b = burbujaChat(lista, m.clase, m.etiqueta, m.texto, m.hora); if (m.escribiendo) b.classList.add("escribiendo"); });
-  pintarOpcionesChat();
+  pintarOpcionesChat(localesChat.length > 0 || pendientesChat.length > 0 || q[0].data.some(function (m) { return m.de === "bot" || (m.de === "cliente" && String(m.cuerpo).indexOf("🙋") !== 0); }));
   if (abajo || !lista.dataset.visto) { lista.scrollTop = lista.scrollHeight; lista.dataset.visto = "1"; }
 }
 async function abrirChat() {
   var m = $("modal-chat"); if (!m) return;
-  msg("msg-chat", ""); $("chat-lista").dataset.visto = ""; localesChat = [];
+  msg("msg-chat", ""); $("chat-lista").dataset.visto = ""; localesChat = []; faqAbiertas = false;
   m.classList.remove("oculto"); document.body.style.overflow = "hidden";
   await pintarChat();
   await sb.rpc("rnm_mensajes_leer"); mensajesSinLeer = 0; pintarAvisoMensajes();
@@ -1751,7 +1759,7 @@ async function preguntarAlAsistente(texto) {
 async function enviarChat() {
   var txt = $("chat-texto"), env = $("chat-enviar"); if (!txt || esperandoBot) return;
   var t = txt.value.trim(); if (!t) return;
-  txt.value = ""; msg("msg-chat", "");
+  txt.value = ""; msg("msg-chat", ""); faqAbiertas = false;
   if (modoSoporte === "humano") {
     env.disabled = true;
     var r0 = await sb.rpc("rnm_mensaje_enviar", { p_cuerpo: t });
