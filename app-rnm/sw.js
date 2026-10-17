@@ -1,5 +1,5 @@
-var CACHE = "rnm-v81";
-var ARCHIVOS = ["./", "index.html", "app.js", "manifest.json", "icon.svg", "premium.css", "figma.css", "logo-rnm-grande.png", "logo-rnm.png", "efectos.js"];
+var CACHE = "rnm-v82";
+var ARCHIVOS = ["./", "index.html", "app.js", "manifest.json", "icon.svg", "premium.css", "figma.css", "logo-rnm-grande.png", "logo-rnm.png", "efectos.js", "fondo-brasil.jpg"];
 
 self.addEventListener("install", function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(ARCHIVOS); }));
