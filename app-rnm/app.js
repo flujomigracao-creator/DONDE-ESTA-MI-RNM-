@@ -16,7 +16,7 @@ var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 (function () {
   try {
     var q = new URLSearchParams(location.search), planParam = String(q.get("plan") || "").toLowerCase(), metodo = q.get("pago");
-    var tipoPlan = planParam === "manual" ? "manual" : ((planParam === "semanal" || (Number(planParam) >= 1 && Number(planParam) <= 4)) ? "semanal" : null);
+    var tipoPlan = planParam === "manual" ? "manual" : planParam === "quincenal" ? "quincenal" : ((planParam === "semanal" || (Number(planParam) >= 1 && Number(planParam) <= 4)) ? "semanal" : null);
     var ref = String(q.get("ref") || "").toLowerCase();
     if (/^[a-z0-9_-]{3,40}$/.test(ref)) {
       localStorage.setItem("rnm_ref", ref);
@@ -40,7 +40,7 @@ function consumirIrAPago() {
   var d;
   try { d = JSON.parse(localStorage.getItem("rnm_ir_pago") || "null"); localStorage.removeItem("rnm_ir_pago"); } catch (e) { return; }
   if (!d || Date.now() - d.t > 7 * 24 * 3600 * 1000) return;
-  var tipoIr = d.plan === "manual" ? "manual" : "semanal";
+  var tipoIr = d.plan === "manual" ? "manual" : (d.plan === "quincenal" ? "quincenal" : "semanal");
   navegarA("planes");
   setTimeout(function () {
     mostrarPago(tipoIr);
