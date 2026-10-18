@@ -2376,8 +2376,10 @@ var REGLAS_CONSULTA = [
     f: function () { return { resumen: "La solicitud no fue aprobada o fue archivada.", pasos: ["Escríbenos " + VIA_CONTACTO + " para revisar tu caso."], detalles: [] }; } },
   { re: /pend[eê]ncia|exig[eê]ncia|complement|inconsist/i, tono: "aviso", badge: "", corto: "Falta algo", t: "Falta algo en tu trámite",
     f: function () { return { resumen: "La Policía Federal pide información o documentos adicionales.", pasos: ["Escríbenos " + VIA_CONTACTO + " y te ayudamos a responder a tiempo."], detalles: [] }; } },
+  { re: /encaminhad[oa] para impress/i, tono: "aviso", badge: "vigila", corto: "En impresión", t: "Tu carné fue enviado a impresión",
+    f: function () { return { resumen: "Es de las últimas etapas: cuando termine de imprimirse pasará a «listo para retirar». Suele tardar de unos días a un par de semanas.", pasos: ["No tienes que hacer nada por ahora.", "Para que te avisemos por WhatsApp apenas esté listo, sin tener que entrar a mirar, activa un plan desde R$ 4,99 al mes."], detalles: [] }; } },
   { re: /an[aá]lise|em andamento|processamento|aguard|confec[cç][aã]o|produ[cç][aã]o/i, tono: "aviso", badge: "vigila", corto: "En trámite", t: "Tu trámite sigue en proceso",
-    f: function () { return { resumen: "Está en análisis o en fabricación.", pasos: ["No tienes que hacer nada por ahora.", "Con un plan activo lo revisamos cada 7 días."], detalles: [] }; } },
+    f: function () { return { resumen: "Está en análisis o en fabricación.", pasos: ["No tienes que hacer nada por ahora.", "Con un plan activo lo revisamos por ti y te avisamos por WhatsApp (desde R$ 4,99 al mes)."], detalles: [] }; } },
   { re: /n[aã]o (foi )?encontrad|nenhum|sin resultados/i, tono: "aviso", badge: "", corto: "No encontrado", t: "No encontramos tu trámite",
     f: function () { return { resumen: "La Policía Federal no encontró tu trámite con los datos registrados.", pasos: ["Revisa que tu RNM y tu fecha de nacimiento estén bien escritos.", "Si todo está bien, escríbenos " + VIA_CONTACTO + "."], detalles: [] }; } }
 ];

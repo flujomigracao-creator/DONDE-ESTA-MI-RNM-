@@ -384,6 +384,42 @@
     });
   }
 
+  var embudoCargado = null;
+  function dibujarEmbudo() {
+    var d = embudoCargado;
+    seccion("Embudo completo y dónde se atasca (últimos " + (d ? d.dias : 30) + " días)");
+    if (!d) { app.appendChild(e("p", "vacio", "No se pudo cargar el embudo.")); return; }
+    var caja = e("div", "caja"); var pasos = d.pasos || [];
+    var primero = (pasos[0] && pasos[0].n) || 1;
+    filas(caja, pasos.map(function (p, i) {
+      var ant = i ? pasos[i - 1].n : p.n;
+      var color = i === pasos.length - 1 ? "var(--verde)" : (i >= 4 ? "var(--ambar)" : null);
+      return [p.titulo, p.n, color, num(p.n) + (i ? " · " + pct(p.n, ant) + " del paso anterior" : "")];
+    }), primero);
+    app.appendChild(caja);
+    var notas = e("div", "caja"); notas.style.marginTop = "10px";
+    notas.appendChild(e("p", "", num(d.ya_resueltos) + " persona(s) ya tienen su RNM listo o entregado: con la primera consulta gratis ya obtuvieron lo que buscaban, por eso no necesitan un plan."));
+    notas.appendChild(e("p", "", num(d.no_encontrados) + " persona(s) tienen un RNM «no encontrado»: primero hay que corregir el dato."));
+    notas.appendChild(e("p", "", "Planes activos hoy: " + num(d.planes_activos_total) + ", de los cuales " + num(d.planes_activados_a_mano) + " se activaron a mano o en pruebas (no son pagos reales de clientes)."));
+    app.appendChild(notas);
+    var grupos = [["sin_perfil", "No completaron sus datos"], ["sin_rnm", "Con perfil pero sin RNM"], ["no_encontrado", "RNM no encontrado (hay que corregirlo)"], ["sin_plan", "RNM en trámite y sin plan"]];
+    grupos.forEach(function (g) {
+      var lista = (d.atascados && d.atascados[g[0]]) || [];
+      var det = e("details", "caja"); det.style.marginTop = "10px";
+      det.appendChild(e("summary", "", g[1] + " (" + lista.length + ")"));
+      if (!lista.length) det.appendChild(e("p", "vacio", "Nadie."));
+      lista.slice(0, 40).forEach(function (p) {
+        var f = e("div", "persona");
+        f.appendChild(e("b", "", p.nombre || p.email));
+        f.appendChild(e("small", "", " · " + (p.email || "") + (p.telefono ? " · " + p.telefono : "") + " · entró " + fecha(p.creado_at)));
+        var link = wa(p.telefono);
+        if (link) { var a = e("a", "", "WhatsApp"); a.href = link; a.target = "_blank"; a.rel = "noopener"; a.style.marginLeft = "8px"; f.appendChild(a); }
+        det.appendChild(f);
+      });
+      app.appendChild(det);
+    });
+  }
+
   function dibujarClientes() {
     seccion("Clientes y mensajes");
     var sin = clientesCargados.filter(function (c) { return c.sin_leer > 0; }).length;
@@ -461,6 +497,7 @@
     emb.appendChild(e("p", "vacio", num(c.con_avisos_whatsapp) + " aceptaron avisos por WhatsApp."));
     dos.appendChild(emb);
 
+    dibujarEmbudo();
     dibujarClientes();
     dibujarOpiniones();
 
@@ -513,8 +550,8 @@
   }
 
   function cargar() {
-    Promise.all([sb.rpc("rnm_admin_resumen"), sb.rpc("rnm_admin_planes"), sb.rpc("rnm_admin_clientes"), sb.rpc("rnm_admin_opiniones")]).then(function (rs) {
-      var x = rs[0]; planesCargados = (rs[1] && rs[1].data) || []; clientesCargados = (rs[2] && rs[2].data) || []; opinionesCargadas = (rs[3] && rs[3].data) || { resumen: null, lista: [] };
+    Promise.all([sb.rpc("rnm_admin_resumen"), sb.rpc("rnm_admin_planes"), sb.rpc("rnm_admin_clientes"), sb.rpc("rnm_admin_opiniones"), sb.rpc("rnm_admin_embudo", { p_dias: 30 })]).then(function (rs) {
+      var x = rs[0]; planesCargados = (rs[1] && rs[1].data) || []; clientesCargados = (rs[2] && rs[2].data) || []; opinionesCargadas = (rs[3] && rs[3].data) || { resumen: null, lista: [] }; embudoCargado = (rs[4] && rs[4].data) || null;
       if (x.error) {
         if (x.error.code === "42501" || /no_autorizado/.test(x.error.message || "")) return pantalla("Sin acceso", "Esta cuenta no tiene permiso para ver el panel.", [btn("Salir", function () { sb.auth.signOut().then(function () { location.reload(); }); })]);
         return pantalla("No se pudo cargar", "Revisa tu conexión e inténtalo de nuevo.", [btn("Reintentar", cargar)]);
