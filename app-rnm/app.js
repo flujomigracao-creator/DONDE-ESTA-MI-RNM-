@@ -1043,6 +1043,7 @@ function cartelPlanes(regs, plan) {
   c.appendChild(el("p", "sub", activo
     ? "Pagas el nuevo plan completo y reemplaza al actual durante 1 mes desde hoy."
     : "Cada RNM ya tuvo su primera verificación gratis. Con un plan, lo seguimos por ti."));
+  var socialPlanes = el("div", "opiniones-publicas oculto"); c.appendChild(socialPlanes); pintarPruebaSocial(socialPlanes);
   var grid = el("div", "planes-op");
   ["quincenal", "semanal", "manual"].forEach(function (tipo) {
     var esActual = activo && plan.tipo === tipo;
@@ -1197,6 +1198,7 @@ function abrirOfertaSeguimiento(x) {
   if (!yaWa && tel && tel.length >= 10) { quiereWa.classList.remove("oculto"); $("sg-wa").checked = true; $("sg-wa-texto").textContent = "Quiero recibir los avisos por WhatsApp al +" + (tel.length <= 11 ? "55" + tel : tel) + "."; }
   else quiereWa.classList.add("oculto");
   msg("msg-seguir", "");
+  pintarPruebaSocial($("sg-opiniones"));
   m.classList.remove("oculto"); document.body.style.overflow = "hidden";
   m.querySelector(".modal-caja").focus();
 }
@@ -1952,10 +1954,23 @@ async function revisarOpinionPendiente(soloTipo) {
   opinionPendienteMostrada = true;
   abrirOpinion(r.data.tipo, r.data.registro_id, r.data.rnm_fin);
 }
+var opinionesPublicasCache = null;
+/* Prueba social junto al precio: solo si hay opiniones aprobadas y la valoración media es buena (4 o más). */
+function pintarPruebaSocial(box) {
+  if (!box) return;
+  box.textContent = ""; box.classList.add("oculto");
+  var d = opinionesPublicasCache; if (!d || !d.resumen || Number(d.resumen.promedio) < 4) return;
+  var cab = el("p", "op-pub-resumen"); cab.appendChild(el("b", "op-pub-estrellas", "★ " + String(d.resumen.promedio).replace(".", ",")));
+  cab.appendChild(document.createTextNode(" · " + d.resumen.total + " opiniones de clientes")); box.appendChild(cab);
+  var o = (d.opiniones || []).filter(function (x) { return x.estrellas >= 4 && x.comentario; })[0];
+  if (o) { var c = el("figure", "op-pub-caja"); c.appendChild(el("div", "op-pub-estrellas", "★★★★★".slice(0, o.estrellas))); c.appendChild(el("blockquote", "", "«" + o.comentario + "»")); c.appendChild(el("figcaption", "", o.nombre)); box.appendChild(c); }
+  box.classList.remove("oculto");
+}
 async function cargarOpinionesPublicas() {
   var box = $("opiniones-publicas"); if (!box) return;
   var r = await sb.rpc("rnm_opiniones_publicas");
   if (r.error || !r.data) return;
+  opinionesPublicasCache = r.data;
   var res = r.data.resumen, lista = r.data.opiniones || [];
   if (!res && !lista.length) return;
   box.textContent = "";
