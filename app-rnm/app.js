@@ -2339,8 +2339,10 @@ function cajaResultado(x) {
     var ub = el("div", "donde-ahora");
     ub.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s7-6 7-12a7 7 0 10-14 0c0 6 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>';
     var ubt = el("div", "");
-    ubt.appendChild(el("small", "", "Dónde está tu RNM ahora"));
-    ubt.appendChild(el("b", "", e.ubicacion));
+    var listoAqui = e.corto === "Listo" && x.unidad_pf;
+    ubt.appendChild(el("small", "", listoAqui ? "Retíralo en" : "Dónde está tu RNM ahora"));
+    ubt.appendChild(el("b", "", listoAqui ? lugarDeUnidad(x.unidad_pf) : e.ubicacion));
+    if (listoAqui) ubt.appendChild(el("small", "", "Unidad de la PF: " + x.unidad_pf));
     ub.appendChild(ubt);
     caja.appendChild(ub);
   }
