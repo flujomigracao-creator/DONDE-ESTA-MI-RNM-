@@ -1988,25 +1988,51 @@ function pintarPruebaSocial(box) {
   if (!o) return;
   if (d.resumen && Number(d.resumen.promedio) >= 4) { var cab = el("p", "op-pub-resumen"); cab.appendChild(el("b", "op-pub-estrellas", "★ " + String(d.resumen.promedio).replace(".", ","))); cab.appendChild(document.createTextNode(" · " + d.resumen.total + " opiniones de clientes")); box.appendChild(cab); }
   if (o) box.appendChild(tarjetaOpinion(o));
-  if ((d.opiniones || []).length > 1) { var v = el("button", "op-ver-todas", "Ver todas las opiniones"); v.type = "button"; v.addEventListener("click", abrirOpinionesClientes); box.appendChild(v); }
+  if ((d.opiniones || []).length > 1) { var v = el("button", "op-ver-todas", "Ver todas las opiniones"); v.type = "button"; v.addEventListener("click", function () { abrirOpinionesClientes(false); }); box.appendChild(v); }
   box.classList.remove("oculto");
 }
-/* Ventana de solo lectura con las opiniones de otros clientes (prueba social). */
-function abrirOpinionesClientes() {
+/* Pantalla completa con las opiniones de otros clientes (prueba social). En el primer registro es OBLIGATORIO deslizar hasta
+   abajo para poder continuar; las opiniones van apareciendo mientras la persona baja. Desde el enlace «Ver todas» se puede cerrar libremente. */
+var ovObservador = null;
+function abrirOpinionesClientes(obligatoria) {
   var d = opinionesPublicasCache, m = $("modal-opiniones"); if (!m || !d || !(d.opiniones || []).length) return;
+  obligatoria = obligatoria === true;
   var primer = (perfilActual && perfilActual.nombre) ? String(perfilActual.nombre).trim().split(" ")[0] : "";
   $("ov-eyebrow").textContent = primer ? "Hola, " + primer.charAt(0).toUpperCase() + primer.slice(1).toLowerCase() + " 👋" : "Antes de empezar";
   var res = $("ov-resumen"); res.textContent = "";
   if (d.resumen) { res.appendChild(el("b", "", "★ " + String(d.resumen.promedio).replace(".", ","))); res.appendChild(document.createTextNode(" · " + d.resumen.total + " opiniones de clientes")); }
   var lista = $("ov-lista"); lista.textContent = "";
-  d.opiniones.forEach(function (o) {
-    lista.appendChild(tarjetaOpinion(o));
-  });
-  m.classList.remove("oculto"); document.body.style.overflow = "hidden"; m.querySelector(".modal-caja").focus();
+  d.opiniones.forEach(function (o) { lista.appendChild(tarjetaOpinion(o)); });
+  var caja = $("ov-caja"), btn = $("ov-continuar"), hint = $("ov-hint"), barra = $("ov-barra"), fin = $("ov-fin");
+  m.classList.toggle("ov-obligatoria", obligatoria);
+  $("ov-desliza-arriba").classList.remove("oculto");
+  caja.scrollTop = 0; barra.style.width = "0%"; fin.classList.remove("visible");
+  var listo = !obligatoria;
+  btn.disabled = !listo; hint.textContent = listo ? "" : "Desliza hasta el final para continuar ↓";
+  // Las tarjetas aparecen al llegar a ellas
+  if (ovObservador) ovObservador.disconnect();
+  var tarjetas = Array.prototype.slice.call(lista.querySelectorAll(".op-pub-caja")).concat([fin]);
+  if ("IntersectionObserver" in window) {
+    ovObservador = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add("visible"); ovObservador.unobserve(e.target); } }); }, { root: caja, threshold: 0.25 });
+    tarjetas.forEach(function (t) { ovObservador.observe(t); });
+  } else tarjetas.forEach(function (t) { t.classList.add("visible"); });
+  function progreso() {
+    var max = caja.scrollHeight - caja.clientHeight;
+    var p = max <= 4 ? 1 : caja.scrollTop / max;
+    barra.style.width = Math.min(100, Math.round(p * 100)) + "%";
+    if (p > 0.04) $("ov-desliza-arriba").classList.add("oculto");
+    if (!listo && p >= 0.96) { listo = true; btn.disabled = false; hint.textContent = "¡Gracias por llegar hasta aquí! Ya puedes continuar ✓"; }
+  }
+  caja.onscroll = progreso;
+  m.classList.remove("oculto"); document.body.style.overflow = "hidden"; caja.focus();
+  setTimeout(progreso, 60);
+  // Si por el tamaño de la pantalla no hay recorrido, no se bloquea a nadie.
+  if (obligatoria) setTimeout(function () { if (!listo && caja.scrollHeight - caja.clientHeight <= 4) progreso(); }, 400);
 }
-function cerrarOpinionesClientes() { var m = $("modal-opiniones"); if (!m) return; m.classList.add("oculto"); document.body.style.overflow = ""; }
+function cerrarOpinionesClientes() { var m = $("modal-opiniones"); if (!m) return; m.classList.add("oculto"); m.classList.remove("ov-obligatoria"); document.body.style.overflow = ""; if (ovObservador) ovObservador.disconnect(); }
 $("ov-cerrar").addEventListener("click", cerrarOpinionesClientes);
 $("ov-continuar").addEventListener("click", cerrarOpinionesClientes);
+$("modal-opiniones").addEventListener("keydown", function (ev) { if (ev.key === "Escape" && !$("modal-opiniones").classList.contains("ov-obligatoria")) cerrarOpinionesClientes(); });
 /* Pantalla completa solo en el PRIMER registro (cuando aún no tiene ningún RNM) y una sola vez, si hay al menos 2 opiniones aprobadas; después solo queda el enlace «Ver todas las opiniones». */
 var opinionesAlEntrarRevisado = false;
 async function mostrarOpinionesAlEntrar() {
@@ -2021,7 +2047,7 @@ async function mostrarOpinionesAlEntrar() {
   await new Promise(function (r) { setTimeout(r, 1200); });
   if (hayModalAbierto() || $("vista-app").classList.contains("oculto")) { opinionesAlEntrarRevisado = false; return; }
   try { localStorage.setItem(clave, String(Date.now())); } catch (e) { /* sin almacenamiento */ }
-  abrirOpinionesClientes();
+  abrirOpinionesClientes(true);
 }
 async function cargarOpinionesPublicas() {
   var box = $("opiniones-publicas"); if (!box) return;

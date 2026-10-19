@@ -493,14 +493,21 @@
   <!-- MODAL DE CONFIRMACIÓN ACCESIBLE (ConfirmDialog) -->
   <!-- OPINIONES DE CLIENTES (solo lectura) -->
   <div id="modal-opiniones" class="modal oculto" role="dialog" aria-modal="true" aria-labelledby="ov-titulo">
-    <div class="modal-caja modal-confirmacion ov-caja" tabindex="-1">
+    <div class="ov-progreso" aria-hidden="true"><i id="ov-barra"></i></div>
+    <div class="modal-caja modal-confirmacion ov-caja" id="ov-caja" tabindex="-1">
       <button id="ov-cerrar" class="cerrar" type="button" aria-label="Cerrar">&times;</button>
       <p class="ov-eyebrow" id="ov-eyebrow">Antes de empezar</p>
       <h3 id="ov-titulo">Lo que dicen nuestros clientes</h3>
       <p class="ov-resumen" id="ov-resumen"></p>
+      <p class="ov-desliza" id="ov-desliza-arriba">Desliza hacia abajo para conocer sus experiencias <span aria-hidden="true">&darr;</span></p>
       <div id="ov-lista" class="ov-lista"></div>
-      <p class="sub ov-nota">Opiniones reales de personas que usaron la app, mostradas con su permiso.</p>
-      <button type="button" class="btn" id="ov-continuar">Continuar</button>
+      <div class="ov-fin" id="ov-fin">
+        <p class="ov-fin-texto">Personas como tú ya siguen su RNM con nosotros. Opiniones reales, mostradas con su permiso.</p>
+      </div>
+      <div class="ov-pie">
+        <p class="ov-hint" id="ov-hint" aria-live="polite"></p>
+        <button type="button" class="btn" id="ov-continuar">Continuar</button>
+      </div>
     </div>
   </div>
 

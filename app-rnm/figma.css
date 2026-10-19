@@ -1133,21 +1133,37 @@ body:has(.modal:not(.oculto)) .consent-pixel, body:has(.camara:not(.oculto)) .co
 #modal-seguir .sg-pie { display: flex; justify-content: space-between; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
 #modal-seguir .sg-enlace { background: none !important; box-shadow: none !important; background-image: none !important; color: var(--brand) !important; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; min-height: 40px; padding: 4px 6px; }
 
-/* Pantalla completa con las opiniones de clientes (solo lectura): al entrar por primera vez */
+/* Pantalla completa interactiva con las opiniones de clientes: se desliza hacia abajo y van apareciendo */
 #modal-opiniones { padding: 0 !important; align-items: stretch !important; justify-content: stretch !important; background: var(--canvas, #F4F8FF) !important; backdrop-filter: none !important; }
-#modal-opiniones .ov-caja { max-width: none !important; width: 100% !important; height: 100dvh !important; max-height: 100dvh !important; border-radius: 0 !important; box-shadow: none !important; background: transparent !important; text-align: left; display: flex; flex-direction: column; padding: calc(28px + env(safe-area-inset-top, 0px)) 20px calc(18px + env(safe-area-inset-bottom, 0px)) !important; overflow-y: auto; }
+#modal-opiniones .ov-progreso { position: absolute; top: 0; left: 0; right: 0; height: 4px; background: var(--line); z-index: 5; }
+#modal-opiniones .ov-progreso i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--verde-marca, #138A3E), var(--amarillo-marca, #FFC83D)); transition: width 0.12s linear; }
+#modal-opiniones .ov-caja { max-width: none !important; width: 100% !important; height: 100dvh !important; max-height: 100dvh !important; border-radius: 0 !important; box-shadow: none !important; background: transparent !important; text-align: left; display: block; padding: calc(30px + env(safe-area-inset-top, 0px)) 20px 0 !important; overflow-y: auto; scroll-behavior: smooth; overscroll-behavior: contain; }
 #modal-opiniones .ov-caja::before { display: none !important; }
 #modal-opiniones .ov-eyebrow { margin: 0 0 6px; font-size: 0.78rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--success); }
-#modal-opiniones h3 { margin: 0 0 8px; font-size: 1.75rem; line-height: 1.15; letter-spacing: -0.02em; }
-#modal-opiniones .ov-resumen { margin: 0 0 16px; color: var(--text-muted); font-size: 1rem; }
+#modal-opiniones h3 { margin: 0 0 8px; font-size: 1.85rem; line-height: 1.12; letter-spacing: -0.02em; }
+#modal-opiniones .ov-resumen { margin: 0 0 10px; color: var(--text-muted); font-size: 1rem; }
 #modal-opiniones .ov-resumen b { color: #F5B301; font-size: 1.4rem; }
-#modal-opiniones .ov-lista { display: grid; gap: 12px; margin-bottom: 12px; flex: 1 1 auto; align-content: start; }
-#modal-opiniones .ov-lista .op-pub-caja { padding: 16px; font-size: 1.02rem; }
-#modal-opiniones .ov-nota { margin: 6px 0 14px; font-size: 0.82rem; }
-#modal-opiniones .btn { width: 100%; min-height: 54px; font-size: 1.05rem; flex: none; }
-#modal-opiniones .cerrar { top: calc(14px + env(safe-area-inset-top, 0px)); right: 14px; }
+#modal-opiniones .ov-desliza { margin: 6px 0 18px; font-size: 0.92rem; font-weight: 700; color: var(--brand); animation: ov-rebota 1.6s ease-in-out infinite; }
+@keyframes ov-rebota { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(5px); } }
+#modal-opiniones .ov-lista { display: grid; gap: 0; }
+/* Cada opinión ocupa casi una pantalla para que haya recorrido y aparezca al llegar a ella */
+#modal-opiniones .ov-lista .op-pub-caja { min-height: 46dvh; margin: 0 0 18px; padding: 22px 20px; display: flex; flex-direction: column; justify-content: center; border-radius: 22px; box-shadow: 0 10px 30px rgba(10, 42, 94, 0.08); opacity: 0; transform: translateY(36px) scale(0.98); transition: opacity 0.55s ease, transform 0.55s cubic-bezier(0.16, 1, 0.3, 1); }
+#modal-opiniones .ov-lista .op-pub-caja.visible { opacity: 1; transform: none; }
+#modal-opiniones .ov-lista .op-pub-caja blockquote { font-size: 1.22rem; line-height: 1.4; margin: 10px 0 0; font-weight: 600; }
+#modal-opiniones .ov-lista .op-pub-avatar { width: 46px; height: 46px; font-size: 1.25rem; }
+#modal-opiniones .ov-lista .op-pub-nombre { font-size: 1.1rem; }
+#modal-opiniones .ov-lista .op-pub-estrellas { font-size: 1.1rem; }
+#modal-opiniones .ov-fin { min-height: 24dvh; display: grid; place-items: center; text-align: center; padding: 10px 6px 100px; opacity: 0; transition: opacity 0.5s ease; }
+#modal-opiniones .ov-fin.visible { opacity: 1; }
+#modal-opiniones .ov-fin-texto { margin: 0; font-size: 1.02rem; font-weight: 700; color: var(--navy); }
+#modal-opiniones .ov-pie { position: sticky; bottom: 0; margin: 0 -20px; padding: 14px 20px calc(16px + env(safe-area-inset-bottom, 0px)); padding-top: 26px; background: linear-gradient(180deg, rgba(244, 248, 255, 0), var(--canvas, #F4F8FF) 62%); z-index: 3; }
+#modal-opiniones .ov-hint { margin: 0 0 8px; text-align: center; font-size: 0.85rem; font-weight: 700; color: var(--text-muted); min-height: 1.2em; }
+#modal-opiniones .btn { width: 100%; min-height: 54px; font-size: 1.05rem; }
+#modal-opiniones .btn:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none !important; }
+#modal-opiniones .cerrar { top: calc(14px + env(safe-area-inset-top, 0px)); right: 14px; z-index: 6; }
+#modal-opiniones.ov-obligatoria .cerrar { display: none; }
+@media (prefers-reduced-motion: reduce) { #modal-opiniones .ov-lista .op-pub-caja, #modal-opiniones .ov-fin { transition: none; opacity: 1; transform: none; } #modal-opiniones .ov-desliza { animation: none; } #modal-opiniones .ov-caja { scroll-behavior: auto; } }
 .op-ver-todas { background: none !important; box-shadow: none !important; background-image: none !important; color: var(--brand) !important; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; min-height: 40px; padding: 4px 6px; justify-self: center; }
-
 /* Tarjeta de opinión con el nombre de la persona */
 .op-pub-cab { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
 .op-pub-avatar { flex: none; width: 38px; height: 38px; border-radius: 50%; background: var(--brand-soft); color: var(--brand); display: grid; place-items: center; font-weight: 800; font-size: 1.05rem; }
