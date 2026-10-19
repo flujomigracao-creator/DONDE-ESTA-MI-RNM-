@@ -1234,3 +1234,34 @@ body:has(.modal:not(.oculto)) .consent-pixel, body:has(.camara:not(.oculto)) .co
 .op-pub-estrellas i { font-style: normal; }
 .op-pub-avatar { background: var(--av, var(--brand)); color: #fff; }
 .op-pub-sub { display: block; font-size: 0.72rem; font-weight: 700; color: var(--success); }
+/* ===== Refinamiento de tamaños (pantalla de opiniones): tarjetas compactas, se ven varias a la vez, contenido centrado en pantallas grandes ===== */
+#modal-opiniones .ov-caja { padding: calc(26px + env(safe-area-inset-top, 0px)) max(18px, calc((100% - 540px) / 2)) 0 !important; }
+#modal-opiniones .ov-pie { margin: 0 calc(-1 * max(18px, calc((100% - 540px) / 2))); padding-left: max(18px, calc((100% - 540px) / 2)); padding-right: max(18px, calc((100% - 540px) / 2)); }
+#modal-opiniones h3 { font-size: 1.7rem; margin-bottom: 12px; }
+#modal-opiniones .ov-eyebrow { margin-bottom: 8px; padding: 4px 11px; font-size: 0.74rem; }
+#modal-opiniones .ov-nota-grande { gap: 12px; margin-bottom: 12px; padding: 11px 14px; border-radius: 18px; }
+#modal-opiniones .ov-nota-num { font-size: 2.5rem; }
+#modal-opiniones .ov-estrellas-hero i { font-size: 1.25rem; }
+#modal-opiniones .ov-nota-total { font-size: 0.8rem; }
+#modal-opiniones .ov-sello { font-size: 0.84rem; margin-bottom: 10px; }
+#modal-opiniones .ov-desliza { padding: 7px 14px; font-size: 0.84rem; margin: 2px 0 6px; }
+#modal-opiniones .ov-lista .op-pub-caja { min-height: 0; margin-bottom: 14px; padding: 18px 18px 20px; border-radius: 22px; justify-content: flex-start; }
+#modal-opiniones .ov-lista .op-pub-caja::before { top: -10px; right: 10px; font-size: 6.4rem; }
+#modal-opiniones .ov-lista .op-pub-cab { gap: 11px; margin-bottom: 8px; }
+#modal-opiniones .ov-lista .op-pub-avatar { width: 44px; height: 44px; font-size: 1.2rem; }
+#modal-opiniones .ov-lista .op-pub-nombre { font-size: 1.04rem; }
+#modal-opiniones .ov-lista .op-pub-estrellas { font-size: 1rem; }
+#modal-opiniones .ov-lista .op-pub-sub { font-size: 0.72rem; }
+#modal-opiniones .ov-lista .op-pub-caja blockquote { font-size: 1.1rem; line-height: 1.45; margin-top: 4px; font-weight: 600; }
+/* el cierre da el recorrido final para poder deslizar aunque haya pocas opiniones */
+#modal-opiniones .ov-fin { min-height: 54dvh; padding-bottom: 120px; }
+#modal-opiniones .ov-check { width: 64px; height: 64px; }
+#modal-opiniones .ov-fin-texto { font-size: 1.15rem; }
+#modal-opiniones .ov-fin-sub { font-size: 0.92rem; }
+@media (max-width: 360px) { #modal-opiniones h3 { font-size: 1.5rem; } #modal-opiniones .ov-nota-num { font-size: 2.2rem; } #modal-opiniones .ov-lista .op-pub-caja blockquote { font-size: 1.02rem; } }
+/* tarjetas fuera de la pantalla completa (login, popup, planes): más compactas */
+.op-pub-caja { padding: 11px 13px; }
+.op-pub-avatar { width: 34px; height: 34px; font-size: 0.95rem; }
+.op-pub-nombre { font-size: 0.92rem; }
+.op-pub-estrellas { font-size: 0.85rem; }
+#modal-opiniones .ov-pie { padding-top: 34px; background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0, rgba(255, 255, 255, 0.96) 26%, #fff 40%); }
