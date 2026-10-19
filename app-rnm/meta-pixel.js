@@ -61,6 +61,7 @@
       claves.forEach(function (k, i) { if (hs[i]) ud[k] = hs[i]; });
       try { window.fbq("init", PIXEL_ID, ud); } catch (e) { /* sin píxel */ }
     });
+    setTimeout(function () { if (typeof window.rnmMetaConsent === "function") { try { window.rnmMetaConsent({ fbp: cookie("_fbp"), fbc: cookie("_fbc") }); } catch (e) { /* sin servidor */ } } }, 2500);
     contexto = {};
     if (p.ciudad) contexto.ciudad = String(p.ciudad).slice(0, 80);
     if (p.estado) contexto.estado = String(p.estado).slice(0, 2).toUpperCase();

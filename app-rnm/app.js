@@ -73,6 +73,12 @@ async function iniciar() {
 }
 
 var usuarioActual = null;
+var metaConsentEnviado = false;
+/* Guarda en el servidor que esta persona aceptó la medición de anuncios: así la COMPRA se envía a Meta desde el webhook de pago aunque ya haya cerrado la app. */
+window.rnmMetaConsent = async function (c) {
+  if (metaConsentEnviado) return;
+  try { var r = await sb.rpc("rnm_meta_consentir", { p_fbp: (c && c.fbp) || null, p_fbc: (c && c.fbc) || null }); if (!r.error) metaConsentEnviado = true; } catch (e) { /* sin sesión */ }
+};
 window.rnmMetaServidor = async function (cuerpo) {
   try {
     var ses = await sb.auth.getSession();
