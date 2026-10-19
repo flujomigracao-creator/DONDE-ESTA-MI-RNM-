@@ -491,6 +491,18 @@
   </div>
 
   <!-- MODAL DE CONFIRMACIÓN ACCESIBLE (ConfirmDialog) -->
+  <!-- OPINIONES DE CLIENTES (solo lectura) -->
+  <div id="modal-opiniones" class="modal oculto" role="dialog" aria-modal="true" aria-labelledby="ov-titulo">
+    <div class="modal-caja modal-confirmacion ov-caja" tabindex="-1">
+      <button id="ov-cerrar" class="cerrar" type="button" aria-label="Cerrar">&times;</button>
+      <h3 id="ov-titulo">Lo que dicen nuestros clientes</h3>
+      <p class="ov-resumen" id="ov-resumen"></p>
+      <div id="ov-lista" class="ov-lista"></div>
+      <p class="sub ov-nota">Opiniones reales de personas que usaron la app, mostradas con su permiso.</p>
+      <button type="button" class="btn" id="ov-continuar">Continuar</button>
+    </div>
+  </div>
+
   <!-- OFERTA DE SEGUIMIENTO: aparece tras la primera consulta -->
   <div id="modal-seguir" class="modal oculto" role="dialog" aria-modal="true" aria-labelledby="sg-titulo">
     <div class="modal-caja modal-confirmacion sg-caja" tabindex="-1">

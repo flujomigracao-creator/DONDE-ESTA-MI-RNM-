@@ -1167,6 +1167,7 @@ async function cargarRegistros(soloSiCambia) {
   if (seccionActual === "planes") renderizarPlanes(r.data, plan);
   if (seccionActual === "detalle-rnm" && detalleActual) construirDetalle(detalleActual);
   consumirIrAPago();
+  mostrarOpinionesAlEntrar();
   revisarOfertaSeguimiento(r.data, plan, activo);
 }
 
@@ -1971,12 +1972,42 @@ var opinionesPublicasCache = null;
 function pintarPruebaSocial(box) {
   if (!box) return;
   box.textContent = ""; box.classList.add("oculto");
-  var d = opinionesPublicasCache; if (!d || !d.resumen || Number(d.resumen.promedio) < 4) return;
-  var cab = el("p", "op-pub-resumen"); cab.appendChild(el("b", "op-pub-estrellas", "★ " + String(d.resumen.promedio).replace(".", ",")));
-  cab.appendChild(document.createTextNode(" · " + d.resumen.total + " opiniones de clientes")); box.appendChild(cab);
+  var d = opinionesPublicasCache; if (!d) return;
   var o = (d.opiniones || []).filter(function (x) { return x.estrellas >= 4 && x.comentario; })[0];
+  if (!o) return;
+  if (d.resumen && Number(d.resumen.promedio) >= 4) { var cab = el("p", "op-pub-resumen"); cab.appendChild(el("b", "op-pub-estrellas", "★ " + String(d.resumen.promedio).replace(".", ","))); cab.appendChild(document.createTextNode(" · " + d.resumen.total + " opiniones de clientes")); box.appendChild(cab); }
   if (o) { var c = el("figure", "op-pub-caja"); c.appendChild(el("div", "op-pub-estrellas", "★★★★★".slice(0, o.estrellas))); c.appendChild(el("blockquote", "", "«" + o.comentario + "»")); c.appendChild(el("figcaption", "", o.nombre)); box.appendChild(c); }
+  if ((d.opiniones || []).length > 1) { var v = el("button", "op-ver-todas", "Ver todas las opiniones"); v.type = "button"; v.addEventListener("click", abrirOpinionesClientes); box.appendChild(v); }
   box.classList.remove("oculto");
+}
+/* Ventana de solo lectura con las opiniones de otros clientes (prueba social). */
+function abrirOpinionesClientes() {
+  var d = opinionesPublicasCache, m = $("modal-opiniones"); if (!m || !d || !(d.opiniones || []).length) return;
+  var res = $("ov-resumen"); res.textContent = "";
+  if (d.resumen) { res.appendChild(el("b", "", "★ " + String(d.resumen.promedio).replace(".", ","))); res.appendChild(document.createTextNode(" · " + d.resumen.total + " opiniones de clientes")); }
+  var lista = $("ov-lista"); lista.textContent = "";
+  d.opiniones.forEach(function (o) {
+    var c = el("figure", "op-pub-caja"); c.appendChild(el("div", "op-pub-estrellas", "★★★★★".slice(0, o.estrellas)));
+    c.appendChild(el("blockquote", "", "«" + o.comentario + "»")); c.appendChild(el("figcaption", "", o.nombre)); lista.appendChild(c);
+  });
+  m.classList.remove("oculto"); document.body.style.overflow = "hidden"; m.querySelector(".modal-caja").focus();
+}
+function cerrarOpinionesClientes() { var m = $("modal-opiniones"); if (!m) return; m.classList.add("oculto"); document.body.style.overflow = ""; }
+$("ov-cerrar").addEventListener("click", cerrarOpinionesClientes);
+$("ov-continuar").addEventListener("click", cerrarOpinionesClientes);
+/* Al entrar a la app por primera vez se muestra una sola vez (si hay al menos 2 opiniones aprobadas); después queda el enlace «Ver todas las opiniones». */
+var opinionesAlEntrarRevisado = false;
+async function mostrarOpinionesAlEntrar() {
+  if (opinionesAlEntrarRevisado || !usuarioActual) return;
+  opinionesAlEntrarRevisado = true;
+  var clave = "rnm_vio_opiniones_" + usuarioActual.id;
+  try { if (localStorage.getItem(clave)) return; } catch (e) { return; }
+  if (!opinionesPublicasCache) { try { var r = await sb.rpc("rnm_opiniones_publicas"); if (!r.error && r.data) opinionesPublicasCache = r.data; } catch (e) { /* sin red */ } }
+  var d = opinionesPublicasCache; if (!d || (d.opiniones || []).length < 2) return;
+  await new Promise(function (r) { setTimeout(r, 1200); });
+  if (hayModalAbierto() || $("vista-app").classList.contains("oculto")) { opinionesAlEntrarRevisado = false; return; }
+  try { localStorage.setItem(clave, String(Date.now())); } catch (e) { /* sin almacenamiento */ }
+  abrirOpinionesClientes();
 }
 async function cargarOpinionesPublicas() {
   var box = $("opiniones-publicas"); if (!box) return;

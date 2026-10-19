@@ -1132,3 +1132,13 @@ body:has(.modal:not(.oculto)) .consent-pixel, body:has(.camara:not(.oculto)) .co
 #modal-seguir .sg-nota { margin: 8px 0 0; text-align: center; font-size: 0.8rem; color: var(--text-muted); }
 #modal-seguir .sg-pie { display: flex; justify-content: space-between; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
 #modal-seguir .sg-enlace { background: none !important; box-shadow: none !important; background-image: none !important; color: var(--brand) !important; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; min-height: 40px; padding: 4px 6px; }
+
+/* Ventana de opiniones de clientes (solo lectura) */
+#modal-opiniones .ov-caja { max-width: 460px; text-align: left; max-height: 92dvh; overflow-y: auto; }
+#modal-opiniones h3 { margin: 0 0 6px; font-size: 1.3rem; }
+#modal-opiniones .ov-resumen { margin: 0 0 12px; color: var(--text-muted); font-size: 0.95rem; }
+#modal-opiniones .ov-resumen b { color: #F5B301; font-size: 1.15rem; }
+#modal-opiniones .ov-lista { display: grid; gap: 10px; margin-bottom: 8px; }
+#modal-opiniones .ov-nota { margin: 6px 0 14px; font-size: 0.8rem; }
+#modal-opiniones .btn { width: 100%; min-height: 50px; }
+.op-ver-todas { background: none !important; box-shadow: none !important; background-image: none !important; color: var(--brand) !important; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; min-height: 40px; padding: 4px 6px; justify-self: center; }
