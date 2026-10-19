@@ -22,6 +22,10 @@ var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
       localStorage.setItem("rnm_ref", ref);
       history.replaceState(null, "", location.pathname + location.hash);
     }
+    if (!tipoPlan && String(q.get("ir") || "").toLowerCase() === "planes") {
+      localStorage.setItem("rnm_ir_pago", JSON.stringify({ plan: "elegir", metodo: "pix", t: Date.now() }));
+      history.replaceState(null, "", location.pathname + location.hash);
+    }
     if (tipoPlan) {
       localStorage.setItem("rnm_ir_pago", JSON.stringify({ plan: tipoPlan, metodo: metodo === "boleto" ? "boleto" : "pix", t: Date.now() }));
       history.replaceState(null, "", location.pathname + location.hash);
@@ -40,6 +44,7 @@ function consumirIrAPago() {
   var d;
   try { d = JSON.parse(localStorage.getItem("rnm_ir_pago") || "null"); localStorage.removeItem("rnm_ir_pago"); } catch (e) { return; }
   if (!d || Date.now() - d.t > 7 * 24 * 3600 * 1000) return;
+  if (d.plan === "elegir") { navegarA("planes"); return; } // enlace de WhatsApp: la persona elige su plan
   var tipoIr = d.plan === "manual" ? "manual" : (d.plan === "quincenal" ? "quincenal" : "semanal");
   navegarA("planes");
   setTimeout(function () {
