@@ -1981,7 +1981,7 @@ function tarjetaOpinion(o) {
   var datos = el("div", "op-pub-datos"); datos.appendChild(el("b", "op-pub-nombre", nombre));
   var est = el("div", "op-pub-estrellas");
   for (var i = 0; i < Math.max(0, Math.min(5, o.estrellas || 0)); i++) { var e1 = el("i", "", "★"); e1.style.setProperty("--i", String(i)); est.appendChild(e1); }
-  datos.appendChild(est); datos.appendChild(el("span", "op-pub-sub", "Cliente de la app"));
+  datos.appendChild(est); datos.appendChild(el("span", "op-pub-sub", o.equipo ? "Equipo FLUJO" : "Cliente de la app"));
   cab.appendChild(datos); c.appendChild(cab);
   c.appendChild(el("blockquote", "", "«" + o.comentario + "»"));
   return c;
