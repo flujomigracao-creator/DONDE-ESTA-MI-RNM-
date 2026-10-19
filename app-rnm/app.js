@@ -2614,6 +2614,11 @@ function bloqueCambios(texto) {
   if (!texto) return null;
   var lineas = lineasCambio(texto);
   if (!lineas.length) return null;
+  // Se muestran los cambios aprobados (deferidos) y, después de ellos, el último que pidió la persona (si no es uno de ellos).
+  var ult = cambioReciente(lineas);
+  var aprobados = lineas.filter(function (l) { return l.estado === "aprobada"; });
+  lineas = aprobados.concat(ult && aprobados.indexOf(ult) < 0 ? [ult] : []);
+  if (!lineas.length) return null;
   var cont = el("div", "cambios-consulta");
   lineas.forEach(function (l) {
     var p = el("p", "fila-cambio", "");
