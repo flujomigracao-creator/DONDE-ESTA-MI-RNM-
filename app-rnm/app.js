@@ -1995,7 +1995,7 @@ function abrirOpinionesClientes() {
 function cerrarOpinionesClientes() { var m = $("modal-opiniones"); if (!m) return; m.classList.add("oculto"); document.body.style.overflow = ""; }
 $("ov-cerrar").addEventListener("click", cerrarOpinionesClientes);
 $("ov-continuar").addEventListener("click", cerrarOpinionesClientes);
-/* Al entrar a la app por primera vez se muestra una sola vez (si hay al menos 2 opiniones aprobadas); después queda el enlace «Ver todas las opiniones». */
+/* Pantalla completa solo en el PRIMER registro (cuando aún no tiene ningún RNM) y una sola vez, si hay al menos 2 opiniones aprobadas; después solo queda el enlace «Ver todas las opiniones». */
 var opinionesAlEntrarRevisado = false;
 async function mostrarOpinionesAlEntrar() {
   if (opinionesAlEntrarRevisado || !usuarioActual) return;
@@ -2003,6 +2003,8 @@ async function mostrarOpinionesAlEntrar() {
   var clave = "rnm_vio_opiniones_" + usuarioActual.id;
   try { if (localStorage.getItem(clave)) return; } catch (e) { return; }
   if (!opinionesPublicasCache) { try { var r = await sb.rpc("rnm_opiniones_publicas"); if (!r.error && r.data) opinionesPublicasCache = r.data; } catch (e) { /* sin red */ } }
+  // Solo en el primer registro: quien ya tiene algún RNM registrado no la ve.
+  if ((registrosCargados || []).length > 0) { try { localStorage.setItem(clave, "ya_registrado"); } catch (e) { /* sin almacenamiento */ } return; }
   var d = opinionesPublicasCache; if (!d || (d.opiniones || []).length < 2) return;
   await new Promise(function (r) { setTimeout(r, 1200); });
   if (hayModalAbierto() || $("vista-app").classList.contains("oculto")) { opinionesAlEntrarRevisado = false; return; }
