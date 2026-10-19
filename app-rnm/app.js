@@ -1990,7 +1990,7 @@ function pintarPruebaSocial(box) {
   if (!box) return;
   box.textContent = ""; box.classList.add("oculto");
   var d = opinionesPublicasCache; if (!d) return;
-  var o = (d.opiniones || []).filter(function (x) { return x.estrellas >= 4 && x.comentario; })[0];
+  var o = (d.opiniones || []).filter(function (x) { return x.comentario; })[0];
   if (!o) return;
   if (d.resumen && Number(d.resumen.promedio) >= 4) { var cab = el("p", "op-pub-resumen"); cab.appendChild(el("b", "op-pub-estrellas", "★ " + String(d.resumen.promedio).replace(".", ","))); cab.appendChild(document.createTextNode(" · " + d.resumen.total + " opiniones de clientes")); box.appendChild(cab); }
   if (o) box.appendChild(tarjetaOpinion(o));
@@ -2092,7 +2092,7 @@ async function mostrarOpinionesAlEntrar() {
   var clave = "rnm_vio_opiniones_" + usuarioActual.id;
   try { if (localStorage.getItem(clave)) return false; } catch (e) { return false; }
   if (!opinionesPublicasCache) { try { var r = await sb.rpc("rnm_opiniones_publicas"); if (!r.error && r.data) opinionesPublicasCache = r.data; } catch (e) { /* sin red */ } }
-  var d = opinionesPublicasCache; if (!d || (d.opiniones || []).length < 2) return false;
+  var d = opinionesPublicasCache; if (!d || (d.opiniones || []).length < 1) return false;
   try { localStorage.setItem(clave, String(Date.now())); } catch (e) { /* sin almacenamiento */ }
   abrirOpinionesClientes(true);
   return true;
