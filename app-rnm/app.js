@@ -1409,7 +1409,7 @@ function titularRastreador(e) {
 }
 /* ---------- Cambio de dirección animado (mini rastreador) ---------- */
 function fechaNum(f) { var m = /(\d{2})\/(\d{2})\/(\d{4})/.exec(f || ""); return m ? Number(m[3] + m[2] + m[1]) : 0; }
-function cambioReciente(lc) { return lc.slice().sort(function (a, b) { return fechaNum(b.fecha) - fechaNum(a.fecha); })[0]; }
+function cambioReciente(lc) { var mejor = null; lc.forEach(function (l) { if (!mejor || fechaNum(l.fecha) >= fechaNum(mejor.fecha)) mejor = l; }); return mejor; } // el más reciente; con la misma fecha, el último de la lista
 var SVG_CASA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-7 8 7"/><path d="M6 10v10h12V10"/><path d="M10 20v-5h4v5"/></svg>';
 function cambioAnimado(l) {
   var est = l.estado;
@@ -2637,9 +2637,10 @@ function interpretarConsulta(txt) {
 function trasladoPendiente(x) {
   if (!x || x.estado_pf !== "listo" || !x.unidad_pf || !x.cambio_direccion) return null;
   var ufDoc = ufDeUnidad(x.unidad_pf);
-  var aprobados = lineasCambio(x.cambio_direccion).filter(function (l) { return l.estado === "aprobada" && ufDeUnidad(l.codigo); });
-  if (!aprobados.length || !ufDoc) return null;
-  var ult = cambioReciente(aprobados);
+  // Solo hay traslado si el cambio de dirección MÁS RECIENTE fue aprobado (deferido) y va a otra unidad.
+  // Si la última solicitud solo está pedida / sin iniciar / en análisis, el documento sigue listo donde está.
+  var ult = cambioReciente(lineasCambio(x.cambio_direccion));
+  if (!ult || ult.estado !== "aprobada" || !ufDeUnidad(ult.codigo) || !ufDoc) return null;
   if (ufDeUnidad(ult.codigo) === ufDoc) return null;
   return { actual: lugarDeUnidad(x.unidad_pf), destino: lugarDeUnidad(ult.codigo) };
 }
