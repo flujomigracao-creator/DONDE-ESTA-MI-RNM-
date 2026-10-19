@@ -17,6 +17,7 @@ var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
   try {
     var q = new URLSearchParams(location.search), planParam = String(q.get("plan") || "").toLowerCase(), metodo = q.get("pago");
     var tipoPlan = planParam === "manual" ? "manual" : planParam === "quincenal" ? "quincenal" : ((planParam === "semanal" || (Number(planParam) >= 1 && Number(planParam) <= 4)) ? "semanal" : null);
+    if (q.get("opinar") === "1") { localStorage.setItem("rnm_opinar", String(Date.now())); history.replaceState(null, "", location.pathname + location.hash); }
     var ref = String(q.get("ref") || "").toLowerCase();
     if (/^[a-z0-9_-]{3,40}$/.test(ref)) {
       localStorage.setItem("rnm_ref", ref);
@@ -242,7 +243,7 @@ async function mostrar(session) {
   actualizarInfoUsuario(session.user, perfilActual);
   if (window.rnmIdentificar) rnmIdentificar(session.user, perfilActual);
   if (!perfilActual) { abrirPerfil(false); }
-  else { vista("app"); navegarA(seccionInicial()); cargarRegistros(); iniciarTiempoReal(); setTimeout(revisarOpinionPendiente, 6000); }
+  else { vista("app"); navegarA(seccionInicial()); cargarRegistros(); iniciarTiempoReal(); setTimeout(revisarOpinionPendiente, 6000); abrirOpinionDeEnlace(); }
 }
 
 /* ---------- Onboarding / perfil ---------- */
@@ -1953,6 +1954,17 @@ async function revisarOpinionPendiente(soloTipo) {
   if (soloTipo && r.data.tipo !== soloTipo) return;
   opinionPendienteMostrada = true;
   abrirOpinion(r.data.tipo, r.data.registro_id, r.data.rnm_fin);
+}
+/* Enlace «Dejar mi opinión» del WhatsApp (?opinar=1): al entrar se abre directo la ventana de opinión. */
+async function abrirOpinionDeEnlace() {
+  var t; try { t = Number(localStorage.getItem("rnm_opinar") || 0); localStorage.removeItem("rnm_opinar"); } catch (e) { return; }
+  if (!t || Date.now() - t > 14 * 86400000 || !usuarioActual) return;
+  try { localStorage.removeItem("rnm_opinion_snooze"); } catch (e) { /* sin almacenamiento */ }
+  await new Promise(function (r) { setTimeout(r, 1500); });
+  if (document.querySelector(".modal:not(.oculto), .camara:not(.oculto)")) return;
+  opinionPendienteMostrada = true;
+  var r = await sb.rpc("rnm_opinion_pendiente");
+  if (!r.error && r.data) abrirOpinion(r.data.tipo, r.data.registro_id, r.data.rnm_fin); else abrirOpinion("app");
 }
 var opinionesPublicasCache = null;
 /* Prueba social junto al precio: solo si hay opiniones aprobadas y la valoración media es buena (4 o más). */
