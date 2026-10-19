@@ -2345,6 +2345,22 @@ function cajaResultado(x) {
     if (listoAqui) ubt.appendChild(el("small", "", "Unidad de la PF: " + x.unidad_pf));
     ub.appendChild(ubt);
     caja.appendChild(ub);
+    // Si hay un cambio de dirección hacia otra unidad, se dice claramente a cuál (aprobado, o el último pedido).
+    if (e.corto === "Listo" && x.unidad_pf && x.cambio_direccion) {
+      var lc = lineasCambio(x.cambio_direccion).filter(function (l) { return l.codigo && l.codigo !== x.unidad_pf; });
+      var apr = lc.filter(function (l) { return l.estado === "aprobada"; }).pop();
+      var ultC = cambioReciente(lc);
+      [[apr, "Cambio aprobado hacia"], [ultC && ultC !== apr ? ultC : null, "Último cambio pedido hacia"]].forEach(function (p) {
+        if (!p[0]) return;
+        var u2 = el("div", "donde-ahora");
+        u2.innerHTML = ub.firstChild.outerHTML;
+        var t2 = el("div", "");
+        t2.appendChild(el("small", "", p[1]));
+        t2.appendChild(el("b", "", lugarDeUnidad(p[0].codigo)));
+        t2.appendChild(el("small", "", "Unidad de la PF: " + p[0].codigo + " · " + p[0].estado + (p[0].estado === "aprobada" ? ". Aún no llegó: espera nuestro aviso antes de ir." : "")));
+        u2.appendChild(t2); caja.appendChild(u2);
+      });
+    }
   }
   caja.appendChild(el("p", "resumen-estado", e.resumen));
   if (e.detalles && e.detalles.length) {
