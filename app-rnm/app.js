@@ -2044,7 +2044,7 @@ function abrirOpinionesClientes(obligatoria) {
   var lista = $("ov-lista"); lista.textContent = "";
   d.opiniones.forEach(function (o) { lista.appendChild(tarjetaOpinion(o)); });
   var caja = $("ov-caja"), btn = $("ov-continuar"), hint = $("ov-hint"), barra = $("ov-barra"), fin = $("ov-fin");
-  m.classList.toggle("ov-obligatoria", obligatoria); m.classList.remove("ov-bajando");
+  m.classList.toggle("ov-obligatoria", obligatoria); m.classList.remove("ov-bajando"); m.classList.remove("ov-al-final");
   $("ov-desliza-arriba").classList.remove("oculto");
   caja.scrollTop = 0; barra.style.width = "0%"; fin.classList.remove("visible"); ovChispas();
   btn.classList.remove("ov-listo");
@@ -2062,6 +2062,7 @@ function abrirOpinionesClientes(obligatoria) {
     var p = max <= 4 ? 1 : caja.scrollTop / max;
     barra.style.width = Math.min(100, Math.round(p * 100)) + "%";
     m.classList.toggle("ov-bajando", caja.scrollTop > 150);
+    m.classList.toggle("ov-al-final", p >= 0.96);
     if (p > 0.03) $("ov-desliza-arriba").classList.add("oculto");
     if (!listo && p >= 0.96) {
       listo = true; btn.disabled = false; btn.classList.add("ov-listo");
@@ -2076,6 +2077,7 @@ function abrirOpinionesClientes(obligatoria) {
   if (obligatoria) setTimeout(function () { if (!listo && caja.scrollHeight - caja.clientHeight <= 4) progreso(); }, 400);
 }
 function cerrarOpinionesClientes() { var m = $("modal-opiniones"); if (!m) return; m.classList.add("oculto"); m.classList.remove("ov-obligatoria"); document.body.style.overflow = ""; if (ovObservador) ovObservador.disconnect(); }
+$("ov-bajar").addEventListener("click", function () { var c = $("ov-caja"); c.scrollBy({ top: Math.round(c.clientHeight * 0.8), behavior: "smooth" }); });
 $("ov-cerrar").addEventListener("click", cerrarOpinionesClientes);
 $("ov-continuar").addEventListener("click", function () {
   var eraObligatoria = $("modal-opiniones").classList.contains("ov-obligatoria");

@@ -1265,3 +1265,15 @@ body:has(.modal:not(.oculto)) .consent-pixel, body:has(.camara:not(.oculto)) .co
 .op-pub-nombre { font-size: 0.92rem; }
 .op-pub-estrellas { font-size: 0.85rem; }
 #modal-opiniones .ov-pie { padding-top: 34px; background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0, rgba(255, 255, 255, 0.96) 26%, #fff 40%); }
+
+/* Símbolo animado «baja»: botón redondo con flechas que caen y un aro que late; al tocarlo baja una pantalla; desaparece al llegar al final */
+#modal-opiniones .ov-bajar { display: grid; place-items: center; width: 50px; height: 50px; margin: -6px auto 6px; padding: 0; border-radius: 50%; background: var(--navy) !important; background-image: none !important; box-shadow: 0 8px 22px rgba(18, 60, 138, 0.38), 0 0 0 0 rgba(18, 60, 138, 0.45) !important; animation: ov-aro 1.8s ease-out infinite; transition: opacity 0.35s ease, transform 0.35s ease; cursor: pointer; min-height: 0 !important; }
+#modal-opiniones .ov-chev { position: relative; display: block; width: 22px; height: 26px; }
+#modal-opiniones .ov-chev i { position: absolute; left: 50%; width: 11px; height: 11px; margin-left: -8px; border-right: 3px solid #fff; border-bottom: 3px solid #fff; border-radius: 2px; transform: rotate(45deg); opacity: 0; animation: ov-chev 1.5s ease-in-out infinite; }
+#modal-opiniones .ov-chev i:nth-child(1) { top: 0; animation-delay: 0s; }
+#modal-opiniones .ov-chev i:nth-child(2) { top: 7px; animation-delay: 0.18s; }
+#modal-opiniones .ov-chev i:nth-child(3) { top: 14px; animation-delay: 0.36s; }
+@keyframes ov-chev { 0% { opacity: 0; transform: translateY(-6px) rotate(45deg); } 40% { opacity: 1; } 100% { opacity: 0; transform: translateY(6px) rotate(45deg); } }
+@keyframes ov-aro { 0% { box-shadow: 0 8px 22px rgba(18, 60, 138, 0.38), 0 0 0 0 rgba(18, 60, 138, 0.45); } 70%, 100% { box-shadow: 0 8px 22px rgba(18, 60, 138, 0.38), 0 0 0 18px rgba(18, 60, 138, 0); } }
+#modal-opiniones.ov-al-final .ov-bajar { opacity: 0; transform: scale(0.5); pointer-events: none; height: 0; margin: 0; width: 0; animation: none; }
+@media (prefers-reduced-motion: reduce) { #modal-opiniones .ov-bajar { animation: none; } #modal-opiniones .ov-chev i { animation: none; opacity: 1; } #modal-opiniones .ov-chev i:nth-child(1) { opacity: 0.4; } #modal-opiniones .ov-chev i:nth-child(2) { opacity: 0.7; } }
