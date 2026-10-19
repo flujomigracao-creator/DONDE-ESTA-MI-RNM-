@@ -381,6 +381,7 @@ $("form-perfil").addEventListener("submit", async function (e) {
   datos.avisos_whatsapp = quiereAvisos;
   if (quiereAvisos && !(perfilActual && perfilActual.avisos_whatsapp)) datos.avisos_whatsapp_at = new Date().toISOString();
   var btn = $("btn-perfil"); btn.disabled = true;
+  var esPrimerIngreso = !perfilActual;
   var r = perfilActual
     ? await sb.from("rnm_perfiles").update(datos).eq("user_id", usuarioActual.id).select().single()
     : await sb.from("rnm_perfiles").insert(Object.assign({ user_id: usuarioActual.id }, datos)).select().single();
@@ -390,6 +391,7 @@ $("form-perfil").addEventListener("submit", async function (e) {
   if (window.rnmIdentificar && usuarioActual) rnmIdentificar(usuarioActual, perfilActual);
   vista("app");
   cargarRegistros();
+  if (esPrimerIngreso) primerIngresoFlujo();
 });
 
 $("btn-google").addEventListener("click", async function () {
@@ -1167,7 +1169,6 @@ async function cargarRegistros(soloSiCambia) {
   if (seccionActual === "planes") renderizarPlanes(r.data, plan);
   if (seccionActual === "detalle-rnm" && detalleActual) construirDetalle(detalleActual);
   consumirIrAPago();
-  mostrarOpinionesAlEntrar();
   revisarOfertaSeguimiento(r.data, plan, activo);
 }
 
@@ -2031,23 +2032,29 @@ function abrirOpinionesClientes(obligatoria) {
 }
 function cerrarOpinionesClientes() { var m = $("modal-opiniones"); if (!m) return; m.classList.add("oculto"); m.classList.remove("ov-obligatoria"); document.body.style.overflow = ""; if (ovObservador) ovObservador.disconnect(); }
 $("ov-cerrar").addEventListener("click", cerrarOpinionesClientes);
-$("ov-continuar").addEventListener("click", cerrarOpinionesClientes);
+$("ov-continuar").addEventListener("click", function () {
+  var eraObligatoria = $("modal-opiniones").classList.contains("ov-obligatoria");
+  cerrarOpinionesClientes();
+  if (eraObligatoria) navegarA("nueva-consulta"); // primer ingreso: ahora su RNM y fecha de nacimiento
+});
 $("modal-opiniones").addEventListener("keydown", function (ev) { if (ev.key === "Escape" && !$("modal-opiniones").classList.contains("ov-obligatoria")) cerrarOpinionesClientes(); });
 /* Pantalla completa solo en el PRIMER registro (cuando aún no tiene ningún RNM) y una sola vez, si hay al menos 2 opiniones aprobadas; después solo queda el enlace «Ver todas las opiniones». */
 var opinionesAlEntrarRevisado = false;
 async function mostrarOpinionesAlEntrar() {
-  if (opinionesAlEntrarRevisado || !usuarioActual) return;
-  opinionesAlEntrarRevisado = true;
+  if (!usuarioActual) return false;
   var clave = "rnm_vio_opiniones_" + usuarioActual.id;
-  try { if (localStorage.getItem(clave)) return; } catch (e) { return; }
+  try { if (localStorage.getItem(clave)) return false; } catch (e) { return false; }
   if (!opinionesPublicasCache) { try { var r = await sb.rpc("rnm_opiniones_publicas"); if (!r.error && r.data) opinionesPublicasCache = r.data; } catch (e) { /* sin red */ } }
-  // Solo en el primer registro: quien ya tiene algún RNM registrado no la ve.
-  if ((registrosCargados || []).length > 0) { try { localStorage.setItem(clave, "ya_registrado"); } catch (e) { /* sin almacenamiento */ } return; }
-  var d = opinionesPublicasCache; if (!d || (d.opiniones || []).length < 2) return;
-  await new Promise(function (r) { setTimeout(r, 1200); });
-  if (hayModalAbierto() || $("vista-app").classList.contains("oculto")) { opinionesAlEntrarRevisado = false; return; }
+  var d = opinionesPublicasCache; if (!d || (d.opiniones || []).length < 2) return false;
   try { localStorage.setItem(clave, String(Date.now())); } catch (e) { /* sin almacenamiento */ }
   abrirOpinionesClientes(true);
+  return true;
+}
+/* Primer ingreso: al terminar el registro de datos (onboarding) se muestra la pantalla de opiniones y su «Continuar» lleva
+   directo a registrar el RNM y la fecha de nacimiento para la primera consulta. Sin opiniones aprobadas, va directo al formulario. */
+async function primerIngresoFlujo() {
+  var mostro = await mostrarOpinionesAlEntrar();
+  if (!mostro) navegarA("nueva-consulta");
 }
 async function cargarOpinionesPublicas() {
   var box = $("opiniones-publicas"); if (!box) return;
