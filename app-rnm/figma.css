@@ -1117,3 +1117,18 @@ body:has(.modal:not(.oculto)) .consent-pixel, body:has(.camara:not(.oculto)) .co
 #vista-login .fig-barra { background: rgba(255,255,255,.88); }
 #vista-login .fig-hero-marca { background: rgba(255,255,255,.62); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
 #vista-login .fig-bene, #vista-login .fig-confianza { text-shadow: 0 0 10px rgba(244,248,255,.9); }
+
+/* Oferta de seguimiento tras la primera consulta */
+#modal-seguir .sg-caja { max-width: 460px; text-align: left; max-height: 92dvh; overflow-y: auto; }
+#modal-seguir .sg-eyebrow { margin: 0 0 4px; font-size: 0.74rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--success); }
+#modal-seguir h3 { margin: 0 0 8px; font-size: 1.35rem; line-height: 1.2; }
+#modal-seguir .sg-estado { margin: 0 0 12px; padding: 10px 12px; border-radius: 12px; background: var(--brand-soft); color: var(--navy); font-weight: 700; font-size: 0.92rem; }
+#modal-seguir .sg-lista { list-style: none; margin: 8px 0 14px; padding: 0; display: grid; gap: 10px; }
+#modal-seguir .sg-lista li { display: flex; gap: 10px; align-items: flex-start; font-size: 0.95rem; line-height: 1.35; }
+#modal-seguir .sg-lista li > span { flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--success-soft); color: var(--success); display: grid; place-items: center; font-weight: 800; font-size: 0.8rem; margin-top: 1px; }
+#modal-seguir .sg-wa { display: flex; gap: 8px; align-items: flex-start; margin: 4px 0 10px; font-size: 0.88rem; }
+#modal-seguir .sg-wa input { margin-top: 3px; }
+#modal-seguir .sg-suscribir { width: 100%; min-height: 52px; font-size: 1.05rem; }
+#modal-seguir .sg-nota { margin: 8px 0 0; text-align: center; font-size: 0.8rem; color: var(--text-muted); }
+#modal-seguir .sg-pie { display: flex; justify-content: space-between; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+#modal-seguir .sg-enlace { background: none !important; box-shadow: none !important; background-image: none !important; color: var(--brand) !important; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; min-height: 40px; padding: 4px 6px; }

@@ -1165,7 +1165,70 @@ async function cargarRegistros(soloSiCambia) {
   if (seccionActual === "planes") renderizarPlanes(r.data, plan);
   if (seccionActual === "detalle-rnm" && detalleActual) construirDetalle(detalleActual);
   consumirIrAPago();
+  revisarOfertaSeguimiento(r.data, plan, activo);
 }
+
+/* ---------- Oferta de seguimiento tras la primera consulta ---------- */
+var ofertaSeguirMostrada = false, ofertaSeguirTimer = null;
+function hayModalAbierto() {
+  return Array.prototype.some.call(document.querySelectorAll(".modal"), function (m) { return !m.classList.contains("oculto"); });
+}
+function registroParaOferta(regs) {
+  return (regs || []).find(function (x) {
+    return !x.cerrado && !x.cubierto && !!x.ultimo_resultado && x.estado_pf !== "no_encontrado" && x.estado_pf !== "listo" && x.estado_pf !== "entregado";
+  }) || null;
+}
+function revisarOfertaSeguimiento(regs, plan, activo) {
+  if (ofertaSeguirMostrada || activo || pagandoPlan) return;
+  var x = registroParaOferta(regs); if (!x) return;
+  try { var hasta = Number(localStorage.getItem("rnm_seguir_snooze") || 0); if (hasta > Date.now()) return; } catch (e) { /* sin almacenamiento */ }
+  if (ofertaSeguirTimer) clearTimeout(ofertaSeguirTimer);
+  ofertaSeguirTimer = setTimeout(function () {
+    if (ofertaSeguirMostrada || hayModalAbierto() || seccionActual === "planes" || $("vista-app").classList.contains("oculto")) return;
+    ofertaSeguirMostrada = true; abrirOfertaSeguimiento(x);
+  }, 2500);
+}
+function abrirOfertaSeguimiento(x) {
+  var m = $("modal-seguir"); if (!m) return;
+  var e0 = estadoPresentacion(x);
+  $("sg-estado").textContent = "Estado de tu RNM " + (x.rnm ? "terminado en " + String(x.rnm).slice(-4) : "") + ": " + e0.t + ".";
+  var quiereWa = $("sg-wa-fila"), tel = perfilActual && String(perfilActual.telefono || "").replace(/\D/g, "");
+  var yaWa = !!(perfilActual && perfilActual.avisos_whatsapp);
+  if (!yaWa && tel && tel.length >= 10) { quiereWa.classList.remove("oculto"); $("sg-wa").checked = true; $("sg-wa-texto").textContent = "Quiero recibir los avisos por WhatsApp al +" + (tel.length <= 11 ? "55" + tel : tel) + "."; }
+  else quiereWa.classList.add("oculto");
+  msg("msg-seguir", "");
+  m.classList.remove("oculto"); document.body.style.overflow = "hidden";
+  m.querySelector(".modal-caja").focus();
+}
+function cerrarOfertaSeguimiento(posponerDias) {
+  var m = $("modal-seguir"); if (!m) return;
+  m.classList.add("oculto"); document.body.style.overflow = "";
+  if (posponerDias) { try { localStorage.setItem("rnm_seguir_snooze", String(Date.now() + posponerDias * 86400000)); } catch (e) { /* sin almacenamiento */ } }
+}
+async function suscribirDesdeOferta() {
+  var b = $("sg-suscribir"); b.disabled = true;
+  try {
+    // Si aceptó los avisos por WhatsApp, se guarda ese permiso (hace falta para poder escribirle).
+    if (!$("sg-wa-fila").classList.contains("oculto") && $("sg-wa").checked && usuarioActual) {
+      var up = await sb.from("rnm_perfiles").update({ avisos_whatsapp: true, avisos_whatsapp_at: new Date().toISOString() }).eq("user_id", usuarioActual.id).select().maybeSingle();
+      if (up.data) perfilActual = up.data;
+    }
+  } catch (e) { /* si falla, el pago sigue su camino */ }
+  b.disabled = false;
+  cerrarOfertaSeguimiento(0);
+  planElegido = "semanal"; ampliando = false;
+  var regs = registrosCargados || [];
+  cartelPlanes(regs, planCargado);
+  abrirModalPlanes();
+  mostrarPago("semanal");
+}
+$("sg-suscribir").addEventListener("click", suscribirDesdeOferta);
+$("sg-cerrar").addEventListener("click", function () { cerrarOfertaSeguimiento(2); });
+$("sg-ahora-no").addEventListener("click", function () { cerrarOfertaSeguimiento(3); });
+$("sg-otros").addEventListener("click", function () {
+  cerrarOfertaSeguimiento(0); planElegido = "semanal"; ampliando = false;
+  cartelPlanes(registrosCargados || [], planCargado); abrirModalPlanes();
+});
 
 /* ---------- Planes y pagos (Pantalla 13 y 16) ---------- */
 // Solo muestra el estado real del plan y los precios existentes; el cobro se hace siempre en la ventana de pago (tiene sus propios controles).
