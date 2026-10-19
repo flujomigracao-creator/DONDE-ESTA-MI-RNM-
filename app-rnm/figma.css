@@ -1147,3 +1147,9 @@ body:has(.modal:not(.oculto)) .consent-pixel, body:has(.camara:not(.oculto)) .co
 #modal-opiniones .btn { width: 100%; min-height: 54px; font-size: 1.05rem; flex: none; }
 #modal-opiniones .cerrar { top: calc(14px + env(safe-area-inset-top, 0px)); right: 14px; }
 .op-ver-todas { background: none !important; box-shadow: none !important; background-image: none !important; color: var(--brand) !important; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; min-height: 40px; padding: 4px 6px; justify-self: center; }
+
+/* Tarjeta de opinión con el nombre de la persona */
+.op-pub-cab { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.op-pub-avatar { flex: none; width: 38px; height: 38px; border-radius: 50%; background: var(--brand-soft); color: var(--brand); display: grid; place-items: center; font-weight: 800; font-size: 1.05rem; }
+.op-pub-datos { display: grid; gap: 1px; }
+.op-pub-nombre { font-size: 1rem; color: var(--navy); }
