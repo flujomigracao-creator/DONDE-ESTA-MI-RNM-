@@ -1134,38 +1134,103 @@ body:has(.modal:not(.oculto)) .consent-pixel, body:has(.camara:not(.oculto)) .co
 #modal-seguir .sg-enlace { background: none !important; box-shadow: none !important; background-image: none !important; color: var(--brand) !important; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; min-height: 40px; padding: 4px 6px; }
 
 /* Pantalla completa interactiva con las opiniones de clientes: se desliza hacia abajo y van apareciendo */
-#modal-opiniones { padding: 0 !important; align-items: stretch !important; justify-content: stretch !important; background: var(--canvas, #F4F8FF) !important; backdrop-filter: none !important; }
-#modal-opiniones .ov-progreso { position: absolute; top: 0; left: 0; right: 0; height: 4px; background: var(--line); z-index: 5; }
-#modal-opiniones .ov-progreso i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--verde-marca, #138A3E), var(--amarillo-marca, #FFC83D)); transition: width 0.12s linear; }
-#modal-opiniones .ov-caja { max-width: none !important; width: 100% !important; height: 100dvh !important; max-height: 100dvh !important; border-radius: 0 !important; box-shadow: none !important; background: transparent !important; text-align: left; display: block; padding: calc(30px + env(safe-area-inset-top, 0px)) 20px 0 !important; overflow-y: auto; scroll-behavior: smooth; overscroll-behavior: contain; }
+#modal-opiniones { padding: 0 !important; align-items: stretch !important; justify-content: stretch !important; background: linear-gradient(180deg, #EAF1FF 0%, #F6F9FF 38%, #FFFFFF 100%) !important; backdrop-filter: none !important; overflow: hidden; }
+/* fondo vivo: tres manchas de color que flotan despacio */
+#modal-opiniones .ov-fondo { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 0; }
+#modal-opiniones .ov-fondo span { position: absolute; border-radius: 50%; filter: blur(46px); opacity: 0.55; animation: ov-flota 14s ease-in-out infinite; }
+#modal-opiniones .ov-fondo span:nth-child(1) { width: 260px; height: 260px; background: #BFD4FF; top: -60px; left: -70px; }
+#modal-opiniones .ov-fondo span:nth-child(2) { width: 220px; height: 220px; background: #FFE29A; top: 38%; right: -90px; animation-delay: -5s; }
+#modal-opiniones .ov-fondo span:nth-child(3) { width: 240px; height: 240px; background: #C8F0D4; bottom: -80px; left: 10%; animation-delay: -9s; }
+@keyframes ov-flota { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(26px, -34px) scale(1.12); } }
+#modal-opiniones .ov-progreso { position: absolute; top: 0; left: 0; right: 0; height: 5px; background: rgba(18, 60, 138, 0.1); z-index: 8; }
+#modal-opiniones .ov-progreso i { display: block; height: 100%; width: 0; border-radius: 0 6px 6px 0; background: linear-gradient(90deg, #138A3E, #FFC83D); box-shadow: 0 0 10px rgba(255, 200, 61, 0.7); transition: width 0.12s linear; }
+/* barra compacta que aparece al bajar */
+#modal-opiniones .ov-mini { position: absolute; top: 5px; left: 0; right: 0; z-index: 7; display: flex; gap: 8px; align-items: center; justify-content: center; padding: calc(8px + env(safe-area-inset-top, 0px)) 52px 8px; background: rgba(255, 255, 255, 0.86); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); font-size: 0.86rem; font-weight: 700; color: var(--navy); transform: translateY(-110%); transition: transform 0.3s ease; }
+#modal-opiniones .ov-mini b { color: #F5B301; }
+#modal-opiniones.ov-bajando .ov-mini { transform: none; }
+#modal-opiniones .ov-caja { position: relative; z-index: 2; max-width: none !important; width: 100% !important; height: 100dvh !important; max-height: 100dvh !important; border-radius: 0 !important; box-shadow: none !important; background: transparent !important; text-align: left; display: block; padding: calc(34px + env(safe-area-inset-top, 0px)) 20px 0 !important; overflow-y: auto; scroll-behavior: smooth; overscroll-behavior: contain; animation: none !important; }
 #modal-opiniones .ov-caja::before { display: none !important; }
-#modal-opiniones .ov-eyebrow { margin: 0 0 6px; font-size: 0.78rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--success); }
-#modal-opiniones h3 { margin: 0 0 8px; font-size: 1.85rem; line-height: 1.12; letter-spacing: -0.02em; }
-#modal-opiniones .ov-resumen { margin: 0 0 10px; color: var(--text-muted); font-size: 1rem; }
-#modal-opiniones .ov-resumen b { color: #F5B301; font-size: 1.4rem; }
-#modal-opiniones .ov-desliza { margin: 6px 0 18px; font-size: 0.92rem; font-weight: 700; color: var(--brand); animation: ov-rebota 1.6s ease-in-out infinite; }
-@keyframes ov-rebota { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(5px); } }
-#modal-opiniones .ov-lista { display: grid; gap: 0; }
-/* Cada opinión ocupa casi una pantalla para que haya recorrido y aparezca al llegar a ella */
-#modal-opiniones .ov-lista .op-pub-caja { min-height: 46dvh; margin: 0 0 18px; padding: 22px 20px; display: flex; flex-direction: column; justify-content: center; border-radius: 22px; box-shadow: 0 10px 30px rgba(10, 42, 94, 0.08); opacity: 0; transform: translateY(36px) scale(0.98); transition: opacity 0.55s ease, transform 0.55s cubic-bezier(0.16, 1, 0.3, 1); }
+#modal-opiniones .ov-hero { margin-bottom: 8px; animation: ov-entra 0.7s cubic-bezier(0.16, 1, 0.3, 1) both; }
+@keyframes ov-entra { from { opacity: 0; transform: translateY(22px); } to { opacity: 1; transform: none; } }
+#modal-opiniones .ov-eyebrow { display: inline-block; margin: 0 0 10px; padding: 5px 12px; border-radius: 99px; background: #fff; border: 1px solid var(--line); font-size: 0.78rem; font-weight: 800; letter-spacing: 0.04em; text-transform: none; color: var(--success); box-shadow: 0 2px 8px rgba(10, 42, 94, 0.06); }
+#modal-opiniones h3 { margin: 0 0 14px; font-size: 2rem; line-height: 1.08; letter-spacing: -0.03em; color: var(--navy); }
+/* nota grande con estrellas que se llenan */
+#modal-opiniones .ov-nota-grande { display: flex; align-items: center; gap: 14px; margin: 0 0 14px; padding: 14px 16px; border-radius: 20px; background: #fff; border: 1px solid var(--line); box-shadow: 0 10px 30px rgba(10, 42, 94, 0.08); }
+#modal-opiniones .ov-nota-grande.oculto { display: none; }
+#modal-opiniones .ov-nota-num { font-size: 3.1rem; font-weight: 800; line-height: 1; letter-spacing: -0.04em; color: var(--navy); font-variant-numeric: tabular-nums; }
+#modal-opiniones .ov-estrellas-hero { display: flex; gap: 3px; }
+#modal-opiniones .ov-estrellas-hero i { font-style: normal; font-size: 1.5rem; color: #D9E2F2; transform: scale(0.4); opacity: 0; }
+#modal-opiniones .ov-estrellas-hero i.on { color: #F5B301; animation: ov-estrella 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; animation-delay: calc(var(--i) * 110ms + 250ms); text-shadow: 0 2px 10px rgba(245, 179, 1, 0.5); }
+#modal-opiniones .ov-estrellas-hero i.off { opacity: 1; transform: none; animation: none; }
+@keyframes ov-estrella { 0% { transform: scale(0.3) rotate(-40deg); opacity: 0; } 100% { transform: scale(1) rotate(0); opacity: 1; } }
+#modal-opiniones .ov-nota-total { display: block; margin-top: 2px; font-size: 0.86rem; font-weight: 700; color: var(--text-muted); }
+#modal-opiniones .ov-sello { display: flex; gap: 8px; align-items: flex-start; margin: 0 0 14px; font-size: 0.9rem; line-height: 1.35; color: var(--text-muted); }
+#modal-opiniones .ov-sello-ico { flex: none; width: 20px; height: 20px; border-radius: 50%; background: var(--success-soft); color: var(--success); display: grid; place-items: center; font-size: 0.72rem; font-weight: 800; margin-top: 1px; }
+#modal-opiniones .ov-desliza { display: inline-flex; align-items: center; gap: 8px; margin: 4px 0 8px; padding: 9px 16px; border-radius: 99px; background: var(--navy); color: #fff; font-size: 0.9rem; font-weight: 700; box-shadow: 0 8px 20px rgba(18, 60, 138, 0.28); transition: opacity 0.3s ease, transform 0.3s ease; }
+#modal-opiniones .ov-desliza.oculto { display: inline-flex; opacity: 0; transform: translateY(-8px) scale(0.95); pointer-events: none; }
+#modal-opiniones .ov-flecha { display: inline-block; animation: ov-rebota 1.3s ease-in-out infinite; }
+@keyframes ov-rebota { 0%, 100% { transform: translateY(-2px); } 50% { transform: translateY(5px); } }
+#modal-opiniones .ov-lista { display: grid; gap: 0; padding-top: 6px; }
+/* Cada opinión es una tarjeta grande que entra desde un lado, con comilla decorativa y estrellas que aparecen una a una */
+#modal-opiniones .ov-lista .op-pub-caja { position: relative; min-height: 46dvh; margin: 0 0 20px; padding: 26px 22px; display: flex; flex-direction: column; justify-content: center; border-radius: 26px; background: #fff; border: 1px solid rgba(18, 60, 138, 0.08); box-shadow: 0 14px 40px rgba(10, 42, 94, 0.1); overflow: hidden; opacity: 0; transform: translate(var(--dx, 0), 44px) rotate(var(--rot, 0deg)) scale(0.96); transition: opacity 0.6s ease, transform 0.7s cubic-bezier(0.16, 1, 0.3, 1); }
+#modal-opiniones .ov-lista .op-pub-caja:nth-child(odd) { --dx: -34px; --rot: -1.2deg; }
+#modal-opiniones .ov-lista .op-pub-caja:nth-child(even) { --dx: 34px; --rot: 1.2deg; }
 #modal-opiniones .ov-lista .op-pub-caja.visible { opacity: 1; transform: none; }
-#modal-opiniones .ov-lista .op-pub-caja blockquote { font-size: 1.22rem; line-height: 1.4; margin: 10px 0 0; font-weight: 600; }
-#modal-opiniones .ov-lista .op-pub-avatar { width: 46px; height: 46px; font-size: 1.25rem; }
-#modal-opiniones .ov-lista .op-pub-nombre { font-size: 1.1rem; }
-#modal-opiniones .ov-lista .op-pub-estrellas { font-size: 1.1rem; }
-#modal-opiniones .ov-fin { min-height: 24dvh; display: grid; place-items: center; text-align: center; padding: 10px 6px 100px; opacity: 0; transition: opacity 0.5s ease; }
-#modal-opiniones .ov-fin.visible { opacity: 1; }
-#modal-opiniones .ov-fin-texto { margin: 0; font-size: 1.02rem; font-weight: 700; color: var(--navy); }
-#modal-opiniones .ov-pie { position: sticky; bottom: 0; margin: 0 -20px; padding: 14px 20px calc(16px + env(safe-area-inset-bottom, 0px)); padding-top: 26px; background: linear-gradient(180deg, rgba(244, 248, 255, 0), var(--canvas, #F4F8FF) 62%); z-index: 3; }
-#modal-opiniones .ov-hint { margin: 0 0 8px; text-align: center; font-size: 0.85rem; font-weight: 700; color: var(--text-muted); min-height: 1.2em; }
-#modal-opiniones .btn { width: 100%; min-height: 54px; font-size: 1.05rem; }
-#modal-opiniones .btn:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none !important; }
-#modal-opiniones .cerrar { top: calc(14px + env(safe-area-inset-top, 0px)); right: 14px; z-index: 6; }
+#modal-opiniones .ov-lista .op-pub-caja::before { content: "\201C"; position: absolute; top: -18px; right: 12px; font-size: 9rem; line-height: 1; font-family: Georgia, serif; color: var(--brand-soft); pointer-events: none; }
+#modal-opiniones .ov-lista .op-pub-caja::after { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: linear-gradient(180deg, #138A3E, #FFC83D); transform: scaleY(0); transform-origin: top; transition: transform 0.8s ease 0.25s; }
+#modal-opiniones .ov-lista .op-pub-caja.visible::after { transform: scaleY(1); }
+#modal-opiniones .ov-lista .op-pub-cab { position: relative; z-index: 1; gap: 12px; margin-bottom: 10px; }
+#modal-opiniones .ov-lista .op-pub-avatar { width: 52px; height: 52px; font-size: 1.4rem; color: #fff; background: var(--av, var(--brand)); box-shadow: 0 6px 16px rgba(10, 42, 94, 0.2); }
+#modal-opiniones .ov-lista .op-pub-nombre { font-size: 1.15rem; }
+#modal-opiniones .ov-lista .op-pub-sub { font-size: 0.78rem; font-weight: 700; color: var(--success); }
+#modal-opiniones .ov-lista .op-pub-estrellas { font-size: 1.15rem; display: flex; gap: 2px; margin-top: 2px; }
+#modal-opiniones .ov-lista .op-pub-estrellas i { font-style: normal; color: #F5B301; opacity: 0; transform: scale(0.3); }
+#modal-opiniones .ov-lista .visible .op-pub-estrellas i { animation: ov-estrella 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; animation-delay: calc(var(--i) * 90ms + 350ms); }
+#modal-opiniones .ov-lista .op-pub-caja blockquote { position: relative; z-index: 1; font-size: 1.28rem; line-height: 1.42; margin: 8px 0 0; font-weight: 600; color: var(--navy); }
+/* cierre con check animado y chispas */
+#modal-opiniones .ov-fin { position: relative; min-height: 38dvh; display: grid; place-items: center; align-content: center; gap: 8px; text-align: center; padding: 10px 10px 110px; }
+#modal-opiniones .ov-fin > * { opacity: 0; transform: translateY(16px); transition: opacity 0.5s ease, transform 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+#modal-opiniones .ov-fin.visible > * { opacity: 1; transform: none; }
+#modal-opiniones .ov-fin.visible .ov-fin-texto { transition-delay: 0.35s; }
+#modal-opiniones .ov-fin.visible .ov-fin-sub { transition-delay: 0.5s; }
+#modal-opiniones .ov-check { width: 74px; height: 74px; }
+#modal-opiniones .ov-check circle { stroke: #138A3E; stroke-dasharray: 145; stroke-dashoffset: 145; }
+#modal-opiniones .ov-check path { stroke: #138A3E; stroke-dasharray: 40; stroke-dashoffset: 40; }
+#modal-opiniones .ov-fin.visible .ov-check circle { animation: ov-trazo 0.7s ease forwards; }
+#modal-opiniones .ov-fin.visible .ov-check path { animation: ov-trazo 0.45s ease 0.6s forwards; }
+@keyframes ov-trazo { to { stroke-dashoffset: 0; } }
+#modal-opiniones .ov-fin-texto { margin: 6px 0 0; font-size: 1.25rem; font-weight: 800; letter-spacing: -0.02em; color: var(--navy); }
+#modal-opiniones .ov-fin-sub { margin: 0; font-size: 0.98rem; font-weight: 600; color: var(--text-muted); }
+#modal-opiniones .ov-chispas { position: absolute; left: 50%; top: 38%; width: 0; height: 0; }
+#modal-opiniones .ov-chispas i { position: absolute; left: 0; top: 0; width: 9px; height: 9px; border-radius: 3px; background: var(--c); opacity: 0; }
+#modal-opiniones .ov-fin.visible .ov-chispas i { animation: ov-chispa 1.3s cubic-bezier(0.2, 0.7, 0.3, 1) forwards; animation-delay: calc(var(--d) * 1ms); }
+@keyframes ov-chispa { 0% { opacity: 1; transform: translate(0, 0) rotate(0); } 100% { opacity: 0; transform: translate(var(--x), var(--y)) rotate(var(--r)); } }
+#modal-opiniones .ov-pie { position: sticky; bottom: 0; margin: 0 -20px; padding: 28px 20px calc(16px + env(safe-area-inset-bottom, 0px)); background: linear-gradient(180deg, rgba(255, 255, 255, 0), #fff 62%); z-index: 3; }
+#modal-opiniones .ov-hint { margin: 0 0 8px; text-align: center; font-size: 0.86rem; font-weight: 700; color: var(--text-muted); min-height: 1.2em; }
+#modal-opiniones .btn { position: relative; overflow: hidden; width: 100%; min-height: 56px; font-size: 1.08rem; transition: opacity 0.3s ease, transform 0.3s ease, filter 0.3s ease; }
+#modal-opiniones .btn:disabled { opacity: 0.5; filter: grayscale(0.35); cursor: not-allowed; box-shadow: none !important; }
+#modal-opiniones .btn.ov-listo { animation: ov-latido 1.8s ease-in-out infinite; }
+#modal-opiniones .btn.ov-listo::after { content: ""; position: absolute; top: 0; bottom: 0; width: 60px; left: -80px; background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.45), transparent); transform: skewX(-20deg); animation: ov-brillo 2.4s ease-in-out infinite; }
+@keyframes ov-latido { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.025); } }
+@keyframes ov-brillo { 0% { left: -80px; } 55%, 100% { left: 120%; } }
+#modal-opiniones .cerrar { top: calc(14px + env(safe-area-inset-top, 0px)); right: 14px; z-index: 9; }
 #modal-opiniones.ov-obligatoria .cerrar { display: none; }
-@media (prefers-reduced-motion: reduce) { #modal-opiniones .ov-lista .op-pub-caja, #modal-opiniones .ov-fin { transition: none; opacity: 1; transform: none; } #modal-opiniones .ov-desliza { animation: none; } #modal-opiniones .ov-caja { scroll-behavior: auto; } }
+@media (prefers-reduced-motion: reduce) {
+  #modal-opiniones .ov-fondo span, #modal-opiniones .ov-flecha, #modal-opiniones .btn.ov-listo, #modal-opiniones .btn.ov-listo::after { animation: none; }
+  #modal-opiniones .ov-hero { animation: none; }
+  #modal-opiniones .ov-lista .op-pub-caja, #modal-opiniones .ov-fin > * { transition: none; opacity: 1; transform: none; }
+  #modal-opiniones .ov-lista .op-pub-estrellas i, #modal-opiniones .ov-estrellas-hero i.on { animation: none; opacity: 1; transform: none; }
+  #modal-opiniones .ov-check circle, #modal-opiniones .ov-check path { stroke-dashoffset: 0; animation: none; }
+  #modal-opiniones .ov-lista .op-pub-caja::after { transform: scaleY(1); transition: none; }
+  #modal-opiniones .ov-caja { scroll-behavior: auto; }
+}
 .op-ver-todas { background: none !important; box-shadow: none !important; background-image: none !important; color: var(--brand) !important; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; min-height: 40px; padding: 4px 6px; justify-self: center; }
 /* Tarjeta de opinión con el nombre de la persona */
 .op-pub-cab { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
 .op-pub-avatar { flex: none; width: 38px; height: 38px; border-radius: 50%; background: var(--brand-soft); color: var(--brand); display: grid; place-items: center; font-weight: 800; font-size: 1.05rem; }
 .op-pub-datos { display: grid; gap: 1px; }
 .op-pub-nombre { font-size: 1rem; color: var(--navy); }
+/* Tarjetas de opinión en todos los sitios: avatar de color, estrellas y etiqueta */
+.op-pub-estrellas i { font-style: normal; }
+.op-pub-avatar { background: var(--av, var(--brand)); color: #fff; }
+.op-pub-sub { display: block; font-size: 0.72rem; font-weight: 700; color: var(--success); }

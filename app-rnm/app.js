@@ -1974,13 +1974,18 @@ function tarjetaOpinion(o) {
   var c = el("figure", "op-pub-caja");
   var cab = el("div", "op-pub-cab");
   var nombre = String(o.nombre || "Cliente");
-  cab.appendChild(el("span", "op-pub-avatar", nombre.charAt(0).toUpperCase()));
-  var datos = el("div", "op-pub-datos"); datos.appendChild(el("b", "op-pub-nombre", nombre)); datos.appendChild(el("div", "op-pub-estrellas", "★★★★★".slice(0, o.estrellas)));
+  var av = el("span", "op-pub-avatar", nombre.charAt(0).toUpperCase());
+  var h = 0; for (var k = 0; k < nombre.length; k++) h = (h * 31 + nombre.charCodeAt(k)) % 360;
+  av.style.setProperty("--av", "linear-gradient(135deg, hsl(" + h + ", 70%, 46%), hsl(" + ((h + 40) % 360) + ", 75%, 38%))");
+  cab.appendChild(av);
+  var datos = el("div", "op-pub-datos"); datos.appendChild(el("b", "op-pub-nombre", nombre));
+  var est = el("div", "op-pub-estrellas");
+  for (var i = 0; i < Math.max(0, Math.min(5, o.estrellas || 0)); i++) { var e1 = el("i", "", "★"); e1.style.setProperty("--i", String(i)); est.appendChild(e1); }
+  datos.appendChild(est); datos.appendChild(el("span", "op-pub-sub", "Cliente de la app"));
   cab.appendChild(datos); c.appendChild(cab);
   c.appendChild(el("blockquote", "", "«" + o.comentario + "»"));
   return c;
 }
-/* Prueba social junto al precio: solo si hay opiniones aprobadas y la valoración media es buena (4 o más). */
 function pintarPruebaSocial(box) {
   if (!box) return;
   box.textContent = ""; box.classList.add("oculto");
@@ -1994,35 +1999,75 @@ function pintarPruebaSocial(box) {
 }
 /* Pantalla completa con las opiniones de otros clientes (prueba social). En el primer registro es OBLIGATORIO deslizar hasta
    abajo para poder continuar; las opiniones van apareciendo mientras la persona baja. Desde el enlace «Ver todas» se puede cerrar libremente. */
-var ovObservador = null;
+var ovObservador = null, ovContador = null;
+function ovChispas() {
+  var box = $("ov-chispas"); box.textContent = "";
+  var colores = ["#FFC83D", "#138A3E", "#155EEF", "#FF8F92", "#7C5CFF"];
+  for (var i = 0; i < 22; i++) {
+    var p = el("i"), ang = Math.random() * Math.PI * 2, dist = 70 + Math.random() * 120;
+    p.style.setProperty("--c", colores[i % colores.length]);
+    p.style.setProperty("--x", Math.round(Math.cos(ang) * dist) + "px");
+    p.style.setProperty("--y", Math.round(Math.sin(ang) * dist - 40) + "px");
+    p.style.setProperty("--r", Math.round(Math.random() * 540 - 270) + "deg");
+    p.style.setProperty("--d", String(Math.round(Math.random() * 260)));
+    box.appendChild(p);
+  }
+}
+function ovNota(valor) {
+  var num = $("ov-nota-num"), mini = $("ov-mini-nota");
+  if (ovContador) cancelAnimationFrame(ovContador);
+  var t0 = null, dur = 1000;
+  function paso(t) {
+    if (t0 === null) t0 = t;
+    var p = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - p, 3);
+    num.textContent = (valor * e).toFixed(1).replace(".", ",");
+    if (p < 1) ovContador = requestAnimationFrame(paso); else { num.textContent = valor.toFixed(1).replace(".", ","); }
+  }
+  mini.textContent = "★ " + valor.toFixed(1).replace(".", ",");
+  ovContador = requestAnimationFrame(paso);
+}
+/* Pantalla completa con las opiniones de otros clientes (prueba social). En el primer registro es OBLIGATORIO deslizar hasta
+   abajo para poder continuar; las opiniones van apareciendo mientras la persona baja. Desde el enlace «Ver todas» se puede cerrar libremente. */
 function abrirOpinionesClientes(obligatoria) {
   var d = opinionesPublicasCache, m = $("modal-opiniones"); if (!m || !d || !(d.opiniones || []).length) return;
   obligatoria = obligatoria === true;
   var primer = (perfilActual && perfilActual.nombre) ? String(perfilActual.nombre).trim().split(" ")[0] : "";
   $("ov-eyebrow").textContent = primer ? "Hola, " + primer.charAt(0).toUpperCase() + primer.slice(1).toLowerCase() + " 👋" : "Antes de empezar";
-  var res = $("ov-resumen"); res.textContent = "";
-  if (d.resumen) { res.appendChild(el("b", "", "★ " + String(d.resumen.promedio).replace(".", ","))); res.appendChild(document.createTextNode(" · " + d.resumen.total + " opiniones de clientes")); }
+  // Nota grande: solo si la base entrega la valoración media real (5 opiniones o más); si no, no se inventa ninguna cifra.
+  var grande = $("ov-nota-grande"), mini = $("ov-mini-nota"), valor = d.resumen ? Number(d.resumen.promedio) : 0;
+  if (d.resumen && valor > 0) {
+    grande.classList.remove("oculto"); $("ov-nota-total").textContent = d.resumen.total + " opiniones de clientes";
+    var estr = $("ov-estrellas-hero").children;
+    for (var k = 0; k < estr.length; k++) { estr[k].style.setProperty("--i", String(k)); estr[k].className = ""; void estr[k].offsetWidth; estr[k].className = k < Math.round(valor) ? "on" : "off"; }
+    ovNota(valor);
+  } else { grande.classList.add("oculto"); mini.textContent = "★"; }
   var lista = $("ov-lista"); lista.textContent = "";
   d.opiniones.forEach(function (o) { lista.appendChild(tarjetaOpinion(o)); });
   var caja = $("ov-caja"), btn = $("ov-continuar"), hint = $("ov-hint"), barra = $("ov-barra"), fin = $("ov-fin");
-  m.classList.toggle("ov-obligatoria", obligatoria);
+  m.classList.toggle("ov-obligatoria", obligatoria); m.classList.remove("ov-bajando");
   $("ov-desliza-arriba").classList.remove("oculto");
-  caja.scrollTop = 0; barra.style.width = "0%"; fin.classList.remove("visible");
+  caja.scrollTop = 0; barra.style.width = "0%"; fin.classList.remove("visible"); ovChispas();
+  btn.classList.remove("ov-listo");
   var listo = !obligatoria;
   btn.disabled = !listo; hint.textContent = listo ? "" : "Desliza hasta el final para continuar ↓";
   // Las tarjetas aparecen al llegar a ellas
   if (ovObservador) ovObservador.disconnect();
   var tarjetas = Array.prototype.slice.call(lista.querySelectorAll(".op-pub-caja")).concat([fin]);
   if ("IntersectionObserver" in window) {
-    ovObservador = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add("visible"); ovObservador.unobserve(e.target); } }); }, { root: caja, threshold: 0.25 });
+    ovObservador = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add("visible"); ovObservador.unobserve(e.target); } }); }, { root: caja, threshold: 0.3 });
     tarjetas.forEach(function (t) { ovObservador.observe(t); });
   } else tarjetas.forEach(function (t) { t.classList.add("visible"); });
   function progreso() {
     var max = caja.scrollHeight - caja.clientHeight;
     var p = max <= 4 ? 1 : caja.scrollTop / max;
     barra.style.width = Math.min(100, Math.round(p * 100)) + "%";
-    if (p > 0.04) $("ov-desliza-arriba").classList.add("oculto");
-    if (!listo && p >= 0.96) { listo = true; btn.disabled = false; hint.textContent = "¡Gracias por llegar hasta aquí! Ya puedes continuar ✓"; }
+    m.classList.toggle("ov-bajando", caja.scrollTop > 150);
+    if (p > 0.03) $("ov-desliza-arriba").classList.add("oculto");
+    if (!listo && p >= 0.96) {
+      listo = true; btn.disabled = false; btn.classList.add("ov-listo");
+      hint.textContent = "¡Gracias por llegar hasta aquí! Ya puedes continuar ✓";
+      try { if (navigator.vibrate) navigator.vibrate(35); } catch (e) { /* sin vibración */ }
+    }
   }
   caja.onscroll = progreso;
   m.classList.remove("oculto"); document.body.style.overflow = "hidden"; caja.focus();
