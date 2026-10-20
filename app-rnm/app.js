@@ -18,6 +18,12 @@ var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     var q = new URLSearchParams(location.search), planParam = String(q.get("plan") || "").toLowerCase(), metodo = q.get("pago");
     var tipoPlan = planParam === "manual" ? "manual" : planParam === "quincenal" ? "quincenal" : ((planParam === "semanal" || (Number(planParam) >= 1 && Number(planParam) <= 4)) ? "semanal" : null);
     if (q.get("opinar") === "1") { localStorage.setItem("rnm_opinar", String(Date.now())); history.replaceState(null, "", location.pathname + location.hash); }
+    /* Enlace «No quiero recibir estos correos» (rnm-baja-email): confirma la baja de los correos de plan y de opinión. */
+    var baja = q.get("baja_correo");
+    if (baja === "ok" || baja === "error") {
+      history.replaceState(null, "", location.pathname + location.hash);
+      setTimeout(function () { if (window.toast) toast(baja === "ok" ? "Listo: no recibirás más correos de ofertas. Los avisos de tu RNM sí seguirán llegando." : "No pudimos darte de baja con ese enlace. Escríbenos y lo hacemos por ti.", baja === "ok" ? "ok" : "error"); }, 1500);
+    }
     var ref = String(q.get("ref") || "").toLowerCase();
     if (/^[a-z0-9_-]{3,40}$/.test(ref)) {
       localStorage.setItem("rnm_ref", ref);
