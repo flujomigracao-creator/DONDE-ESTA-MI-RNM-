@@ -78,6 +78,13 @@
   .heroe .letra { margin: 18px 0 0; font-size: 0.9rem; color: #9FB1C8; }
   .heroe .letra b { color: #fff; font-weight: 600; }
 
+  /* Foto del héroe: arriba en el celular, de fondo en pantallas grandes */
+  .heroe .foto { position: relative; width: 100%; aspect-ratio: 3 / 2; max-height: 460px; background: url("heroe-rnm.jpg") 50% 20% / cover no-repeat; }
+  .heroe .foto::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(11, 37, 69, 0) 55%, var(--tinta) 99%); }
+  .heroe .envoltura { padding-block: 4px 56px !important; }
+  .banda-intro { display: grid; gap: 40px; align-items: center; }
+  .banda-intro .ficha { margin-bottom: 26px; justify-self: center; }
+
   /* Ficha de estado (lo más característico: lo que el cliente ve) */
   .ficha { background: var(--blanco); color: var(--tinta); border-radius: 18px; padding: 22px; max-width: 420px; width: 100%; justify-self: center; box-shadow: 0 30px 60px rgba(0,0,0,.35); position: relative; }
   .ficha .arriba { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; border-bottom: 1px dashed var(--linea); padding-bottom: 14px; }
@@ -236,7 +243,11 @@
   }
   @media (min-width: 960px) {
     body.lp { padding-bottom: 0; } .fijo { display: none; }
-    .heroe .envoltura { grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); align-items: center; gap: 56px; padding-block: 72px 88px; }
+    .heroe .foto { position: absolute; inset: 0 0 0 38%; width: auto; aspect-ratio: auto; max-height: none; height: auto; background-position: 50% 30%; }
+    .heroe .foto::after { background: linear-gradient(90deg, var(--tinta) 0%, rgba(11, 37, 69, .55) 16%, rgba(11, 37, 69, 0) 42%), linear-gradient(0deg, rgba(11, 37, 69, .5) 0%, rgba(11, 37, 69, 0) 30%); }
+    .heroe .envoltura { grid-template-columns: minmax(0, 0.95fr) minmax(0, 1fr); padding-block: 104px 128px !important; }
+    .heroe .envoltura > div:first-child { grid-column: 1; }
+    .banda-intro { grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr); gap: 56px; }
     .seccion { padding-block: 96px 8px; }
   }
   /* Aviso de medición (lo crea meta-pixel.js) */
@@ -272,6 +283,7 @@
 
 <main id="inicio">
 <section class="heroe">
+  <div class="foto" role="img" aria-label="Personas saltando de alegría con su RNM en la mano"></div>
   <div class="envoltura">
     <div>
       <p class="etiqueta">Seguimiento de RNM · Polícia Federal</p>
@@ -282,17 +294,6 @@
         <a class="enlace" href="#como">Cómo funciona</a>
       </div>
       <p class="letra">Desde <b>R$ 4,99 al mes</b> · Pix, tarjeta o boleto · <b>Reembolso</b> si no te convence en la primera hora</p>
-    </div>
-    <div class="ficha" aria-label="Ejemplo de lo que verás en la app">
-      <div class="arriba"><small>Tu seguimiento</small><span class="numero">RNM ···248V</span></div>
-      <ol class="linea-t">
-        <li class="ok">En análisis<small>Recibido por la PF</small></li>
-        <li class="ok">Enviado a impresión<small>Una de las últimas etapas</small></li>
-        <li class="ok">Listo para retirar<small>Revisado hoy</small></li>
-      </ol>
-      <div class="unidad"><small>Retíralo en</small><b>Curitiba / PR</b><code>DELEMIG/DREX/SR/PF/PR</code></div>
-      <div class="sello" aria-hidden="true">Listo<br>para retirar</div>
-      <div class="aviso-wa" aria-hidden="true"><i><svg><use href="#i-wa"/></svg></i><div>Tu RNM está listo para retirar<small>WhatsApp · ahora</small></div></div>
     </div>
   </div>
 </section>
@@ -309,9 +310,24 @@
 </div></section>
 
 <section class="banda"><div class="envoltura">
-  <p class="etiqueta rv">Lo que verás</p>
-  <h2 class="t rv">Lo que dice la PF, explicado en español</h2>
-  <p class="lead rv">La consulta de la Polícia Federal responde en portugués técnico. Nosotros te decimos qué significa, dónde está tu documento y qué hacer.</p>
+  <div class="banda-intro">
+    <div>
+      <p class="etiqueta rv">Lo que verás</p>
+      <h2 class="t rv">Lo que dice la PF, explicado en español</h2>
+      <p class="lead rv">La consulta de la Polícia Federal responde en portugués técnico. Nosotros te decimos qué significa, dónde está tu documento y qué hacer.</p>
+    </div>
+    <div class="ficha" aria-label="Ejemplo de lo que verás en la app">
+      <div class="arriba"><small>Tu seguimiento</small><span class="numero">RNM ···248V</span></div>
+      <ol class="linea-t">
+        <li class="ok">En análisis<small>Recibido por la PF</small></li>
+        <li class="ok">Enviado a impresión<small>Una de las últimas etapas</small></li>
+        <li class="ok">Listo para retirar<small>Revisado hoy</small></li>
+      </ol>
+      <div class="unidad"><small>Retíralo en</small><b>Curitiba / PR</b><code>DELEMIG/DREX/SR/PF/PR</code></div>
+      <div class="sello" aria-hidden="true">Listo<br>para retirar</div>
+      <div class="aviso-wa" aria-hidden="true"><i><svg><use href="#i-wa"/></svg></i><div>Tu RNM está listo para retirar<small>WhatsApp · ahora</small></div></div>
+    </div>
+  </div>
   <div class="estados">
     <article class="estado rv"><span class="pildora ok">Listo</span><h3>Tu RNM está listo para retirar</h3><p>Te decimos en qué unidad y cómo retirarlo.</p><p class="donde">Retíralo en Curitiba / PR<code>DELEMIG/DREX/SR/PF/PR</code></p></article>
     <article class="estado rv" style="--d:.08s"><span class="pildora mov">En traslado</span><h3>Tu cambio de dirección fue aprobado</h3><p>Todavía no vayas a retirarlo: el documento va camino de la unidad nueva.</p><p class="donde">De Boa Vista / RR a Curitiba / PR<code>SR/PF/RR → SR/PF/PR</code></p></article>
@@ -432,7 +448,11 @@
   var raiz = document.documentElement;
   var movimiento = !(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
   if ("IntersectionObserver" in window && movimiento) raiz.classList.add("js");
-  document.querySelector(".ficha").classList.add("anima");
+  var ficha = document.querySelector(".ficha");
+  if ("IntersectionObserver" in window) {
+    var ioF = new IntersectionObserver(function (es) { if (es[0].isIntersecting) { ficha.classList.add("anima"); ioF.disconnect(); } }, { threshold: 0.4 });
+    ioF.observe(ficha);
+  } else ficha.classList.add("anima");
 
   var SB = "https://rumpfqevyspdmhaggxtq.supabase.co", KEY = "sb_publishable_7znj3ENrTWXDE2dibUzv_A_a7HUoud_";
   var segmento = "";
