@@ -409,6 +409,53 @@
     });
   }
 
+  var avisosCargados = [];
+  var estadoAvisos = { tipo: "todos", estado: "todos" };
+  var TIPO_AVISO = { listo: "RNM listo", etapa: "Cambio de etapa", problema: "Problema / pendencia", direccion: "Cambio de dirección", plan: "Invitación al plan", plan_semana: "Recordatorio a la semana", corregir: "Corregir RNM", opinion: "Pedir opinión" };
+  function pintarAvisos(cont) {
+    cont.textContent = "";
+    var lista = avisosCargados.filter(function (a) {
+      return (estadoAvisos.tipo === "todos" || a.tipo === estadoAvisos.tipo) && (estadoAvisos.estado === "todos" || a.estado === estadoAvisos.estado);
+    });
+    if (!lista.length) { cont.appendChild(e("p", "vacio", "No hay avisos con ese filtro.")); return; }
+    lista.forEach(function (a) {
+      var t = e("div", "persona"), cab = e("div", "cab"), tit = e("div");
+      tit.appendChild(e("b", "", a.cliente || "—")); tit.appendChild(e("br"));
+      tit.appendChild(e("small", "", (TIPO_AVISO[a.tipo] || a.tipo) + (a.rnm_final ? " · RNM …" + a.rnm_final : "") + " · " + (a.enviado_at ? "enviado " + fecha(a.enviado_at) : "creado " + fecha(a.creado_at))));
+      cab.appendChild(tit);
+      var cls = a.estado === "enviado" ? "activo" : (a.estado === "error" ? "vencido" : (a.estado === "cancelado" ? "cancelado" : ""));
+      cab.appendChild(e("span", "insignia " + cls, a.estado)); t.appendChild(cab);
+      if (a.error && a.estado !== "enviado") t.appendChild(e("p", "nota-p", a.estado === "error" ? "Error: " + a.error : "Motivo: " + a.error));
+      if (a.estado === "pendiente" && a.enviar_despues_at && new Date(a.enviar_despues_at) > new Date()) t.appendChild(e("p", "nota-p", "Sale el " + fecha(a.enviar_despues_at) + "."));
+      if (a.texto_enviado) { var det = e("details"); det.appendChild(e("summary", "", "Ver el mensaje que recibió")); det.appendChild(e("p", "comentario", a.texto_enviado)); t.appendChild(det); }
+      var acc = e("div", "acc");
+      var link = wa(a.telefono); if (link) { var l = e("a", "", "WhatsApp"); l.href = link; l.target = "_blank"; l.rel = "noopener"; acc.appendChild(l); }
+      var cli = clientesCargados.filter(function (c) { return c.user_id === a.user_id; })[0];
+      if (cli) { var w = e("button", "", "Conversación"); w.type = "button"; w.addEventListener("click", function () { abrirHilo(cli); }); acc.appendChild(w); }
+      if (acc.childNodes.length) t.appendChild(acc);
+      cont.appendChild(t);
+    });
+  }
+  function dibujarAvisos() {
+    seccion("Avisos por WhatsApp enviados");
+    var cuenta = function (f) { return avisosCargados.filter(f).length; };
+    var porTipo = {}; avisosCargados.forEach(function (a) { porTipo[a.tipo] = (porTipo[a.tipo] || 0) + 1; });
+    var sem = avisosCargados.filter(function (a) { return a.tipo === "plan_semana"; });
+    rejilla([
+      cifra("Enviados", num(cuenta(function (a) { return a.estado === "enviado"; })), "de los últimos " + avisosCargados.length + " avisos", "ok"),
+      cifra("En cola", num(cuenta(function (a) { return a.estado === "pendiente"; })), "esperando salir"),
+      cifra("Con error", num(cuenta(function (a) { return a.estado === "error"; })), "se reintentan solos si es una plantilla sin aprobar", cuenta(function (a) { return a.estado === "error"; }) ? "aviso" : ""),
+      cifra("Recordatorio a la semana", num(sem.length), num(sem.filter(function (a) { return a.estado === "enviado"; }).length) + " enviados · " + num(sem.filter(function (a) { return a.estado === "pendiente" || a.estado === "error"; }).length) + " esperando")
+    ]);
+    var barra = e("div", "barra"); barra.style.marginTop = "10px"; var cont = e("div", "personas");
+    var tipos = [["todos", "Todos"]].concat(Object.keys(TIPO_AVISO).filter(function (k) { return porTipo[k]; }).map(function (k) { return [k, TIPO_AVISO[k] + " (" + porTipo[k] + ")"]; }));
+    var estados = [["todos", "Cualquier estado"], ["enviado", "Enviados"], ["pendiente", "En cola"], ["error", "Con error"], ["cancelado", "Cancelados"]];
+    var bT = tipos.map(function (c) { var b = e("button", "chip" + (estadoAvisos.tipo === c[0] ? " on" : ""), c[1]); b.type = "button"; b.addEventListener("click", function () { estadoAvisos.tipo = c[0]; bT.forEach(function (x, i) { x.className = "chip" + (tipos[i][0] === c[0] ? " on" : ""); }); pintarAvisos(cont); }); barra.appendChild(b); return b; });
+    var barra2 = e("div", "barra");
+    var bE = estados.map(function (c) { var b = e("button", "chip" + (estadoAvisos.estado === c[0] ? " on" : ""), c[1]); b.type = "button"; b.addEventListener("click", function () { estadoAvisos.estado = c[0]; bE.forEach(function (x, i) { x.className = "chip" + (estados[i][0] === c[0] ? " on" : ""); }); pintarAvisos(cont); }); barra2.appendChild(b); return b; });
+    app.appendChild(barra); app.appendChild(barra2); app.appendChild(cont); pintarAvisos(cont);
+  }
+
   var embudoCargado = null;
   function dibujarEmbudo() {
     var d = embudoCargado;
@@ -569,13 +616,13 @@
     }));
 
     // Avisos
-    seccion("Avisos por WhatsApp");
-    var ac = e("div", "caja"); filas(ac, Object.keys(av).map(function (k) { return [k, av[k], k === "error" ? "var(--rojo)" : (k === "enviado" ? "var(--verde)" : "")]; })); app.appendChild(ac);
+    dibujarAvisos();
     app.appendChild(e("p", "nota", "Datos en vivo de la base de la app. Los importes de ventas vienen de Mercado Pago (tarjeta, Pix y boleto); el gasto, de la sincronización de Meta. El ingreso mensual recurrente suma el precio de los planes activos que no se han cancelado."));
   }
 
   function cargar() {
-    Promise.all([sb.rpc("rnm_admin_resumen"), sb.rpc("rnm_admin_planes"), sb.rpc("rnm_admin_clientes"), sb.rpc("rnm_admin_opiniones"), sb.rpc("rnm_admin_embudo", { p_dias: 30 })]).then(function (rs) {
+    Promise.all([sb.rpc("rnm_admin_resumen"), sb.rpc("rnm_admin_planes"), sb.rpc("rnm_admin_clientes"), sb.rpc("rnm_admin_opiniones"), sb.rpc("rnm_admin_embudo", { p_dias: 30 }), sb.rpc("rnm_admin_avisos")]).then(function (rs) {
+      avisosCargados = (rs[5] && rs[5].data) || [];
       var x = rs[0]; planesCargados = (rs[1] && rs[1].data) || []; clientesCargados = (rs[2] && rs[2].data) || []; opinionesCargadas = (rs[3] && rs[3].data) || { resumen: null, lista: [] }; embudoCargado = (rs[4] && rs[4].data) || null;
       if (x.error) {
         if (x.error.code === "42501" || /no_autorizado/.test(x.error.message || "")) return pantalla("Sin acceso", "Esta cuenta no tiene permiso para ver el panel.", [btn("Salir", function () { sb.auth.signOut().then(function () { location.reload(); }); })]);
