@@ -1287,3 +1287,22 @@ body:has(.modal:not(.oculto)) .consent-pixel, body:has(.camara:not(.oculto)) .co
 /* Landing: el plan se activa antes de entrar */
 body.paywall #modal-planes .cerrar, body.paywall #modal-planes .acciones .sec { display: none !important; }
 .paywall-salir { margin-top: 14px; width: 100%; font-size: 0.88rem; }
+
+/* Elección de planes en el celular: los tres planes caben en la primera vista; los detalles solo del elegido */
+@media (max-width: 679px) {
+  #modal-planes .modal-caja { padding-top: 16px; }
+  #modal-planes .pay-titulo { font-size: 1.22rem; margin-bottom: 4px; }
+  #modal-planes .pay > .sub { font-size: 0.86rem; line-height: 1.35; }
+  #cartel .opiniones-publicas { display: none !important; }
+  #cartel .planes-op { gap: 10px; margin: 14px 0 4px; }
+  #cartel .plan-op { padding: 12px 14px; border-radius: 16px; gap: 2px; }
+  #cartel .plan-op:hover:not(:disabled) { transform: none; }
+  #cartel .plan-op-insignia { position: absolute; top: -9px; right: 12px; font-size: 0.62rem; padding: 2px 8px; }
+  #cartel .plan-op-cab { margin-top: 0; }
+  #cartel .plan-op-nombre { font-size: 1.05rem; }
+  #cartel .plan-op-precio strong { font-size: 1.3rem; }
+  #cartel .plan-op-lema { margin: 0; font-size: 0.8rem; }
+  #cartel .plan-op-puntos { display: none; }
+  #cartel .plan-op.sel .plan-op-puntos { display: grid; gap: 5px; margin-top: 6px; }
+  #cartel .plan-op.sel .plan-op-puntos li { font-size: 0.82rem; }
+}
