@@ -186,11 +186,7 @@
   var FUNCION_BORRAR = "https://rumpfqevyspdmhaggxtq.supabase.co/functions/v1/rnm-admin-borrar-cliente";
   var MENSAJES_BORRAR = { es_dueno: "Esa cuenta es de un dueño y no se puede borrar.", no_puedes_borrarte: "No puedes borrar tu propia cuenta.", no_existe: "La cuenta ya no existe.", no_se_pudo_cancelar_suscripcion: "No se pudo cancelar su suscripción de tarjeta en Mercado Pago, así que no se borró nada. Inténtalo de nuevo." };
   function borrarClienteDe(userId, nombre, boton) {
-    var t = window.prompt("BORRAR LA CUENTA DE " + nombre + "
-
-Se eliminan para siempre: su cuenta, perfil, RNM, consultas, avisos, plan, pagos registrados, opiniones y mensajes. Si paga con tarjeta, se cancela su suscripción. No se puede deshacer.
-
-Para confirmar escribe BORRAR:");
+    var t = window.prompt("BORRAR LA CUENTA DE " + nombre + "\n\nSe eliminan para siempre: su cuenta, perfil, RNM, consultas, avisos, plan, pagos registrados, opiniones y mensajes. Si paga con tarjeta, se cancela su suscripción. No se puede deshacer.\n\nPara confirmar escribe BORRAR:");
     if (t === null) return;
     if (String(t).trim().toUpperCase() !== "BORRAR") { window.alert("No se borró nada: no escribiste BORRAR."); return; }
     boton.disabled = true; var texto = boton.textContent; boton.textContent = "Borrando…";
