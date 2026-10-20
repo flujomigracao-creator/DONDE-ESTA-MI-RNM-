@@ -3,161 +3,347 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Sigue tu RNM sin mirar cada día</title>
-<meta name="description" content="Tu RNM en trámite, seguido por nosotros: te avisamos por WhatsApp cuando cambie. Planes desde R$ 4,99. Garantía de reembolso en la primera hora.">
-<meta name="theme-color" content="#0E3F8E">
+<title>Sigue tu RNM en Brasil: sabe dónde está y recibe avisos por WhatsApp</title>
+<meta name="description" content="¿Hiciste tu RNM en la frontera y te mudaste? Te decimos dónde está tu documento, si hay cambio de dirección y te avisamos por WhatsApp. Planes desde R$ 4,99 con reembolso en la primera hora.">
+<meta name="theme-color" content="#08224F">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="figma.css">
 <style>
-  :root { --azul: #0E3F8E; --azul2: #1F6FEB; --noche: #08224F; --amarillo: #FFC83D; --verde: #13803D; --verde-claro: #E4F6EA; --texto: #0F1B33; --suave: #51617C; --linea: #DCE4F2; --fondo: #F4F7FC; }
+  :root { --azul: #0E3F8E; --azul2: #1F6FEB; --noche: #08224F; --noche2: #0B2E6B; --amarillo: #FFC83D; --amarillo2: #C9951A; --verde: #13803D; --verde-claro: #E4F6EA; --texto: #0F1B33; --suave: #51617C; --linea: #DCE4F2; --fondo: #F4F7FC; --blanco: #fff; }
   * { box-sizing: border-box; }
   html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
-  body.lp { margin: 0; background: var(--fondo); color: var(--texto); font: 17px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding-bottom: 84px; }
+  body.lp { margin: 0; background: var(--fondo); color: var(--texto); font: 17px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding-bottom: 86px; overflow-x: hidden; }
+  .lp img, .lp svg { max-width: 100%; }
   .lp a { color: inherit; }
-  .lp .caja { width: 100%; max-width: 560px; margin: 0 auto; padding: 0 20px; }
-  /* Barra superior */
-  .lp-top { background: var(--noche); padding: calc(10px + env(safe-area-inset-top, 0px)) 0 10px; }
+  .lp .caja { width: 100%; max-width: 1080px; margin: 0 auto; padding: 0 20px; }
+  .lp h1, .lp h2, .lp h3 { font-family: inherit; }
+
+  /* Progreso de lectura + barra superior */
+  #prog { position: fixed; top: 0; left: 0; height: 4px; width: 0; z-index: 70; background: linear-gradient(90deg, var(--amarillo), #ff9f1a); }
+  .lp-top { position: sticky; top: 0; z-index: 60; background: rgba(8, 34, 79, 0.97); backdrop-filter: blur(8px); padding: calc(9px + env(safe-area-inset-top, 0px)) 0 9px; transition: box-shadow .25s; }
+  .lp-top.sombra { box-shadow: 0 6px 24px rgba(0, 0, 0, 0.3); }
   .lp-top .caja { display: flex; align-items: center; gap: 10px; }
   .lp-top img { width: 34px; height: 34px; border-radius: 9px; }
-  .lp-top b { color: #fff; font-size: 1rem; letter-spacing: -0.01em; }
+  .lp-top b { color: #fff; font-size: 1rem; letter-spacing: -0.01em; flex: 1; }
+  .lp-top .mini { display: none; min-height: 40px; padding: 0 16px; border-radius: 12px; background: var(--amarillo); color: #1A1300 !important; font-weight: 800; font-size: 0.92rem; text-decoration: none; align-items: center; }
+  .lp-top.con-cta .mini { display: inline-flex; animation: aparece .3s both; }
+  @keyframes aparece { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+
+  /* Botón principal */
+  .lp-cta { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 58px; padding: 0 22px; border-radius: 16px; background: var(--amarillo); color: #1A1300 !important; font-size: 1.12rem; font-weight: 800; text-decoration: none; box-shadow: 0 6px 0 var(--amarillo2), 0 16px 30px rgba(0, 0, 0, 0.22); transition: transform .12s, box-shadow .12s; position: relative; overflow: hidden; }
+  .lp-cta::after { content: ""; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 35%, rgba(255, 255, 255, 0.55) 50%, transparent 65%); transform: translateX(-120%); animation: brillo 3.6s infinite; }
+  @keyframes brillo { 0%, 55% { transform: translateX(-120%); } 85%, 100% { transform: translateX(120%); } }
+  .lp-cta:hover { transform: translateY(-2px); } .lp-cta:active { transform: translateY(3px); box-shadow: 0 3px 0 var(--amarillo2), 0 8px 16px rgba(0, 0, 0, 0.22); }
+  .lp-cta.sec { background: #fff; color: var(--azul) !important; border: 2px solid var(--azul2); box-shadow: none; } .lp-cta.sec::after { display: none; }
+  .lp-cta.fantasma { background: transparent; color: #fff !important; border: 2px solid rgba(255, 255, 255, 0.55); box-shadow: none; min-height: 52px; font-size: 1rem; } .lp-cta.fantasma::after { display: none; }
+
   /* Héroe */
-  .lp-hero { background: linear-gradient(180deg, var(--noche) 0%, var(--azul) 100%); color: #fff; padding: 26px 0 34px; }
-  .lp-etiqueta { display: inline-block; background: var(--amarillo); color: #1A1300; font-weight: 800; font-size: 0.78rem; letter-spacing: 0.05em; text-transform: uppercase; padding: 5px 12px; border-radius: 999px; }
-  .lp-hero h1 { margin: 14px 0 10px; font-size: 2.1rem; line-height: 1.08; letter-spacing: -0.03em; }
+  .lp-hero { position: relative; background: linear-gradient(165deg, var(--noche) 0%, var(--azul) 70%, #1A57C4 100%); color: #fff; padding: 34px 0 52px; overflow: hidden; }
+  .forma { position: absolute; border-radius: 50%; filter: blur(2px); opacity: .22; pointer-events: none; will-change: transform; }
+  .forma.a { width: 320px; height: 320px; background: var(--amarillo); top: -120px; right: -90px; } .forma.b { width: 260px; height: 260px; background: #3B8BFF; bottom: -100px; left: -90px; }
+  .hero-grid { position: relative; display: grid; gap: 30px; align-items: center; }
+  .lp-etiqueta { display: inline-block; background: var(--amarillo); color: #1A1300; font-weight: 800; font-size: 0.76rem; letter-spacing: 0.05em; text-transform: uppercase; padding: 6px 13px; border-radius: 999px; }
+  .lp-hero h1 { margin: 16px 0 12px; font-size: 2.15rem; line-height: 1.07; letter-spacing: -0.035em; }
   .lp-hero h1 em { font-style: normal; color: var(--amarillo); }
-  .lp-hero p.sub { margin: 0 0 20px; font-size: 1.08rem; color: #D6E3FF; }
-  .lp-cta { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 58px; padding: 0 22px; border-radius: 16px; background: var(--amarillo); color: #1A1300 !important; font-size: 1.15rem; font-weight: 800; text-decoration: none; box-shadow: 0 6px 0 #C9951A, 0 14px 28px rgba(0,0,0,0.25); transition: transform .12s; }
-  .lp-cta:active { transform: translateY(3px); box-shadow: 0 3px 0 #C9951A, 0 8px 16px rgba(0,0,0,0.25); }
-  .lp-nota { margin: 12px 0 0; text-align: center; font-size: 0.86rem; color: #BBD0F7; }
-  .lp-nota b { color: #fff; }
-  /* Teléfono animado */
-  .lp-tel { margin: 28px auto 0; width: min(100%, 320px); border-radius: 30px; background: #fff; color: var(--texto); padding: 18px 16px 16px; box-shadow: 0 24px 50px rgba(0,0,0,0.35); border: 6px solid #0B1A3A; }
-  .lp-tel h3 { margin: 0 0 4px; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--suave); }
-  .lp-tel .rnm { font-weight: 800; font-size: 1.15rem; margin-bottom: 12px; letter-spacing: 0.04em; }
-  .paso-t { display: flex; align-items: center; gap: 10px; padding: 9px 0; font-weight: 700; font-size: 0.98rem; opacity: 0.38; animation: enciende 7s infinite; }
-  .paso-t i { flex: none; width: 24px; height: 24px; border-radius: 50%; background: var(--linea); display: grid; place-items: center; font-style: normal; font-size: 0.8rem; color: #fff; }
-  .paso-t:nth-of-type(1) { animation-delay: 0s; } .paso-t:nth-of-type(2) { animation-delay: 1.4s; } .paso-t:nth-of-type(3) { animation-delay: 2.8s; }
-  .paso-t.final { color: var(--verde); }
-  @keyframes enciende { 0%, 8% { opacity: .38; } 14%, 86% { opacity: 1; } 100% { opacity: .38; } }
-  .paso-t.final i { background: var(--verde); } .paso-t:not(.final) i { background: var(--azul2); }
-  .lp-wa { margin-top: 12px; padding: 11px 13px; border-radius: 14px 14px 14px 4px; background: var(--verde-claro); color: #0E3B21; font-size: 0.9rem; font-weight: 600; animation: sube 7s infinite; }
+  .lp-hero p.sub { margin: 0 0 22px; font-size: 1.1rem; color: #D6E3FF; }
+  .lp-hero p.sub b { color: #fff; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+  .chips span { background: rgba(255, 255, 255, 0.12); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 999px; padding: 6px 12px; font-size: 0.84rem; font-weight: 600; color: #E7EFFF; }
+  .lp-nota { margin: 12px 0 0; font-size: 0.88rem; color: #BBD0F7; } .lp-nota b { color: #fff; }
+
+  /* Teléfono */
+  .lp-tel { width: min(100%, 320px); margin: 0 auto; border-radius: 32px; background: #fff; color: var(--texto); padding: 18px 16px 16px; box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4); border: 7px solid #0B1A3A; animation: flota 6s ease-in-out infinite; }
+  @keyframes flota { 50% { transform: translateY(-8px); } }
+  .lp-tel h3 { margin: 0 0 4px; font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--suave); }
+  .lp-tel .rnm { font-weight: 800; font-size: 1.15rem; margin-bottom: 10px; letter-spacing: 0.04em; }
+  .paso-t { display: flex; align-items: center; gap: 10px; padding: 8px 0; font-weight: 700; font-size: 0.97rem; opacity: 0.38; animation: enciende 8s infinite; }
+  .paso-t i { flex: none; width: 24px; height: 24px; border-radius: 50%; background: var(--azul2); display: grid; place-items: center; font-style: normal; font-size: 0.8rem; color: #fff; }
+  .paso-t:nth-of-type(1) { animation-delay: 0s; } .paso-t:nth-of-type(2) { animation-delay: 1.5s; } .paso-t:nth-of-type(3) { animation-delay: 3s; }
+  .paso-t.final { color: var(--verde); } .paso-t.final i { background: var(--verde); }
+  @keyframes enciende { 0%, 6% { opacity: .38; } 12%, 88% { opacity: 1; } 100% { opacity: .38; } }
+  .lp-ubi { margin: 8px 0 0; padding: 9px 12px; border-radius: 12px; background: #EEF4FF; font-size: 0.86rem; font-weight: 700; color: var(--azul); animation: sube 8s infinite; animation-delay: 3.2s; }
+  .lp-wa { margin-top: 10px; padding: 11px 13px; border-radius: 14px 14px 14px 4px; background: var(--verde-claro); color: #0E3B21; font-size: 0.9rem; font-weight: 600; animation: sube 8s infinite; animation-delay: 4s; }
   .lp-wa small { display: block; font-weight: 500; color: #3D6B50; margin-top: 2px; }
-  @keyframes sube { 0%, 38% { opacity: 0; transform: translateY(10px); } 48%, 90% { opacity: 1; transform: none; } 100% { opacity: 0; } }
-  @media (prefers-reduced-motion: reduce) { .paso-t, .lp-wa { animation: none; opacity: 1; } }
+  @keyframes sube { 0%, 8% { opacity: 0; transform: translateY(10px); } 18%, 88% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+
   /* Secciones */
-  .lp-sec { padding: 38px 0 6px; }
-  .lp-sec h2 { margin: 0 0 6px; font-size: 1.55rem; line-height: 1.15; letter-spacing: -0.02em; }
-  .lp-sec .lead { margin: 0 0 18px; color: var(--suave); }
+  .lp-sec { padding: 56px 0 8px; }
+  .lp-sec.oscura { background: var(--noche); color: #fff; padding: 56px 0 60px; margin-top: 48px; }
+  .lp-sec .etq { display: inline-block; color: var(--azul2); font-weight: 800; font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 8px; }
+  .oscura .etq { color: var(--amarillo); }
+  .lp-sec h2 { margin: 0 0 10px; font-size: 1.85rem; line-height: 1.12; letter-spacing: -0.03em; }
+  .lp-sec .lead { margin: 0 0 24px; color: var(--suave); font-size: 1.05rem; max-width: 640px; } .oscura .lead { color: #BBD0F7; }
+
+  /* Historia + ruta */
+  .historia { display: grid; gap: 22px; }
+  .historia p { margin: 0 0 12px; color: var(--suave); } .historia p b { color: var(--texto); }
+  .dolores { display: grid; gap: 10px; margin: 18px 0 0; padding: 0; list-style: none; }
+  .dolores li { display: flex; gap: 12px; background: #fff; border: 1px solid var(--linea); border-radius: 16px; padding: 14px 16px; font-weight: 600; font-size: 0.97rem; }
+  .dolores li::before { content: "⚠️"; }
+  .ruta-caja { background: linear-gradient(160deg, #0B2E6B, #123F8E); border-radius: 24px; padding: 18px; color: #fff; }
+  .ruta-caja svg { width: 100%; height: auto; display: block; }
+  .ruta-pie { display: flex; justify-content: space-between; gap: 10px; font-size: 0.8rem; color: #BBD0F7; margin-top: 8px; }
+  #ruta-linea { stroke-dasharray: 520; stroke-dashoffset: 520; transition: stroke-dashoffset 2.2s ease .2s; }
+  .in #ruta-linea { stroke-dashoffset: 0; }
+  .pin { opacity: 0; transform: translateY(-14px); transition: all .5s ease; transform-box: fill-box; }
+  .in .pin.p1 { opacity: 1; transform: none; transition-delay: .2s; } .in .pin.p2 { opacity: 1; transform: none; transition-delay: 2.3s; }
+  .globo { opacity: 0; transition: opacity .6s ease 2.8s; } .in .globo { opacity: 1; }
+
+  /* Tarjetas de beneficios */
+  .rejilla { display: grid; gap: 12px; }
+  .ben { background: #fff; border: 1px solid var(--linea); border-radius: 20px; padding: 20px; transition: transform .2s, box-shadow .2s; }
+  .ben:hover { transform: translateY(-4px); box-shadow: 0 14px 30px rgba(14, 63, 142, 0.14); }
+  .ben .ico { width: 46px; height: 46px; border-radius: 14px; background: #EAF1FF; display: grid; place-items: center; font-size: 1.4rem; margin-bottom: 10px; }
+  .ben h3 { margin: 0 0 4px; font-size: 1.08rem; } .ben p { margin: 0; color: var(--suave); font-size: 0.95rem; }
+
+  /* Ejemplos de pantalla */
+  .ejemplos { display: grid; gap: 12px; }
+  .ej { background: #fff; color: var(--texto); border-radius: 20px; padding: 16px; border-left: 6px solid var(--azul2); }
+  .ej.ok { border-left-color: var(--verde); } .ej.mov { border-left-color: var(--amarillo2); }
+  .ej small { color: var(--suave); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.7rem; }
+  .ej h3 { margin: 2px 0 4px; font-size: 1.12rem; } .ej p { margin: 0; color: var(--suave); font-size: 0.93rem; }
+  .ej .ubi { margin-top: 8px; display: inline-block; background: #EEF4FF; color: var(--azul); border-radius: 10px; padding: 5px 10px; font-weight: 700; font-size: 0.86rem; }
+
+  /* Pasos */
   .pasos { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; counter-reset: p; }
   .pasos li { counter-increment: p; display: flex; gap: 14px; align-items: flex-start; background: #fff; border: 1px solid var(--linea); border-radius: 18px; padding: 16px; }
-  .pasos li::before { content: counter(p); flex: none; width: 38px; height: 38px; border-radius: 50%; background: var(--azul); color: #fff; font-weight: 800; display: grid; place-items: center; font-size: 1.1rem; }
+  .pasos li::before { content: counter(p); flex: none; width: 40px; height: 40px; border-radius: 50%; background: var(--azul); color: #fff; font-weight: 800; display: grid; place-items: center; font-size: 1.1rem; }
   .pasos b { display: block; font-size: 1.04rem; } .pasos span { color: var(--suave); font-size: 0.95rem; }
-  .planes { display: grid; gap: 12px; }
-  .plan-lp { position: relative; background: #fff; border: 2px solid var(--linea); border-radius: 20px; padding: 18px; }
-  .plan-lp.rec { border-color: var(--azul2); box-shadow: 0 10px 28px rgba(31, 111, 235, 0.18); }
-  .plan-lp .rec-tag { position: absolute; top: -12px; left: 16px; background: var(--azul2); color: #fff; font-size: 0.74rem; font-weight: 800; padding: 3px 12px; border-radius: 999px; letter-spacing: 0.04em; text-transform: uppercase; }
-  .plan-lp .cab { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
-  .plan-lp h3 { margin: 0; font-size: 1.1rem; }
-  .plan-lp .precio { font-size: 2rem; font-weight: 800; letter-spacing: -0.03em; } .plan-lp .precio small { font-size: 0.9rem; font-weight: 600; color: var(--suave); }
-  .plan-lp ul { margin: 8px 0 0; padding: 0; list-style: none; display: grid; gap: 5px; font-size: 0.95rem; }
+
+  /* Calificación */
+  .quiz { display: grid; gap: 10px; }
+  .quiz button { text-align: left; min-height: 56px; padding: 12px 16px; border-radius: 16px; background: #fff; border: 2px solid var(--linea); color: var(--texto); font: inherit; font-weight: 700; cursor: pointer; transition: border-color .15s, transform .15s; }
+  .quiz button:hover { border-color: var(--azul2); transform: translateX(3px); }
+  .quiz button.on { border-color: var(--azul2); background: #EAF1FF; }
+  .quiz-resp { margin-top: 14px; padding: 16px; border-radius: 16px; background: var(--verde-claro); border: 1px solid #BFE5CC; color: #0E3B21; display: none; }
+  .quiz-resp.ver { display: block; animation: aparece .35s both; } .quiz-resp b { display: block; margin-bottom: 4px; }
+  .quiz-resp .lp-cta { margin-top: 12px; }
+  .dos-col { display: grid; gap: 12px; }
+  .col-si, .col-no { background: #fff; border-radius: 20px; padding: 18px; border: 1px solid var(--linea); }
+  .col-si h3, .col-no h3 { margin: 0 0 8px; font-size: 1.05rem; } .col-si h3 { color: var(--verde); } .col-no h3 { color: #B3261E; }
+  .col-si ul, .col-no ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 7px; font-size: 0.95rem; }
+  .col-si li::before { content: "✓"; color: var(--verde); font-weight: 800; margin-right: 8px; } .col-no li::before { content: "✕"; color: #B3261E; font-weight: 800; margin-right: 8px; }
+
+  /* Planes */
+  .planes { display: grid; gap: 14px; }
+  .plan-lp { position: relative; background: #fff; border: 2px solid var(--linea); border-radius: 22px; padding: 22px 18px 18px; transition: transform .2s; }
+  .plan-lp:hover { transform: translateY(-4px); }
+  .plan-lp.rec { border-color: var(--azul2); box-shadow: 0 14px 34px rgba(31, 111, 235, 0.2); }
+  .plan-lp .rec-tag { position: absolute; top: -13px; left: 18px; background: var(--azul2); color: #fff; font-size: 0.74rem; font-weight: 800; padding: 4px 13px; border-radius: 999px; letter-spacing: 0.04em; text-transform: uppercase; }
+  .plan-lp h3 { margin: 0; font-size: 1.12rem; } .plan-lp .precio { font-size: 2.3rem; font-weight: 800; letter-spacing: -0.03em; line-height: 1.1; } .plan-lp .precio small { font-size: 0.9rem; font-weight: 600; color: var(--suave); }
+  .plan-lp ul { margin: 10px 0 0; padding: 0; list-style: none; display: grid; gap: 6px; font-size: 0.95rem; }
   .plan-lp li::before { content: "✓"; color: var(--verde); font-weight: 800; margin-right: 8px; }
-  .plan-btn { margin-top: 14px; min-height: 50px; font-size: 1.02rem; box-shadow: 0 4px 0 #C9951A; }
-  .plan-btn.sec { background: #fff; color: var(--azul) !important; border: 2px solid var(--azul2); box-shadow: none; }
-  .garantia-caja { margin-top: 16px; padding: 16px; border-radius: 16px; background: var(--verde-claro); border: 1px solid #BFE5CC; color: #0E3B21; display: grid; gap: 4px; }
-  .garantia-caja span { font-size: 0.95rem; }
+  .plan-btn { margin-top: 16px; min-height: 52px; font-size: 1rem; }
+  .garantia-caja { margin-top: 20px; padding: 18px; border-radius: 18px; background: var(--verde-claro); border: 1px solid #BFE5CC; color: #0E3B21; display: grid; gap: 4px; }
+  .garantia-caja b { font-size: 1.05rem; } .garantia-caja span { font-size: 0.95rem; }
   .garantias { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
   .garantias span { background: #fff; border: 1px solid var(--linea); border-radius: 999px; padding: 6px 12px; font-size: 0.86rem; font-weight: 600; }
-  .para { background: #fff; border: 1px solid var(--linea); border-radius: 18px; padding: 6px 16px; }
-  .para div { display: flex; gap: 12px; padding: 11px 0; border-top: 1px solid var(--linea); font-weight: 600; } .para div:first-child { border-top: 0; }
-  .para div::before { content: "👉"; }
-  details.faq { background: #fff; border: 1px solid var(--linea); border-radius: 14px; padding: 0 16px; margin-bottom: 8px; }
-  details.faq summary { cursor: pointer; font-weight: 700; padding: 14px 0; list-style: none; display: flex; justify-content: space-between; gap: 10px; min-height: 48px; align-items: center; }
-  details.faq summary::-webkit-details-marker { display: none; } details.faq summary::after { content: "+"; font-size: 1.4rem; color: var(--azul2); }
-  details.faq[open] summary::after { content: "–"; }
-  details.faq p { margin: 0 0 14px; color: var(--suave); font-size: 0.96rem; }
-  .lp-final { margin-top: 38px; background: var(--azul); color: #fff; padding: 34px 0 40px; text-align: center; }
-  .lp-final h2 { margin: 0 0 8px; font-size: 1.6rem; letter-spacing: -0.02em; } .lp-final p { margin: 0 0 18px; color: #D6E3FF; }
-  .lp-pie { padding: 22px 0; text-align: center; font-size: 0.8rem; color: var(--suave); } .lp-pie a { text-decoration: underline; }
-  /* Botón fijo en el celular */
-  .lp-fijo { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px)); background: rgba(8, 34, 79, 0.96); backdrop-filter: blur(8px); transform: translateY(110%); transition: transform .25s; }
-  .lp-fijo.ver { transform: none; } .lp-fijo .lp-cta { max-width: 520px; margin: 0 auto; min-height: 54px; font-size: 1.08rem; }
-  @media (min-width: 720px) { .lp-hero h1 { font-size: 2.6rem; } .lp .caja { max-width: 640px; } }
+
+  /* Opiniones */
+  #sec-op { display: none; }
+  #sec-op.ver { display: block; }
+  .ops { display: grid; gap: 12px; }
+  .op { background: #fff; border: 1px solid var(--linea); border-radius: 20px; padding: 18px; }
+  .op .cab { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+  .op .av { width: 44px; height: 44px; border-radius: 50%; color: #fff; font-weight: 800; display: grid; place-items: center; font-size: 1.1rem; }
+  .op b { display: block; } .op .est { color: #F5B301; letter-spacing: 2px; font-size: 0.95rem; } .op small { color: var(--suave); }
+  .op blockquote { margin: 0; font-size: 0.98rem; }
+  .op-res { margin: 0 0 14px; font-weight: 700; } .op-res span { color: #F5B301; }
+
+  details.faq { background: #fff; border: 1px solid var(--linea); border-radius: 16px; padding: 0 18px; margin-bottom: 10px; }
+  details.faq summary { cursor: pointer; font-weight: 700; padding: 15px 0; list-style: none; display: flex; justify-content: space-between; gap: 10px; min-height: 52px; align-items: center; }
+  details.faq summary::-webkit-details-marker { display: none; } details.faq summary::after { content: "+"; font-size: 1.5rem; color: var(--azul2); transition: transform .2s; }
+  details.faq[open] summary::after { transform: rotate(45deg); }
+  details.faq p { margin: 0 0 15px; color: var(--suave); font-size: 0.97rem; }
+
+  .lp-final { margin-top: 56px; background: linear-gradient(165deg, var(--noche), var(--azul)); color: #fff; padding: 52px 0 56px; text-align: center; }
+  .lp-final h2 { margin: 0 0 10px; font-size: 1.9rem; letter-spacing: -0.03em; line-height: 1.12; } .lp-final p { margin: 0 auto 20px; color: #D6E3FF; max-width: 520px; }
+  .lp-final .acc { max-width: 460px; margin: 0 auto; display: grid; gap: 12px; }
+  .lp-final .peq { margin: 10px auto 0; font-size: 0.85rem; color: #BBD0F7; }
+  .lp-pie { padding: 24px 0; text-align: center; font-size: 0.8rem; color: var(--suave); } .lp-pie a { text-decoration: underline; }
+
+  /* Botón fijo */
+  .lp-fijo { position: fixed; left: 0; right: 0; bottom: 0; z-index: 50; padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px)); background: rgba(8, 34, 79, 0.97); backdrop-filter: blur(8px); transform: translateY(110%); transition: transform .25s; }
+  .lp-fijo.ver { transform: none; } .lp-fijo .lp-cta { max-width: 520px; margin: 0 auto; min-height: 54px; font-size: 1.05rem; }
+
+  /* Efectos al desplazarse */
+  .rv { opacity: 0; transform: translateY(26px); transition: opacity .7s ease, transform .7s ease; transition-delay: var(--d, 0s); }
+  .rv.in { opacity: 1; transform: none; }
+  @media (prefers-reduced-motion: reduce) {
+    .rv { opacity: 1; transform: none; transition: none; } .lp-tel, .paso-t, .lp-ubi, .lp-wa, .lp-cta::after { animation: none; opacity: 1; }
+    #ruta-linea { stroke-dashoffset: 0; transition: none; } .pin, .globo { opacity: 1; transform: none; transition: none; } html { scroll-behavior: auto; }
+  }
+
+  @media (min-width: 900px) {
+    .lp-hero { padding: 56px 0 72px; } .lp-hero h1 { font-size: 3rem; }
+    .hero-grid { grid-template-columns: 1.15fr 0.85fr; gap: 56px; }
+    .lp-cta { width: auto; min-width: 340px; padding: 0 30px; } .lp-final .acc .lp-cta { width: 100%; } .plan-btn { width: 100%; min-width: 0; }
+    .lp-sec h2 { font-size: 2.3rem; }
+    .historia { grid-template-columns: 1fr 1fr; align-items: center; gap: 40px; }
+    .rejilla { grid-template-columns: repeat(3, 1fr); } .ejemplos { grid-template-columns: repeat(3, 1fr); }
+    .planes { grid-template-columns: repeat(3, 1fr); align-items: start; } .ops { grid-template-columns: repeat(3, 1fr); }
+    .dos-col { grid-template-columns: 1fr 1fr; } .quiz { grid-template-columns: 1fr 1fr; }
+    body.lp { padding-bottom: 0; } .lp-fijo { display: none; }
+  }
 </style>
 </head>
 <body class="lp">
-<header class="lp-top"><div class="caja"><img src="icon-192.png" alt="" width="34" height="34"><b>¿Dónde está mi RNM?</b></div></header>
+<div id="prog" aria-hidden="true"></div>
+<header class="lp-top" id="top"><div class="caja"><img src="icon-192.png" alt="" width="34" height="34"><b>¿Dónde está mi RNM?</b><a class="mini" href="/" data-cta="top" data-plan="quincenal">Activar · R$ 4,99</a></div></header>
 
 <section class="lp-hero">
-  <div class="caja">
-    <span class="lp-etiqueta">Para quien espera su RNM</span>
-    <h1>Tu RNM lleva meses en trámite. <em>Deja de mirar cada día.</em></h1>
-    <p class="sub">Lo seguimos por ti en la Polícia Federal y <b>te avisamos por WhatsApp</b> apenas cambie. Planes desde <b>R$ 4,99</b>.</p>
-    <a class="lp-cta" href="/" data-cta="hero" data-plan="quincenal">Activar mi seguimiento · R$ 4,99 →</a>
-    <p class="lp-nota"><b>Pagas con Pix en 1 minuto</b> · Si no te convence, cancelas en la primera hora y te devolvemos tu dinero</p>
-
+  <span class="forma a" data-vel="0.12"></span><span class="forma b" data-vel="-0.08"></span>
+  <div class="caja hero-grid">
+    <div>
+      <span class="lp-etiqueta">Para extranjeros con RNM en Brasil</span>
+      <h1>Hiciste tu RNM en la frontera. Te mudaste. <em>¿Y ahora, dónde está tu documento?</em></h1>
+      <p class="sub">Lo seguimos por ti en la Polícia Federal y <b>te avisamos por WhatsApp</b> cuando cambie de estado, de unidad o esté listo para retirar. Desde <b>R$ 4,99</b>.</p>
+      <a class="lp-cta" href="/" data-cta="hero" data-plan="quincenal">Activar mi seguimiento · R$ 4,99 →</a>
+      <p class="lp-nota"><b>Pagas con Pix en 1 minuto</b> · Si no te convence, cancelas en la primera hora y te devolvemos tu dinero</p>
+      <div class="chips"><span>💬 Aviso por WhatsApp</span><span>🇪🇸 Todo en español</span><span>🛡️ Reembolso en 1 hora</span></div>
+    </div>
     <div class="lp-tel" aria-hidden="true">
       <h3>Tu seguimiento</h3>
       <div class="rnm">RNM …XXXX</div>
       <div class="paso-t"><i>✓</i>En trámite</div>
       <div class="paso-t"><i>✓</i>En impresión</div>
       <div class="paso-t final"><i>✓</i>¡Listo para retirar!</div>
+      <div class="lp-ubi">📍 Retíralo en Curitiba/PR</div>
       <div class="lp-wa">¡Tu RNM está listo para retirar! 🎉<small>WhatsApp · ahora</small></div>
     </div>
   </div>
 </section>
 
 <section class="lp-sec"><div class="caja">
-  <h2>Así de simple</h2>
-  <p class="lead">Sin llamadas, sin filas y sin entrar a la página de la Polícia Federal cada mañana.</p>
-  <ol class="pasos">
-    <li><div><b>Entra con Google y activa tu plan</b><span>Pagas con Pix en 1 minuto (o con tarjeta o boleto).</span></div></li>
-    <li><div><b>Registra tu RNM y tu fecha de nacimiento</b><span>Hacemos tu primera revisión y te decimos en qué estado va y en qué unidad está.</span></div></li>
-    <li><div><b>Si no te convence, te devolvemos tu dinero</b><span>Tienes 1 hora después de tu primera revisión para cancelar. Si te convence, nosotros lo vigilamos y te escribimos por WhatsApp cuando cambie.</span></div></li>
+  <div class="historia">
+    <div class="rv">
+      <span class="etq">Te suena familiar</span>
+      <h2>Haces el trámite en un lugar, vives en otro y nadie te dice dónde está tu RNM</h2>
+      <p>Muchas personas llegan a Brasil y hacen su trámite del RNM en la ciudad de la frontera. Después se mudan a otra ciudad para trabajar o para estar con su familia.</p>
+      <p><b>El documento puede quedar en la unidad donde hiciste el trámite</b>, y nadie te avisa. Para recibirlo en tu ciudad nueva hay que pedir un <b>cambio de dirección</b>, y la Polícia Federal responde en portugués técnico que cuesta entender.</p>
+      <ul class="dolores">
+        <li>No sabes en qué unidad está tu RNM ni si ya salió.</li>
+        <li>Pediste un cambio de dirección y no sabes si lo aprobaron ni a dónde va tu documento.</li>
+        <li>Entras a la página de la PF cada semana y los mensajes no se entienden.</li>
+      </ul>
+    </div>
+    <div class="ruta-caja rv" style="--d:.15s" aria-hidden="true">
+      <svg viewBox="0 0 360 250" fill="none">
+        <path id="ruta-linea" d="M58 52 C 130 40, 120 150, 180 150 S 280 190, 300 196" stroke="#FFC83D" stroke-width="4" stroke-linecap="round"/>
+        <g class="pin p1"><circle cx="58" cy="52" r="15" fill="#FFC83D"/><text x="58" y="57" text-anchor="middle" font-size="15" font-weight="800" fill="#1A1300">1</text></g>
+        <g class="pin p2"><circle cx="300" cy="196" r="15" fill="#2FD27A"/><text x="300" y="201" text-anchor="middle" font-size="15" font-weight="800" fill="#06301A">2</text></g>
+        <text x="78" y="40" font-size="13" font-weight="700" fill="#fff">Frontera · hiciste el trámite</text>
+        <text x="200" y="226" font-size="13" font-weight="700" fill="#fff">Tu ciudad nueva</text>
+        <g class="globo"><rect x="84" y="102" width="150" height="34" rx="12" fill="#fff"/><text x="159" y="124" text-anchor="middle" font-size="14" font-weight="800" fill="#0E3F8E">¿Dónde está mi RNM?</text></g>
+      </svg>
+      <div class="ruta-pie"><span>1 · Trámite en la frontera</span><span>2 · Te mudas</span></div>
+    </div>
+  </div>
+</div></section>
+
+<section class="lp-sec oscura"><div class="caja">
+  <span class="etq rv">Lo que hacemos por ti</span>
+  <h2 class="rv">Tu RNM, explicado y vigilado</h2>
+  <p class="lead rv">Consultamos la Polícia Federal por ti y te lo contamos en español, con lo que importa: en qué estado está y dónde retirarlo.</p>
+  <div class="ejemplos">
+    <div class="ej ok rv"><small>Ejemplo · documento listo</small><h3>¡Tu RNM está listo para retirar!</h3><p>Te decimos en qué unidad y cómo retirarlo.</p><span class="ubi">📍 Retíralo en Curitiba/PR</span></div>
+    <div class="ej mov rv" style="--d:.12s"><small>Ejemplo · cambio de dirección aprobado</small><h3>Tu cambio de dirección fue aprobado</h3><p>Tu RNM sigue en otra unidad y será trasladado. Todavía no vayas a retirarlo.</p><span class="ubi">📍 En camino de Boa Vista/RR a Curitiba/PR</span></div>
+    <div class="ej rv" style="--d:.24s"><small>Ejemplo · en proceso</small><h3>Tu carné fue enviado a impresión</h3><p>Es de las últimas etapas. Te avisamos apenas esté listo.</p><span class="ubi">📍 En la unidad donde hiciste el trámite</span></div>
+  </div>
+</div></section>
+
+<section class="lp-sec"><div class="caja">
+  <span class="etq rv">Qué incluye</span>
+  <h2 class="rv">Todo para dejar de preguntarte «¿ya salió?»</h2>
+  <div class="rejilla" style="margin-top:20px">
+    <div class="ben rv"><div class="ico">📍</div><h3>Sabes dónde está</h3><p>Te mostramos la ciudad y la unidad de la PF donde puedes retirarlo.</p></div>
+    <div class="ben rv" style="--d:.1s"><div class="ico">🔁</div><h3>Sigues tu cambio de dirección</h3><p>Ves si fue aprobado, si está en traslado y a qué unidad va tu documento.</p></div>
+    <div class="ben rv" style="--d:.2s"><div class="ico">💬</div><h3>Avisos por WhatsApp</h3><p>Te escribimos cuando cambie el estado y apenas esté listo. Tú no haces nada.</p></div>
+    <div class="ben rv"><div class="ico">🇪🇸</div><h3>Todo en español</h3><p>Traducimos y explicamos lo que dice la PF, con qué hacer en cada caso.</p></div>
+    <div class="ben rv" style="--d:.1s"><div class="ico">👨‍👩‍👧</div><h3>Hasta 4 RNM</h3><p>Sigue el tuyo y el de tu pareja, tus hijos o tus padres con un solo plan.</p></div>
+    <div class="ben rv" style="--d:.2s"><div class="ico">🛡️</div><h3>Sin riesgo</h3><p>Si no te convence en la primera hora, cancelas y te devolvemos tu dinero.</p></div>
+  </div>
+</div></section>
+
+<section class="lp-sec"><div class="caja">
+  <span class="etq rv">Cómo funciona</span>
+  <h2 class="rv">Listo en 3 pasos</h2>
+  <ol class="pasos" style="margin-top:20px">
+    <li class="rv"><div><b>Entra con Google y activa tu plan</b><span>Pagas con Pix en 1 minuto (o con tarjeta o boleto).</span></div></li>
+    <li class="rv" style="--d:.1s"><div><b>Registra tu RNM y tu fecha de nacimiento</b><span>Hacemos tu primera revisión y te decimos en qué estado va y en qué unidad está.</span></div></li>
+    <li class="rv" style="--d:.2s"><div><b>Nosotros lo vigilamos por ti</b><span>Te escribimos por WhatsApp cada vez que cambie. Si no te convence, tienes 1 hora después de tu primera revisión para cancelar con reembolso.</span></div></li>
   </ol>
 </div></section>
 
 <section class="lp-sec"><div class="caja">
-  <h2>Elige tu plan</h2>
-  <p class="lead">Todos incluyen hasta 4 RNM (tú, tu pareja, tus hijos…).</p>
+  <span class="etq rv">¿Es para ti?</span>
+  <h2 class="rv">Cuéntanos tu caso</h2>
+  <p class="lead rv">Elige lo que más se parece a tu situación y te decimos cómo te ayudamos.</p>
+  <div class="quiz rv" id="quiz">
+    <button type="button" data-seg="frontera">Hice el trámite en la frontera y me mudé de ciudad</button>
+    <button type="button" data-seg="cambio_dir">Pedí un cambio de dirección de entrega</button>
+    <button type="button" data-seg="en_tramite">Mi RNM lleva semanas o meses en trámite</button>
+    <button type="button" data-seg="agendamiento">Hice el agendamiento y quiero saber si ya salió</button>
+  </div>
+  <div class="quiz-resp" id="quiz-resp" aria-live="polite"><b id="quiz-t"></b><span id="quiz-d"></span><a class="lp-cta" href="/" data-cta="quiz" data-plan="quincenal">Activar mi seguimiento · R$ 4,99 →</a></div>
+  <div class="dos-col" style="margin-top:22px">
+    <div class="col-si rv"><h3>Es para ti si…</h3><ul><li>Tu RNM está en trámite o no sabes dónde está</li><li>Te mudaste de ciudad después del trámite</li><li>Pediste un cambio de dirección</li><li>Quieres enterarte sin entrar a la PF cada día</li><li>Sigues el trámite de tu familia</li></ul></div>
+    <div class="col-no rv" style="--d:.12s"><h3>No es para ti si…</h3><ul><li>Ya retiraste tu RNM</li><li>Buscas que hagamos el trámite o la cita por ti: aquí solo seguimos y te informamos</li><li>Esperas una respuesta oficial: somos un servicio independiente, no la Polícia Federal</li></ul></div>
+  </div>
+</div></section>
+
+<section class="lp-sec" id="planes"><div class="caja">
+  <span class="etq rv">Planes</span>
+  <h2 class="rv">Elige tu plan</h2>
+  <p class="lead rv">Todos incluyen hasta 4 RNM y avisos por WhatsApp. Sin permanencia.</p>
   <div class="planes">
-    <div class="plan-lp rec"><span class="rec-tag">El más elegido</span>
-      <div class="cab"><h3>Quincenal</h3><div class="precio">R$ 4,99<small> /mes</small></div></div>
-      <ul><li>Revisamos tu RNM cada 15 días</li><li>Aviso por WhatsApp si cambia</li><li>Hasta 4 RNM</li></ul><a class="lp-cta plan-btn" href="/" data-cta="plan-quincenal" data-plan="quincenal">Elegir quincenal · R$ 4,99</a></div>
-    <div class="plan-lp">
-      <div class="cab"><h3>Semanal</h3><div class="precio">R$ 9,99<small> /mes</small></div></div>
-      <ul><li>Revisamos tu RNM cada 7 días</li><li>Aviso por WhatsApp si cambia</li><li>Hasta 4 RNM</li></ul><a class="lp-cta plan-btn sec" href="/" data-cta="plan-semanal" data-plan="semanal">Elegir semanal · R$ 9,99</a></div>
-    <div class="plan-lp">
-      <div class="cab"><h3>Manual</h3><div class="precio">R$ 19,99<small> /mes</small></div></div>
-      <ul><li>Revisión semanal</li><li>Botón «Verificar ahora» cuando quieras</li><li>Hasta 4 RNM</li></ul><a class="lp-cta plan-btn sec" href="/" data-cta="plan-manual" data-plan="manual">Elegir manual · R$ 19,99</a></div>
+    <div class="plan-lp rec rv"><span class="rec-tag">El más elegido</span>
+      <h3>Quincenal</h3><div class="precio">R$ 4,99<small> /mes</small></div>
+      <ul><li>Revisamos tu RNM cada 15 días</li><li>Aviso por WhatsApp si cambia</li><li>Hasta 4 RNM</li></ul>
+      <a class="lp-cta plan-btn" href="/" data-cta="plan-quincenal" data-plan="quincenal">Elegir quincenal</a></div>
+    <div class="plan-lp rv" style="--d:.1s">
+      <h3>Semanal</h3><div class="precio">R$ 9,99<small> /mes</small></div>
+      <ul><li>Revisamos tu RNM cada 7 días</li><li>Aviso por WhatsApp si cambia</li><li>Hasta 4 RNM</li></ul>
+      <a class="lp-cta plan-btn sec" href="/" data-cta="plan-semanal" data-plan="semanal">Elegir semanal</a></div>
+    <div class="plan-lp rv" style="--d:.2s">
+      <h3>Manual</h3><div class="precio">R$ 19,99<small> /mes</small></div>
+      <ul><li>Revisión semanal</li><li>Botón «Verificar ahora» cuando quieras</li><li>Hasta 4 RNM</li></ul>
+      <a class="lp-cta plan-btn sec" href="/" data-cta="plan-manual" data-plan="manual">Elegir manual</a></div>
   </div>
-  <div class="garantias"><span>Pix, tarjeta o boleto</span><span>Cancelas cuando quieras</span><span>Reembolso en la primera hora</span></div>
-  <div class="garantia-caja"><b>🛡️ Garantía de 1 hora</b><span>Activa tu plan y registra tu RNM. Si en la hora siguiente a tu primera revisión no te convence, lo cancelas desde la app y te devolvemos el pago completo.</span></div>
+  <div class="garantia-caja rv"><b>🛡️ Garantía de 1 hora</b><span>Activa tu plan y registra tu RNM. Si en la hora siguiente a tu primera revisión no te convence, lo cancelas desde la app y te devolvemos el pago completo.</span></div>
+  <div class="garantias rv"><span>Pix, tarjeta o boleto</span><span>Sin permanencia</span><span>Reembolso en la primera hora</span></div>
+</div></section>
+
+<section class="lp-sec" id="sec-op"><div class="caja">
+  <span class="etq rv">Opiniones</span>
+  <h2 class="rv">Lo que dicen quienes ya lo usan</h2>
+  <p class="op-res rv" id="op-res"></p>
+  <div class="ops" id="ops"></div>
 </div></section>
 
 <section class="lp-sec"><div class="caja">
-  <h2>¿Te pasa esto?</h2>
-  <div class="para">
-    <div>Tu RNM lleva semanas o meses «en trámite»</div>
-    <div>Entras a la página de la PF y no entiendes qué significa</div>
-    <div>Pediste cambio de dirección y no sabes dónde retirarlo</div>
-    <div>Hiciste el agendamiento y quieres saber si ya salió</div>
+  <span class="etq rv">Dudas</span>
+  <h2 class="rv">Preguntas frecuentes</h2>
+  <div style="margin-top:18px">
+    <details class="faq rv"><summary>¿Es de la Polícia Federal?</summary><p>No. Somos FLUJO Migração, un servicio independiente. Consultamos la información que la PF publica sobre tu trámite y te la explicamos en español. La decisión y la entrega del documento son siempre de la PF.</p></details>
+    <details class="faq rv"><summary>Hice el trámite en la frontera y ahora vivo en otra ciudad. ¿Me sirve?</summary><p>Sí, es justo para eso. Te mostramos en qué unidad está tu documento y, si pediste un cambio de dirección, si fue aprobado y a qué unidad va. Así sabes dónde retirarlo y cuándo ir.</p></details>
+    <details class="faq rv"><summary>¿Hacen el cambio de dirección por mí?</summary><p>El servicio es de seguimiento: te informamos cómo va tu cambio de dirección y dónde está tu RNM. Si necesitas ayuda con ese trámite, puedes escribirle al equipo desde la app.</p></details>
+    <details class="faq rv"><summary>¿Qué datos me piden?</summary><p>Tu número de RNM y tu fecha de nacimiento, lo mismo que pide la consulta pública de la PF, más tus datos de contacto para avisarte. Nunca te pedimos contraseñas de la PF.</p></details>
+    <details class="faq rv"><summary>¿Cómo funciona la garantía de 1 hora?</summary><p>Activas tu plan, registras tu RNM y hacemos tu primera revisión. Si en la hora siguiente no te convence, entras a la app, cancelas y te devolvemos el pago completo. Se aplica a tu primer pago.</p></details>
+    <details class="faq rv"><summary>¿Y si mi RNM ya está listo?</summary><p>Entonces no necesitas el seguimiento: es para quien todavía lo tiene en trámite. Si activaste el plan y tu RNM ya estaba listo, te mostramos dónde retirarlo y puedes cancelar en la primera hora para que te devolvamos tu dinero.</p></details>
+    <details class="faq rv"><summary>¿Y si no hay novedades?</summary><p>Revisamos tu RNM con la frecuencia de tu plan y te escribimos cuando cambie algo. Mientras no cambie, no te molestamos.</p></details>
+    <details class="faq rv"><summary>¿Puedo cancelar cuando quiera?</summary><p>Sí, desde la app. El plan sigue activo hasta la fecha que ya pagaste y no hay permanencia.</p></details>
   </div>
-</div></section>
-
-<section class="lp-sec"><div class="caja">
-  <h2>Preguntas frecuentes</h2>
-  <details class="faq"><summary>¿Es de la Polícia Federal?</summary><p>No. Somos FLUJO Migração, un servicio independiente. Consultamos la información que la PF publica sobre tu trámite y te la explicamos en español. La decisión y la entrega del documento son siempre de la PF.</p></details>
-  <details class="faq"><summary>¿Qué datos me piden?</summary><p>Tu número de RNM y tu fecha de nacimiento, que es lo mismo que pide la consulta pública de la PF. Nunca te pedimos contraseñas de la PF.</p></details>
-  <details class="faq"><summary>¿Cómo funciona la garantía de 1 hora?</summary><p>Activas tu plan, registras tu RNM y hacemos tu primera revisión. Si en la hora siguiente no te convence, entras a la app, cancelas y te devolvemos el pago completo. Se aplica a tu primer pago.</p></details>
-  <details class="faq"><summary>¿Y si mi RNM ya está listo?</summary><p>Entonces no necesitas el seguimiento: es para quien todavía lo tiene en trámite. Si activaste el plan y tu RNM ya estaba listo, te mostramos dónde retirarlo y puedes cancelar en la primera hora para que te devolvamos tu dinero.</p></details>
-  <details class="faq"><summary>¿Y si no hay novedades?</summary><p>Revisamos tu RNM con la frecuencia de tu plan y te escribimos cuando cambie algo. Mientras no cambie, no te molestamos.</p></details>
-  <details class="faq"><summary>¿Puedo cancelar?</summary><p>Sí, cuando quieras desde la app. El plan sigue activo hasta la fecha que ya pagaste.</p></details>
 </div></section>
 
 <section class="lp-final"><div class="caja">
-  <h2>No esperes a ciegas</h2>
-  <p>Activa tu plan hoy. Si no te convence en la primera hora, te devolvemos tu dinero.</p>
-  <a class="lp-cta" href="/" data-cta="final" data-plan="quincenal">Activar mi seguimiento · R$ 4,99 →</a>
+  <h2 class="rv">No esperes a ciegas</h2>
+  <p class="rv">Activa el seguimiento y olvídate de entrar cada día. Si no te convence en la primera hora, te devolvemos tu dinero.</p>
+  <div class="acc rv">
+    <a class="lp-cta" href="/" data-cta="final" data-plan="quincenal">Activar mi seguimiento · R$ 4,99 →</a>
+    <a class="lp-cta fantasma" href="/" data-cta="gratis" data-plan="quincenal" data-gratis="1">Prefiero empezar gratis y ver mi RNM primero</a>
+  </div>
+  <p class="peq rv">Con la consulta gratis ves el estado de tu RNM hoy. El seguimiento con avisos es el que tiene plan.</p>
 </div></section>
 
 <footer class="lp-pie caja">FLUJO Migração · Servicio independiente, no afiliado a la Polícia Federal ni al gobierno.<br><a href="terminos.html">Términos</a> · <a href="privacidad.html">Privacidad</a></footer>
@@ -168,23 +354,98 @@
 <script>
 (function () {
   "use strict";
-  // Los datos del anuncio (utm_*) pasan a la app para saber de qué anuncio llegó cada persona.
-  var q = location.search || "";
-  var usadas = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "fbclid"];
-  var p = new URLSearchParams(q), salida = new URLSearchParams();
-  salida.set("pref", "quincenal");
-  usadas.forEach(function (k) { if (p.get(k)) salida.set(k, p.get(k).slice(0, 80)); });
-  salida.set("via", "landing");
+  var SB = "https://rumpfqevyspdmhaggxtq.supabase.co", KEY = "sb_publishable_7znj3ENrTWXDE2dibUzv_A_a7HUoud_";
+  var segmento = "";
+  var p = new URLSearchParams(location.search);
+  var UTMS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"];
+
+  // ---- Enlaces: pasan los datos del anuncio y el segmento elegido a la app ----
+  function armarEnlaces() {
+    Array.prototype.forEach.call(document.querySelectorAll("a[data-cta]"), function (a) {
+      var d = new URLSearchParams();
+      UTMS.forEach(function (k) { if (p.get(k)) d.set(k, p.get(k).slice(0, 80)); });
+      if (segmento) d.set("utm_term", segmento);
+      d.set("pref", a.getAttribute("data-plan") || "quincenal");
+      d.set("via", a.getAttribute("data-gratis") ? "landing-gratis" : "landing");
+      a.href = "/?" + d.toString();
+    });
+  }
+  armarEnlaces();
   Array.prototype.forEach.call(document.querySelectorAll("a[data-cta]"), function (a) {
-    var d = new URLSearchParams(salida.toString()); d.set("pref", a.getAttribute("data-plan") || "quincenal");
-    a.href = "/?" + d.toString();
     a.addEventListener("click", function () { if (window.rnmTrack) { try { window.rnmTrack("Lead", { content_name: "landing-" + a.getAttribute("data-cta") }); } catch (e) { /* sin píxel */ } } });
   });
   if (window.rnmTrack) { try { window.rnmTrack("ViewContent", { content_name: "landing-seguimiento" }); } catch (e) { /* sin píxel */ } }
-  // El botón fijo aparece al bajar del primer botón.
-  var fijo = document.getElementById("fijo"), primero = document.querySelector(".lp-hero .lp-cta");
-  function revisar() { var r = primero.getBoundingClientRect(); fijo.classList.toggle("ver", r.bottom < 0); }
-  window.addEventListener("scroll", revisar, { passive: true }); revisar();
+
+  // ---- ¿Es para ti? ----
+  var MENSAJES = {
+    frontera: ["Es justo tu caso", "Te mostramos en qué unidad quedó tu documento y si ya está listo, para que sepas dónde ir aunque vivas en otra ciudad."],
+    cambio_dir: ["Te ayudamos a seguirlo", "Ves si tu cambio de dirección fue aprobado, si el documento está en traslado y a qué unidad va. Te avisamos cuando llegue."],
+    en_tramite: ["Deja de mirar cada día", "Lo revisamos por ti con la frecuencia de tu plan y te escribimos por WhatsApp apenas cambie el estado."],
+    agendamiento: ["Sabrás cuándo salió", "Te avisamos en cuanto aparezca listo para retirar y te decimos en qué unidad hacerlo."]
+  };
+  var botonesQ = document.querySelectorAll("#quiz button"), resp = document.getElementById("quiz-resp");
+  Array.prototype.forEach.call(botonesQ, function (b) {
+    b.addEventListener("click", function () {
+      segmento = b.getAttribute("data-seg");
+      Array.prototype.forEach.call(botonesQ, function (x) { x.classList.toggle("on", x === b); });
+      var m = MENSAJES[segmento];
+      document.getElementById("quiz-t").textContent = m[0]; document.getElementById("quiz-d").textContent = m[1];
+      resp.classList.add("ver"); armarEnlaces();
+    });
+  });
+
+  // ---- Efectos al desplazarse ----
+  var movimiento = !(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  var io = null;
+  var rv = document.querySelectorAll(".rv");
+  if ("IntersectionObserver" in window && movimiento) {
+    io = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }); }, { threshold: 0.15, rootMargin: "0px 0px -40px 0px" });
+    Array.prototype.forEach.call(rv, function (n) { io.observe(n); });
+  } else Array.prototype.forEach.call(rv, function (n) { n.classList.add("in"); });
+
+  var prog = document.getElementById("prog"), top = document.getElementById("top"), fijo = document.getElementById("fijo");
+  var primero = document.querySelector(".lp-hero .lp-cta"), formas = document.querySelectorAll(".forma");
+  var lista = false;
+  function alDesplazar() {
+    var y = window.pageYOffset, max = document.documentElement.scrollHeight - window.innerHeight;
+    prog.style.width = (max > 0 ? Math.min(100, (y / max) * 100) : 0) + "%";
+    top.classList.toggle("sombra", y > 8);
+    var pasado = primero.getBoundingClientRect().bottom < 0;
+    top.classList.toggle("con-cta", pasado); fijo.classList.toggle("ver", pasado);
+    if (movimiento) Array.prototype.forEach.call(formas, function (f) { f.style.transform = "translateY(" + (y * parseFloat(f.getAttribute("data-vel"))) + "px)"; });
+    lista = false;
+  }
+  window.addEventListener("scroll", function () { if (!lista) { lista = true; requestAnimationFrame(alDesplazar); } }, { passive: true });
+  alDesplazar();
+
+  // ---- Opiniones reales (solo las aprobadas en el panel; si no hay, la sección no se muestra) ----
+  fetch(SB + "/rest/v1/rpc/rnm_opiniones_publicas", { method: "POST", headers: { "Content-Type": "application/json", apikey: KEY, Authorization: "Bearer " + KEY }, body: "{}" })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (d) {
+      var ops = d && d.opiniones ? d.opiniones.filter(function (o) { return o.comentario; }).slice(0, 6) : [];
+      if (!ops.length) return;
+      var box = document.getElementById("ops");
+      ops.forEach(function (o, i) {
+        var n = String(o.nombre || "Cliente"), h = 0; for (var k = 0; k < n.length; k++) h = (h * 31 + n.charCodeAt(k)) % 360;
+        var c = document.createElement("figure"); c.className = "op rv"; c.style.margin = "0"; c.style.setProperty("--d", (i * 0.08) + "s");
+        var cab = document.createElement("div"); cab.className = "cab";
+        var av = document.createElement("span"); av.className = "av"; av.textContent = n.charAt(0).toUpperCase(); av.style.background = "hsl(" + h + " 55% 40%)"; cab.appendChild(av);
+        var dv = document.createElement("div"); var b = document.createElement("b"); b.textContent = n; dv.appendChild(b);
+        var st = document.createElement("span"); st.className = "est"; st.textContent = "★★★★★".slice(0, Math.max(0, Math.min(5, o.estrellas || 0))); dv.appendChild(st);
+        var sm = document.createElement("small"); sm.textContent = o.equipo ? " · Equipo FLUJO" : " · Cliente de la app"; dv.appendChild(sm); cab.appendChild(dv);
+        c.appendChild(cab);
+        var bq = document.createElement("blockquote"); bq.textContent = "«" + o.comentario + "»"; c.appendChild(bq);
+        box.appendChild(c);
+        if (io) io.observe(c); else c.classList.add("in");
+      });
+      var r = document.getElementById("op-res");
+      if (d.resumen && Number(d.resumen.promedio) >= 4) {
+        r.textContent = "";
+        var s = document.createElement("span"); s.textContent = "★ " + String(d.resumen.promedio).replace(".", ","); r.appendChild(s);
+        r.appendChild(document.createTextNode(" · " + d.resumen.total + " opiniones de clientes"));
+      } else r.style.display = "none";
+      document.getElementById("sec-op").classList.add("ver");
+    }).catch(function () { /* sin red: la sección queda oculta */ });
 })();
 </script>
 </body>
