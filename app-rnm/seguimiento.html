@@ -61,6 +61,10 @@
   .plan-lp .precio { font-size: 2rem; font-weight: 800; letter-spacing: -0.03em; } .plan-lp .precio small { font-size: 0.9rem; font-weight: 600; color: var(--suave); }
   .plan-lp ul { margin: 8px 0 0; padding: 0; list-style: none; display: grid; gap: 5px; font-size: 0.95rem; }
   .plan-lp li::before { content: "✓"; color: var(--verde); font-weight: 800; margin-right: 8px; }
+  .plan-btn { margin-top: 14px; min-height: 50px; font-size: 1.02rem; box-shadow: 0 4px 0 #C9951A; }
+  .plan-btn.sec { background: #fff; color: var(--azul) !important; border: 2px solid var(--azul2); box-shadow: none; }
+  .garantia-caja { margin-top: 16px; padding: 16px; border-radius: 16px; background: var(--verde-claro); border: 1px solid #BFE5CC; color: #0E3B21; display: grid; gap: 4px; }
+  .garantia-caja span { font-size: 0.95rem; }
   .garantias { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
   .garantias span { background: #fff; border: 1px solid var(--linea); border-radius: 999px; padding: 6px 12px; font-size: 0.86rem; font-weight: 600; }
   .para { background: #fff; border: 1px solid var(--linea); border-radius: 18px; padding: 6px 16px; }
@@ -88,8 +92,8 @@
     <span class="lp-etiqueta">Para quien espera su RNM</span>
     <h1>Tu RNM lleva meses en trámite. <em>Deja de mirar cada día.</em></h1>
     <p class="sub">Lo seguimos por ti en la Polícia Federal y <b>te avisamos por WhatsApp</b> apenas cambie. Planes desde <b>R$ 4,99</b>.</p>
-    <a class="lp-cta" href="/?pref=quincenal" data-cta="hero">Empezar gratis →</a>
-    <p class="lp-nota"><b>Primera consulta gratis</b> · Sin tarjeta · Tarda 1 minuto</p>
+    <a class="lp-cta" href="/" data-cta="hero" data-plan="quincenal">Activar mi seguimiento · R$ 4,99 →</a>
+    <p class="lp-nota"><b>Primera revisión gratis</b> · Si no te convence, cancelas en la primera hora y te devolvemos tu dinero</p>
 
     <div class="lp-tel" aria-hidden="true">
       <h3>Tu seguimiento</h3>
@@ -106,28 +110,28 @@
   <h2>Así de simple</h2>
   <p class="lead">Sin llamadas, sin filas y sin entrar a la página de la Polícia Federal cada mañana.</p>
   <ol class="pasos">
-    <li><div><b>Pon tu RNM y tu fecha de nacimiento</b><span>Te toma 1 minuto. Entras con tu cuenta de Google.</span></div></li>
-    <li><div><b>Vemos cómo está hoy, gratis</b><span>Te decimos en qué estado va y en qué unidad está.</span></div></li>
-    <li><div><b>Si sigue en trámite, lo vigilamos por ti</b><span>Activas el seguimiento y te escribimos por WhatsApp cada vez que cambie.</span></div></li>
+    <li><div><b>Entra con Google y pon tu RNM</b><span>Tu número de RNM y tu fecha de nacimiento. Te toma 1 minuto.</span></div></li>
+    <li><div><b>Tu primera revisión es gratis</b><span>Te decimos en qué estado va y en qué unidad está.</span></div></li>
+    <li><div><b>Activa el seguimiento y olvídate</b><span>Pagas con Pix en 1 minuto. Nosotros lo vigilamos y te escribimos por WhatsApp cada vez que cambie.</span></div></li>
   </ol>
 </div></section>
 
 <section class="lp-sec"><div class="caja">
-  <h2>Elige cómo quieres el seguimiento</h2>
+  <h2>Elige tu plan</h2>
   <p class="lead">Todos incluyen hasta 4 RNM (tú, tu pareja, tus hijos…).</p>
   <div class="planes">
     <div class="plan-lp rec"><span class="rec-tag">El más elegido</span>
       <div class="cab"><h3>Quincenal</h3><div class="precio">R$ 4,99<small> /mes</small></div></div>
-      <ul><li>Revisamos tu RNM cada 15 días</li><li>Aviso por WhatsApp si cambia</li><li>Hasta 4 RNM</li></ul></div>
+      <ul><li>Revisamos tu RNM cada 15 días</li><li>Aviso por WhatsApp si cambia</li><li>Hasta 4 RNM</li></ul><a class="lp-cta plan-btn" href="/" data-cta="plan-quincenal" data-plan="quincenal">Elegir quincenal · R$ 4,99</a></div>
     <div class="plan-lp">
       <div class="cab"><h3>Semanal</h3><div class="precio">R$ 9,99<small> /mes</small></div></div>
-      <ul><li>Revisamos tu RNM cada 7 días</li><li>Aviso por WhatsApp si cambia</li><li>Hasta 4 RNM</li></ul></div>
+      <ul><li>Revisamos tu RNM cada 7 días</li><li>Aviso por WhatsApp si cambia</li><li>Hasta 4 RNM</li></ul><a class="lp-cta plan-btn sec" href="/" data-cta="plan-semanal" data-plan="semanal">Elegir semanal · R$ 9,99</a></div>
     <div class="plan-lp">
       <div class="cab"><h3>Manual</h3><div class="precio">R$ 19,99<small> /mes</small></div></div>
-      <ul><li>Revisión semanal</li><li>Botón «Verificar ahora» cuando quieras</li><li>Hasta 4 RNM</li></ul></div>
+      <ul><li>Revisión semanal</li><li>Botón «Verificar ahora» cuando quieras</li><li>Hasta 4 RNM</li></ul><a class="lp-cta plan-btn sec" href="/" data-cta="plan-manual" data-plan="manual">Elegir manual · R$ 19,99</a></div>
   </div>
-  <div class="garantias"><span>Pix, tarjeta o boleto</span><span>Cancelas cuando quieras</span><span>Primera consulta gratis</span></div>
-  <a class="lp-cta" href="/?pref=quincenal" data-cta="planes" style="margin-top:18px">Probar gratis ahora →</a>
+  <div class="garantias"><span>Pix, tarjeta o boleto</span><span>Cancelas cuando quieras</span><span>Reembolso en la primera hora</span></div>
+  <div class="garantia-caja"><b>🛡️ Garantía de 1 hora</b><span>Haz tu primera revisión gratis. Si activas el plan y en la primera hora no te convence, lo cancelas desde la app y te devolvemos el pago completo.</span></div>
 </div></section>
 
 <section class="lp-sec"><div class="caja">
@@ -144,20 +148,21 @@
   <h2>Preguntas frecuentes</h2>
   <details class="faq"><summary>¿Es de la Polícia Federal?</summary><p>No. Somos FLUJO Migração, un servicio independiente. Consultamos la información que la PF publica sobre tu trámite y te la explicamos en español. La decisión y la entrega del documento son siempre de la PF.</p></details>
   <details class="faq"><summary>¿Qué datos me piden?</summary><p>Tu número de RNM y tu fecha de nacimiento, que es lo mismo que pide la consulta pública de la PF. Nunca te pedimos contraseñas de la PF.</p></details>
-  <details class="faq"><summary>¿De verdad la primera consulta es gratis?</summary><p>Sí. Registras tu RNM y te decimos cómo está hoy, sin pagar. El seguimiento semanal o quincenal es lo que tiene costo.</p></details>
-  <details class="faq"><summary>¿Y si mi RNM ya está listo?</summary><p>Te lo decimos gratis y te explicamos dónde y cómo retirarlo. El seguimiento solo hace falta si todavía está en trámite.</p></details>
+  <details class="faq"><summary>¿Cómo funciona la garantía de 1 hora?</summary><p>Tu primera revisión es gratis. Si activas un plan y en la primera hora no te convence, entras a la app, cancelas y te devolvemos el pago completo. Se aplica a tu primer pago.</p></details>
+  <details class="faq"><summary>¿Y si mi RNM ya está listo?</summary><p>Entonces no necesitas el seguimiento: te lo decimos gratis y te explicamos dónde y cómo retirarlo. El seguimiento es para quien todavía lo tiene en trámite.</p></details>
+  <details class="faq"><summary>¿Y si no hay novedades?</summary><p>Revisamos tu RNM con la frecuencia de tu plan y te escribimos cuando cambie algo. Mientras no cambie, no te molestamos.</p></details>
   <details class="faq"><summary>¿Puedo cancelar?</summary><p>Sí, cuando quieras desde la app. El plan sigue activo hasta la fecha que ya pagaste.</p></details>
 </div></section>
 
 <section class="lp-final"><div class="caja">
   <h2>No esperes a ciegas</h2>
-  <p>Haz tu primera consulta gratis y decide después.</p>
-  <a class="lp-cta" href="/?pref=quincenal" data-cta="final">Empezar gratis →</a>
+  <p>Primera revisión gratis. Si no te convence en la primera hora, te devolvemos tu dinero.</p>
+  <a class="lp-cta" href="/" data-cta="final" data-plan="quincenal">Activar mi seguimiento · R$ 4,99 →</a>
 </div></section>
 
 <footer class="lp-pie caja">FLUJO Migração · Servicio independiente, no afiliado a la Polícia Federal ni al gobierno.<br><a href="terminos.html">Términos</a> · <a href="privacidad.html">Privacidad</a></footer>
 
-<div class="lp-fijo" id="fijo"><a class="lp-cta" href="/?pref=quincenal" data-cta="fijo">Empezar gratis →</a></div>
+<div class="lp-fijo" id="fijo"><a class="lp-cta" href="/" data-cta="fijo" data-plan="quincenal">Activar mi seguimiento · R$ 4,99 →</a></div>
 
 <script src="meta-pixel.js"></script>
 <script>
@@ -170,9 +175,9 @@
   salida.set("pref", "quincenal");
   usadas.forEach(function (k) { if (p.get(k)) salida.set(k, p.get(k).slice(0, 80)); });
   salida.set("via", "landing");
-  var destino = "/?" + salida.toString();
   Array.prototype.forEach.call(document.querySelectorAll("a[data-cta]"), function (a) {
-    a.href = destino;
+    var d = new URLSearchParams(salida.toString()); d.set("pref", a.getAttribute("data-plan") || "quincenal");
+    a.href = "/?" + d.toString();
     a.addEventListener("click", function () { if (window.rnmTrack) { try { window.rnmTrack("Lead", { content_name: "landing-" + a.getAttribute("data-cta") }); } catch (e) { /* sin píxel */ } } });
   });
   if (window.rnmTrack) { try { window.rnmTrack("ViewContent", { content_name: "landing-seguimiento" }); } catch (e) { /* sin píxel */ } }

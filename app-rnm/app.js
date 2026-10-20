@@ -803,6 +803,7 @@ function mostrarPago(tipo) {
     '<h2 class="pay-titulo">Finaliza tu suscripción</h2>' +
     '<div class="pay-resumen"><div><b>' + nombrePlan(tipo) + '</b><span>' + (tipo === "manual" ? "Hasta 4 RNM · revisión semanal + Verificar ahora" : (tipo === "quincenal" ? "Hasta 4 RNM · revisión automática cada 15 días" : "Hasta 4 RNM · revisión automática cada 7 días")) + '</span></div>' +
       '<div class="pay-precio"><b>' + precio + '</b><span>por mes</span></div></div>' +
+    (planCargado ? '' : '<p class="pay-garantia">🛡️ Garantía: si no te convence, cancelas en la primera hora y te devolvemos tu dinero.</p>') +
     '<p class="pay-sub">Elige cómo quieres pagar</p>' +
     '<div class="metodos" role="radiogroup" aria-label="Forma de pago">' +
       '<button type="button" class="metodo sel" data-m="pix" role="radio" aria-checked="true">' + ICONOS_PAGO.pix + '<b>Pix</b><small>Al instante</small></button>' +
@@ -1021,6 +1022,39 @@ function notaSemanal() {
   return n;
 }
 
+/* Garantía de 1 hora: se puede cancelar el primer plan y recibir el reembolso completo. */
+async function mostrarGarantia(cont) {
+  var r;
+  try { r = await sb.rpc("rnm_mi_garantia"); } catch (e) { return; }
+  var g = r && r.data;
+  if (!g || !g.elegible) return;
+  var hasta = new Date(g.hasta);
+  if (hasta <= new Date()) return;
+  cont.textContent = "";
+  cont.appendChild(el("b", "", "🛡️ Garantía de 1 hora"));
+  cont.appendChild(el("p", "", "Si no te convence, cancela tu plan y te devolvemos " + reales(g.monto_centavos) + " completos. Tienes hasta las " + hasta.toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit" }) + "."));
+  var b = el("button", "sec", "Cancelar y recibir mi dinero"); b.type = "button";
+  var aviso = el("p", "msg", ""); aviso.setAttribute("role", "alert");
+  b.addEventListener("click", async function () {
+    if (!window.confirm("¿Cancelar tu plan y recibir el reembolso de " + reales(g.monto_centavos) + "? Dejaremos de vigilar tus RNM.")) return;
+    b.disabled = true; aviso.textContent = "Procesando el reembolso…";
+    try {
+      var s = await sb.auth.getSession(), tk = s.data.session && s.data.session.access_token;
+      var rr = await fetch(SUPABASE_URL + "/functions/v1/mp-reembolsar-plan", { method: "POST", headers: { "Content-Type": "application/json", "apikey": SUPABASE_KEY, "Authorization": "Bearer " + tk }, body: "{}" });
+      var j = await rr.json().catch(function () { return {}; });
+      if (rr.ok && j.ok) {
+        aviso.className = "msg bien"; aviso.textContent = "Listo: cancelamos tu plan y Mercado Pago te devolverá " + reales(j.monto_centavos) + ". Puede tardar unos días en verse en tu cuenta.";
+        b.classList.add("oculto"); window.alert(aviso.textContent); cargarRegistros();
+      } else {
+        b.disabled = false;
+        aviso.className = "msg";
+        aviso.textContent = j.error === "fuera_de_garantia" ? "La garantía de 1 hora ya terminó." : (j.error === "ya_reembolsado" ? "Este plan ya fue reembolsado." : "No pudimos hacer el reembolso ahora. Escríbenos " + VIA_CONTACTO + " y lo resolvemos.");
+      }
+    } catch (e) { b.disabled = false; aviso.className = "msg"; aviso.textContent = "No pudimos conectar. Revisa tu internet e intenta de nuevo."; }
+  });
+  cont.appendChild(b); cont.appendChild(aviso);
+  cont.classList.remove("oculto");
+}
 function cartelPlanes(regs, plan) {
   if (pagandoPlan) return; // se está escribiendo la tarjeta: no tocar la pantalla
   var cont = $("cartel");
@@ -1045,6 +1079,7 @@ function cartelPlanes(regs, plan) {
     ok.innerHTML = '<div class="pay-icono ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>';
     ok.appendChild(el("h2", "pay-titulo", nombrePlan(plan.tipo) + " activo"));
     ok.appendChild(el("p", "sub", "Cubre hasta 4 RNM (" + reales(plan.precio_centavos) + " al mes) y está pagado hasta el " + fechaCorta(plan.vence_at) + "."));
+    var gar = el("div", "garantia-ok oculto"); ok.appendChild(gar); mostrarGarantia(gar);
     var sup = planSuperior(plan.tipo);
     if (sup) {
       var aSup = el("button", "", "Pasar al " + PLANES[sup].etiqueta.toLowerCase() + " · " + reales(PRECIOS[sup])); aSup.type = "button";
@@ -1223,7 +1258,7 @@ function abrirOfertaSeguimiento(x) {
   msg("msg-seguir", "");
   var pl = planPreferido(), cad = pl === "quincenal" ? "cada 15 días" : (pl === "manual" ? "cada semana + Verificar ahora" : "cada semana");
   $("sg-suscribir").textContent = "Suscribirme por " + reales(PRECIOS[pl]) + " al mes";
-  document.querySelector("#modal-seguir .sg-nota").textContent = "Revisamos tu RNM " + cad + " · Pagas con Pix, tarjeta o boleto · Cancelas cuando quieras";
+  document.querySelector("#modal-seguir .sg-nota").textContent = "Revisamos tu RNM " + cad + " · Pix, tarjeta o boleto · 🛡️ Si no te convence, cancelas en la primera hora y te devolvemos tu dinero";
   pintarPruebaSocial($("sg-opiniones"));
   m.classList.remove("oculto"); document.body.style.overflow = "hidden";
   m.querySelector(".modal-caja").focus();
