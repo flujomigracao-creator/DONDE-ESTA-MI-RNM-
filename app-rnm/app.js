@@ -1158,10 +1158,12 @@ function revisarPaywall(plan) {
   if (paywallAbierto || pagandoPlan) return;
   paywallAbierto = true;
   document.body.classList.add("paywall");
-  var pref = planPreferido(); planElegido = pref; ampliando = false;
+  // Si eligió un plan concreto en la landing, se abre su pago; si no, se queda en la elección de planes.
+  var o = origenGuardado(), elegido = o && (o.p === "quincenal" || o.p === "semanal" || o.p === "manual") ? o.p : "";
+  planElegido = elegido || "quincenal"; ampliando = false;
   cartelPlanes(registrosCargados || [], planCargado);
   abrirModalPlanes();
-  setTimeout(function () { mostrarPago(pref); }, 300);
+  if (elegido) setTimeout(function () { mostrarPago(elegido); }, 300);
   if (!$("paywall-salir")) {
     var sal = el("button", "sec paywall-salir", "Salir de mi cuenta"); sal.type = "button"; sal.id = "paywall-salir";
     sal.addEventListener("click", function () { salidaManual = true; sb.auth.signOut(); });

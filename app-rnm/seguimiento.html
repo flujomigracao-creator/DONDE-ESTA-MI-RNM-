@@ -465,7 +465,8 @@
       var d = new URLSearchParams();
       UTMS.forEach(function (k) { if (p.get(k)) d.set(k, p.get(k).slice(0, 80)); });
       if (segmento) d.set("utm_term", segmento);
-      d.set("pref", a.getAttribute("data-plan") || "quincenal");
+      // Solo los botones de un plan concreto llevan el plan elegido; los demás abren la elección de planes.
+      if (String(a.getAttribute("data-cta")).indexOf("plan-") === 0) d.set("pref", a.getAttribute("data-plan"));
       d.set("via", a.getAttribute("data-gratis") ? "landing-gratis" : "landing");
       a.href = "/?" + d.toString();
     });
