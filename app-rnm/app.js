@@ -1157,31 +1157,24 @@ function marcarVistos(ids) {
   try { localStorage.setItem("rnm_planes_vistos", JSON.stringify(planesVistos.slice(-50))); } catch (e) { /* sin almacenamiento */ }
 }
 var focoAntesModal = null;
-/* Camino de la landing: primero se activa el plan y después se registra el RNM. */
-var paywallAbierto = false;
-function debePagarAntes(plan) {
-  var o = origenGuardado();
-  return !!(o && o.v === "landing" && !plan);
-}
+/* Camino de la landing: la persona registra su RNM, ve el resultado de su primera revisión
+   y enseguida se le abre la elección de planes (con el plan que eligió en la landing, si eligió uno). */
+var planesLandingMostrados = false;
+function debePagarAntes() { return false; } // ya no se cobra antes de registrar el RNM
 function revisarPaywall(plan) {
-  if (!debePagarAntes(plan)) {
-    if (document.body.classList.contains("paywall") && plan && new Date(plan.vence_at) > new Date()) document.body.classList.remove("paywall");
-    return;
-  }
-  if (paywallAbierto || pagandoPlan) return;
-  paywallAbierto = true;
-  document.body.classList.add("paywall");
-  // Si eligió un plan concreto en la landing, se abre su pago; si no, se queda en la elección de planes.
-  var o = origenGuardado(), elegido = o && (o.p === "quincenal" || o.p === "semanal" || o.p === "manual") ? o.p : "";
-  planElegido = elegido || "quincenal"; ampliando = false;
-  cartelPlanes(registrosCargados || [], planCargado);
-  abrirModalPlanes();
-  if (elegido) setTimeout(function () { mostrarPago(elegido); }, 300);
-  if (!$("paywall-salir")) {
-    var sal = el("button", "sec paywall-salir", "Salir de mi cuenta"); sal.type = "button"; sal.id = "paywall-salir";
-    sal.addEventListener("click", function () { salidaManual = true; sb.auth.signOut(); });
-    $("modal-planes").querySelector(".modal-caja").appendChild(sal);
-  }
+  document.body.classList.remove("paywall");
+  var o = origenGuardado();
+  if (!o || o.v !== "landing" || plan || planesLandingMostrados || pagandoPlan) return;
+  if (!registroParaOferta(registrosCargados || [])) return; // aún sin resultado, o el RNM ya está listo / no se encontró
+  planesLandingMostrados = true;
+  setTimeout(function () {
+    if (planCargado || pagandoPlan || hayModalAbierto() || $("vista-app").classList.contains("oculto")) { planesLandingMostrados = false; return; }
+    var elegido = (o.p === "quincenal" || o.p === "semanal" || o.p === "manual") ? o.p : "";
+    planElegido = elegido || "quincenal"; ampliando = false;
+    cartelPlanes(registrosCargados || [], planCargado);
+    abrirModalPlanes();
+    if (elegido) setTimeout(function () { mostrarPago(elegido); }, 300);
+  }, 7000); // tiempo para que lea el resultado de su RNM
 }
 function abrirModalPlanes() {
   if ($("modal-planes").classList.contains("oculto")) focoAntesModal = document.activeElement;
@@ -1287,6 +1280,7 @@ function registroParaOferta(regs) {
 }
 function revisarOfertaSeguimiento(regs, plan, activo) {
   if (ofertaSeguirMostrada || activo || pagandoPlan) return;
+  var origen = origenGuardado(); if (origen && origen.v === "landing") return; // a ellos se les abre directamente la elección de planes
   var x = registroParaOferta(regs); if (!x) return;
   try { var hasta = Number(localStorage.getItem("rnm_seguir_snooze") || 0); if (hasta > Date.now()) return; } catch (e) { /* sin almacenamiento */ }
   if (ofertaSeguirTimer) clearTimeout(ofertaSeguirTimer);
