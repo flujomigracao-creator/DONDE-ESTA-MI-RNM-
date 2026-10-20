@@ -183,6 +183,33 @@
       }).catch(function () { boton.disabled = false; boton.textContent = texto; window.alert("No se pudo cancelar. Revisa la conexión."); });
   }
 
+  var FUNCION_BORRAR = "https://rumpfqevyspdmhaggxtq.supabase.co/functions/v1/rnm-admin-borrar-cliente";
+  var MENSAJES_BORRAR = { es_dueno: "Esa cuenta es de un dueño y no se puede borrar.", no_puedes_borrarte: "No puedes borrar tu propia cuenta.", no_existe: "La cuenta ya no existe.", no_se_pudo_cancelar_suscripcion: "No se pudo cancelar su suscripción de tarjeta en Mercado Pago, así que no se borró nada. Inténtalo de nuevo." };
+  function borrarClienteDe(userId, nombre, boton) {
+    var t = window.prompt("BORRAR LA CUENTA DE " + nombre + "
+
+Se eliminan para siempre: su cuenta, perfil, RNM, consultas, avisos, plan, pagos registrados, opiniones y mensajes. Si paga con tarjeta, se cancela su suscripción. No se puede deshacer.
+
+Para confirmar escribe BORRAR:");
+    if (t === null) return;
+    if (String(t).trim().toUpperCase() !== "BORRAR") { window.alert("No se borró nada: no escribiste BORRAR."); return; }
+    boton.disabled = true; var texto = boton.textContent; boton.textContent = "Borrando…";
+    sb.auth.getSession().then(function (s) {
+      var tk = s.data.session && s.data.session.access_token;
+      return fetch(FUNCION_BORRAR, { method: "POST", headers: { "Content-Type": "application/json", apikey: CLAVE, Authorization: "Bearer " + tk }, body: JSON.stringify({ user_id: userId }) });
+    }).then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return { ok: r.ok && j.ok === true, j: j }; }); })
+      .then(function (x) {
+        if (!x.ok) { boton.disabled = false; boton.textContent = texto; window.alert((MENSAJES_BORRAR[x.j && x.j.error]) || ("No se pudo borrar" + (x.j && x.j.error ? " (" + x.j.error + ")" : "") + ". No se perdió nada.")); return; }
+        window.alert("Cuenta borrada" + (x.j.suscripciones_canceladas ? " y suscripción de tarjeta cancelada" : "") + ".");
+        cargar();
+      }).catch(function () { boton.disabled = false; boton.textContent = texto; window.alert("No se pudo borrar. Revisa la conexión."); });
+  }
+  function botonBorrar(userId, nombre) {
+    var b = e("button", "peligro", "Borrar cuenta y datos"); b.type = "button";
+    b.addEventListener("click", function () { borrarClienteDe(userId, nombre, b); });
+    return b;
+  }
+
   function pintarPersonas(cont) {
     cont.textContent = "";
     var q = sinAcento(estadoLista.busca);
@@ -211,6 +238,7 @@
       var link = wa(p.telefono); if (link) { var a = e("a", "", "WhatsApp"); a.href = link; a.target = "_blank"; a.rel = "noopener"; acc.appendChild(a); }
       if (p.email) { var m = e("a", "", "Correo"); m.href = "mailto:" + p.email; acc.appendChild(m); }
       if (p.estado === "activo") { var b = e("button", "peligro", "Cancelar plan"); b.type = "button"; b.addEventListener("click", function () { cancelarPlanDe(p, b); }); acc.appendChild(b); }
+      acc.appendChild(botonBorrar(p.user_id, p.nombre));
       c.appendChild(acc); cont.appendChild(c);
     });
   }
@@ -380,6 +408,7 @@
       if (c.rnm_no_encontrado > 0) t.appendChild(e("p", "nota-p", "Tiene " + c.rnm_no_encontrado + " RNM que la PF no encontró: probablemente lo escribió mal."));
       var acc = e("div", "acc"); var m = e("button", "msg", c.ultimo_mensaje_at ? "Conversación" : "Escribir"); m.type = "button"; m.addEventListener("click", function () { abrirHilo(c); }); acc.appendChild(m);
       var link = wa(c.telefono); if (link) { var a = e("a", "", "WhatsApp"); a.href = link; a.target = "_blank"; a.rel = "noopener"; acc.appendChild(a); }
+      acc.appendChild(botonBorrar(c.user_id, c.nombre));
       t.appendChild(acc); cont.appendChild(t);
     });
   }
