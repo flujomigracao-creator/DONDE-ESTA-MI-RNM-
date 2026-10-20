@@ -625,8 +625,8 @@ if (btnConfEnviar) {
     btn.disabled = false;
 
     if (r.error) {
-      if ((r.error.message || "").indexOf("limite_4_rnm") >= 0) {
-        return msg("msg-confirmar", "Has alcanzado el límite máximo de 4 RNM por cuenta.");
+      if (/limite_[46]_rnm/.test(r.error.message || "")) {
+        return msg("msg-confirmar", "Has alcanzado el límite máximo de " + MAX_RNM + " RNM por cuenta.");
       }
       return msg("msg-confirmar", r.error.code === "23505"
         ? "Ese RNM ya está registrado en una cuenta. Si es tuyo y no lo ves en tu lista, contáctanos a " + CONTACTO_EMAIL + "."
@@ -661,11 +661,11 @@ async function mostrarConsultando(trabajo) {
 
 /* ---------- Lista de RNM ---------- */
 var gratisDisponible = true;
-// Muestra un solo aviso: primera consulta gratis, cubierto por el plan, RNM adicional con plan, o límite de 4.
+// Muestra un solo aviso: primera consulta gratis, cubierto por el plan, RNM adicional con plan, o límite de la cuenta.
 function mostrarCosteAplicable() {
-  var lleno = registrosCargados.length >= 4;
+  var lleno = registrosCargados.length >= MAX_RNM;
   var activo = !!planCargado && new Date(planCargado.vence_at) > new Date();
-  var cual = lleno ? "tope-4" : "reg-gratis"; // cada RNM (hasta 4) tiene su primera verificación gratis
+  var cual = lleno ? "tope-4" : "reg-gratis"; // cada RNM tiene su primera verificación gratis
   ["reg-gratis", "reg-cubierto", "reg-adicional", "tope-4"].forEach(function (id) { var n = $(id); if (n) n.classList.toggle("oculto", id !== cual); });
 }
 async function actualizarAvisoRegistro() {
@@ -673,18 +673,20 @@ async function actualizarAvisoRegistro() {
   mostrarCosteAplicable();
 }
 
-/* Tres planes, todos de hasta 4 RNM: Quincenal (revisión cada 15 días), Semanal (cada 7 días) y Manual (todo lo del semanal + "Verificar ahora"). */
+/* Tres planes: Quincenal (hasta 2 RNM, revisión cada 15 días), Semanal (hasta 4, cada 7 días) y Manual (hasta 6, semanal + "Verificar ahora"). */
+var CUPOS = { quincenal: 2, semanal: 4, manual: 6 }; // RNM incluidos por plan (igual que en la base de datos)
+var MAX_RNM = 6; // máximo por cuenta
 var PRECIOS = { quincenal: 499, semanal: 999, manual: 1999 }; // centavos al mes
 var ORDEN_PLAN = { quincenal: 1, semanal: 2, manual: 3 };
 function planSuperior(tipo) { return tipo === "quincenal" ? "semanal" : (tipo === "semanal" ? "manual" : null); }
 function reales(c) { return "R$ " + (c / 100).toFixed(2).replace(".", ","); }
 var PLANES = {
   quincenal: { nombre: "Quincenal", etiqueta: "Plan quincenal", insignia: "Más económico", lema: "Actualización automática cada 15 días",
-    puntos: ["Hasta 4 RNM en una sola cuenta", "Revisión automática cada 15 días", "Ves dónde está tu RNM y qué hacer", "Primera verificación gratis en cada RNM"] },
+    puntos: ["Hasta 2 RNM en una sola cuenta", "Revisión automática cada 15 días", "Ves dónde está tu RNM y qué hacer", "Primera verificación gratis en cada RNM"] },
   semanal: { nombre: "Semanal", etiqueta: "Plan semanal", insignia: "Más elegido", lema: "Lo revisamos por ti, cada semana",
     puntos: ["Hasta 4 RNM en una sola cuenta", "Revisión automática cada 7 días", "Ves dónde está tu RNM y qué hacer", "Primera verificación gratis en cada RNM"] },
   manual: { nombre: "Manual", etiqueta: "Plan manual", insignia: "Control total", lema: "Verifica tú, el día que quieras",
-    puntos: ["Todo lo del plan semanal", "Botón «Verificar ahora» en cada RNM", "1 verificación por día y por RNM", "Ideal si estás por retirar tu documento"] }
+    puntos: ["Hasta 6 RNM en una sola cuenta", "Revisión automática cada 7 días", "Botón «Verificar ahora» en cada RNM", "1 verificación por día y por RNM"] }
 };
 function nombrePlan(tipo) { return (PLANES[tipo] || PLANES.semanal).etiqueta; }
 function frecuenciaPlan(tipo) { return tipo === "quincenal" ? "cada 15 días" : "cada semana"; }
@@ -801,7 +803,7 @@ function mostrarPago(tipo) {
   c.innerHTML =
     '<div class="pay-top"><button type="button" class="sec" id="btn-volver-planes"><svg class=\"ic\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M19 12H5M11 6l-6 6 6 6\"/></svg> Cambiar plan</button><span class="pay-paso">Paso 2 de 2</span></div>' +
     '<h2 class="pay-titulo">Finaliza tu suscripción</h2>' +
-    '<div class="pay-resumen"><div><b>' + nombrePlan(tipo) + '</b><span>' + (tipo === "manual" ? "Hasta 4 RNM · revisión semanal + Verificar ahora" : (tipo === "quincenal" ? "Hasta 4 RNM · revisión automática cada 15 días" : "Hasta 4 RNM · revisión automática cada 7 días")) + '</span></div>' +
+    '<div class="pay-resumen"><div><b>' + nombrePlan(tipo) + '</b><span>' + (tipo === "manual" ? "Hasta 6 RNM · revisión semanal + Verificar ahora" : (tipo === "quincenal" ? "Hasta 2 RNM · revisión automática cada 15 días" : "Hasta 4 RNM · revisión automática cada 7 días")) + '</span></div>' +
       '<div class="pay-precio"><b>' + precio + '</b><span>por mes</span></div></div>' +
     (planCargado ? '' : '<p class="pay-garantia">🛡️ Garantía: si no te convence, cancelas en la primera hora y te devolvemos tu dinero.</p>') +
     '<p class="pay-sub">Elige cómo quieres pagar</p>' +
@@ -1080,7 +1082,7 @@ function cartelPlanes(regs, plan) {
     var ok = el("div", "pay pay-centro");
     ok.innerHTML = '<div class="pay-icono ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>';
     ok.appendChild(el("h2", "pay-titulo", nombrePlan(plan.tipo) + " activo"));
-    ok.appendChild(el("p", "sub", "Cubre hasta 4 RNM (" + reales(plan.precio_centavos) + " al mes) y está pagado hasta el " + fechaCorta(plan.vence_at) + "."));
+    ok.appendChild(el("p", "sub", "Cubre hasta " + (plan.cupos || CUPOS[plan.tipo] || 4) + " RNM (" + reales(plan.precio_centavos) + " al mes) y está pagado hasta el " + fechaCorta(plan.vence_at) + "."));
     if (!regs.length) ok.appendChild(el("p", "sub", "Ahora registra tu RNM y tu fecha de nacimiento: haremos tu primera revisión y empezamos a vigilarlo por ti."));
     var gar = el("div", "garantia-ok oculto"); ok.appendChild(gar); mostrarGarantia(gar);
     var sup = planSuperior(plan.tipo);
@@ -1245,7 +1247,7 @@ async function cargarRegistros(soloSiCambia) {
     var clavePago = "rnm_purchase_" + plan.vence_at;
     if (!localStorage.getItem(clavePago)) { try { localStorage.setItem(clavePago, "1"); } catch (e) { /* sin almacenamiento */ } rnmTrack("Purchase", { value: plan.precio_centavos / 100, currency: "BRL", content_name: plan.tipo }, "compra-" + plan.vence_at); }
   }
-  var lleno = r.data.length >= 4;
+  var lleno = r.data.length >= MAX_RNM;
   $("form-rnm").classList.toggle("oculto", lleno);
   mostrarCosteAplicable();
   actualizarDashboard(r.data, plan);
@@ -1347,7 +1349,7 @@ function renderizarPlanes(regs, plan) {
     var filas = el("div", "review-summary-card");
     [["Precio mensual", reales(plan.precio_centavos)],
      ["Pagado hasta", fechaCorta(plan.vence_at)],
-     ["RNM incluidos", "hasta 4"],
+     ["RNM incluidos", "hasta " + (plan.cupos || CUPOS[tipoActual] || 4)],
      ["Revisión automática", tipoActual === "quincenal" ? "1 vez cada 15 días" : "1 vez por semana"],
      ["Verificar ahora", tipoActual === "manual" ? "Incluido (1 por día y por RNM)" : "Solo en el plan manual"],
      ["RNM en seguimiento", String(abiertos) + " de 4"]
@@ -1362,7 +1364,7 @@ function renderizarPlanes(regs, plan) {
     estado.appendChild(el("h3", "", plan ? "Tu plan venció" : "Todavía no tienes un plan"));
     estado.appendChild(el("p", "sub", plan
       ? "La vigilancia de tus RNM se detuvo el " + fechaCorta(plan.vence_at) + ". Puedes renovarlo cuando quieras."
-      : "Cada RNM tiene su primera verificación gratis (hasta 4). Para seguir vigilándolos después necesitas un plan mensual."));
+      : "Cada RNM tiene su primera verificación gratis. Para seguir vigilándolos después necesitas un plan mensual."));
   }
   var acc = el("div", "acciones");
   var ver = el("button", "btn", activo ? (planSuperior(tipoActual) ? "Pasar al " + PLANES[planSuperior(tipoActual)].etiqueta.toLowerCase() : "Ver detalles del plan") : "Elegir un plan");
@@ -1385,7 +1387,7 @@ function renderizarPlanes(regs, plan) {
 
   var precios = el("div", "tarjeta");
   precios.appendChild(el("h3", "", "Elige tu plan"));
-  precios.appendChild(el("p", "sub", "Los tres incluyen hasta 4 RNM y la primera verificación gratis de cada uno."));
+  precios.appendChild(el("p", "sub", "Quincenal hasta 2 RNM, semanal hasta 4 y manual hasta 6. Cada RNM tiene su primera verificación gratis."));
   var grid = el("div", "planes-op");
   ["quincenal", "semanal", "manual"].forEach(function (tipo) {
     var esActual = tipoActual === tipo;
@@ -1836,7 +1838,7 @@ var mensajesSinLeer = 0, pollChat = null, modoSoporte = "bot", pendientesChat = 
 var FAQ_RAPIDAS = [
   ["¿Cada cuánto se revisa mi RNM?", "Una vez por semana (cada 7 días) mientras tengas un plan activo. La primera verificación de cada RNM es gratis. La revisión no es en tiempo real: si el estado cambia entre una y otra, lo verás en la siguiente. La app se actualiza sola, no tienes que hacer nada."],
   ["Mi RNM dice «No encontrado»", "Casi siempre es que el RNM o la fecha están mal escritos. Abre ese RNM y toca «Corregir RNM o fecha» (hasta 3 veces, sin costo): se vuelve a consultar al instante. Recuerda que el RNM suele llevar letras, por ejemplo A123456B."],
-  ["¿Cuánto cuesta y cómo pago?", "Hay dos planes: Semanal R$ 9,99 al mes (revisión cada 7 días) y Manual R$ 19,99 al mes (lo mismo, más el botón «Verificar ahora»). Cubren hasta 4 RNM. Entra en Planes, elige uno y paga con Pix, boleto o tarjeta."],
+  ["¿Cuánto cuesta y cómo pago?", "Hay tres planes: Quincenal R$ 4,99 al mes (hasta 2 RNM, revisión cada 15 días), Semanal R$ 9,99 (hasta 4 RNM, cada 7 días) y Manual R$ 19,99 (hasta 6 RNM, semanal más el botón «Verificar ahora»). Entra en Planes, elige uno y paga con Pix, boleto o tarjeta."],
   ["¿Cómo cancelo mi plan?", "En Perfil toca «Cancelar plan» (o entra en Planes). No se vuelve a cobrar y tu plan sigue activo hasta la fecha ya pagada."],
   ["Mi documento está listo en otra ciudad", "En el detalle del RNM ves en qué unidad de la Policía Federal está. El cambio de unidad lo decide la Policía Federal; si necesitas orientación, escríbenos por aquí."]
 ];
