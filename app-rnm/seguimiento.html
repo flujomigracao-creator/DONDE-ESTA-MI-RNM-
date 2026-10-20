@@ -3,363 +3,443 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Sigue tu RNM en Brasil: sabe dónde está y recibe avisos por WhatsApp</title>
-<meta name="description" content="¿Hiciste tu RNM en la frontera y te mudaste? Te decimos dónde está tu documento, si hay cambio de dirección y te avisamos por WhatsApp. Planes desde R$ 4,99 con reembolso en la primera hora.">
-<meta name="theme-color" content="#08224F">
+<title>¿Dónde está mi RNM? · Seguimiento</title>
+<meta name="description" content="Sabe en qué estado va tu RNM y en qué unidad de la Polícia Federal está. Te avisamos por WhatsApp cuando cambie. Desde R$ 4,99 al mes, con reembolso en la primera hora.">
+<meta name="theme-color" content="#0B2545">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="figma.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,500..900&family=IBM+Plex+Mono:wght@500;600&family=Public+Sans:wght@400;500;600;700&display=swap">
 <style>
-  :root { --azul: #0E3F8E; --azul2: #1F6FEB; --noche: #08224F; --noche2: #0B2E6B; --amarillo: #FFC83D; --amarillo2: #C9951A; --verde: #13803D; --verde-claro: #E4F6EA; --texto: #0F1B33; --suave: #51617C; --linea: #DCE4F2; --fondo: #F4F7FC; --blanco: #fff; }
+  /* Página clara, de una sola apariencia: tinta azul profundo sobre papel gris verdoso, verde "listo" como único acento fuerte.
+     Composición: héroe en dos columnas con una ficha de estado viva; secciones alternan papel y tinta. */
+  :root {
+    color-scheme: light;
+    --tinta: #0B2545;      /* texto y bandas oscuras */
+    --tinta-2: #13315C;
+    --papel: #F3F5F2;      /* fondo general */
+    --blanco: #FFFFFF;
+    --gris: #5A6A7E;       /* texto secundario */
+    --linea: #DCE2E6;
+    --verde: #0E7C5A;      /* estado listo / acento */
+    --verde-suave: #E2F2EB;
+    --ambar: #B7791F;      /* traslado */
+    --ambar-suave: #FBF1DF;
+    --azul: #1D5FD1;       /* en proceso / enlaces */
+    --azul-suave: #E7EEFB;
+    --display: "Archivo", "Arial Narrow", system-ui, sans-serif;
+    --texto: "Public Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  }
   * { box-sizing: border-box; }
   html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
-  body.lp { margin: 0; background: var(--fondo); color: var(--texto); font: 17px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding-bottom: 86px; overflow-x: hidden; }
-  .lp img, .lp svg { max-width: 100%; }
+  body.lp { margin: 0; background: var(--papel); color: var(--tinta); font: 400 17px/1.6 var(--texto); padding-bottom: 84px; overflow-x: hidden; }
   .lp a { color: inherit; }
-  .lp .caja { width: 100%; max-width: 1080px; margin: 0 auto; padding: 0 20px; }
-  .lp h1, .lp h2, .lp h3 { font-family: inherit; }
+  .lp img, .lp svg { max-width: 100%; }
+  .envoltura { width: 100%; max-width: 1120px; margin: 0 auto; padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px)); }
+  .lp h1, .lp h2, .lp h3 { font-family: var(--display); font-stretch: 88%; text-wrap: balance; margin: 0; letter-spacing: -0.015em; }
+  .etiqueta { font-family: var(--mono); font-size: 0.74rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--verde); }
+  .mono { font-family: var(--mono); font-feature-settings: "zero" 1; }
 
-  /* Progreso de lectura + barra superior */
-  #prog { position: fixed; top: 0; left: 0; height: 4px; width: 0; z-index: 70; background: linear-gradient(90deg, var(--amarillo), #ff9f1a); }
-  .lp-top { position: sticky; top: 0; z-index: 60; background: rgba(8, 34, 79, 0.97); backdrop-filter: blur(8px); padding: calc(9px + env(safe-area-inset-top, 0px)) 0 9px; transition: box-shadow .25s; }
-  .lp-top.sombra { box-shadow: 0 6px 24px rgba(0, 0, 0, 0.3); }
-  .lp-top .caja { display: flex; align-items: center; gap: 10px; }
-  .lp-top img { width: 34px; height: 34px; border-radius: 9px; }
-  .lp-top b { color: #fff; font-size: 1rem; letter-spacing: -0.01em; flex: 1; }
-  .lp-top .mini { display: none; min-height: 40px; padding: 0 16px; border-radius: 12px; background: var(--amarillo); color: #1A1300 !important; font-weight: 800; font-size: 0.92rem; text-decoration: none; align-items: center; }
-  .lp-top.con-cta .mini { display: inline-flex; animation: aparece .3s both; }
-  @keyframes aparece { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+  /* Barra de progreso y cabecera */
+  #prog { position: fixed; top: 0; left: 0; height: 3px; width: 0; z-index: 80; background: var(--verde); }
+  body.lp::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 61; background: var(--tinta); }
+  .cab { color: #fff; position: sticky; top: env(safe-area-inset-top, 0px); z-index: 60; background: var(--tinta); border-bottom: 1px solid rgba(255,255,255,.08); transition: box-shadow .25s; }
+  .cab.sombra { box-shadow: 0 8px 24px rgba(11, 37, 69, .25); }
+  .cab .envoltura { display: flex; align-items: center; gap: 12px; min-height: 60px; }
+  .lp .marca { display: flex; align-items: center; gap: 10px; color: #fff; text-decoration: none; flex: 1; min-width: 0; }
+  .marca img { width: 32px; height: 32px; border-radius: 8px; }
+  .marca span { font-family: var(--display); font-weight: 800; font-stretch: 92%; font-size: 1.02rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cab .mini { display: none; }
+  .cab.con-cta .mini { display: inline-flex; }
 
-  /* Botón principal */
-  .lp-cta { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 58px; padding: 0 22px; border-radius: 16px; background: var(--amarillo); color: #1A1300 !important; font-size: 1.12rem; font-weight: 800; text-decoration: none; box-shadow: 0 6px 0 var(--amarillo2), 0 16px 30px rgba(0, 0, 0, 0.22); transition: transform .12s, box-shadow .12s; position: relative; overflow: hidden; }
-  .lp-cta::after { content: ""; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 35%, rgba(255, 255, 255, 0.55) 50%, transparent 65%); transform: translateX(-120%); animation: brillo 3.6s infinite; }
-  @keyframes brillo { 0%, 55% { transform: translateX(-120%); } 85%, 100% { transform: translateX(120%); } }
-  .lp-cta:hover { transform: translateY(-2px); } .lp-cta:active { transform: translateY(3px); box-shadow: 0 3px 0 var(--amarillo2), 0 8px 16px rgba(0, 0, 0, 0.22); }
-  .lp-cta.sec { background: #fff; color: var(--azul) !important; border: 2px solid var(--azul2); box-shadow: none; } .lp-cta.sec::after { display: none; }
-  .lp-cta.fantasma { background: transparent; color: #fff !important; border: 2px solid rgba(255, 255, 255, 0.55); box-shadow: none; min-height: 52px; font-size: 1rem; } .lp-cta.fantasma::after { display: none; }
+  /* Botones */
+  .lp-cta { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 56px; padding: 0 26px; border-radius: 12px; background: var(--verde); color: #fff !important; font: 700 1.05rem/1 var(--texto); text-decoration: none; border: 0; box-shadow: 0 1px 0 rgba(255,255,255,.18) inset, 0 8px 20px rgba(14, 124, 90, .28); transition: transform .15s ease, box-shadow .15s ease, background .15s ease; }
+  .lp-cta:hover { background: #0B6B4D; transform: translateY(-1px); box-shadow: 0 1px 0 rgba(255,255,255,.18) inset, 0 12px 26px rgba(14, 124, 90, .34); }
+  .lp-cta:active { transform: translateY(1px); }
+  .lp-cta:focus-visible, .quiz button:focus-visible, summary:focus-visible, .enlace:focus-visible { outline: 3px solid var(--azul); outline-offset: 3px; }
+  .lp-cta svg { width: 18px; height: 18px; flex: none; }
+  .lp-cta.contorno { background: transparent; color: var(--tinta) !important; border: 1.5px solid var(--tinta); box-shadow: none; }
+  .lp-cta.contorno:hover { background: var(--tinta); color: #fff !important; }
+  .lp-cta.claro { background: transparent; color: #fff !important; border: 1.5px solid rgba(255,255,255,.45); box-shadow: none; }
+  .lp-cta.claro:hover { background: rgba(255,255,255,.08); }
+  .lp-cta.pequeno { min-height: 40px; padding: 0 16px; font-size: 0.9rem; border-radius: 10px; box-shadow: none; }
+  .enlace { color: #fff; font-weight: 600; text-decoration: underline; text-underline-offset: 4px; text-decoration-color: rgba(255,255,255,.4); }
 
   /* Héroe */
-  .lp-hero { position: relative; background: linear-gradient(165deg, var(--noche) 0%, var(--azul) 70%, #1A57C4 100%); color: #fff; padding: 34px 0 52px; overflow: hidden; }
-  .forma { position: absolute; border-radius: 50%; filter: blur(2px); opacity: .22; pointer-events: none; will-change: transform; }
-  .forma.a { width: 320px; height: 320px; background: var(--amarillo); top: -120px; right: -90px; } .forma.b { width: 260px; height: 260px; background: #3B8BFF; bottom: -100px; left: -90px; }
-  .hero-grid { position: relative; display: grid; gap: 30px; align-items: center; }
-  .lp-etiqueta { display: inline-block; background: var(--amarillo); color: #1A1300; font-weight: 800; font-size: 0.76rem; letter-spacing: 0.05em; text-transform: uppercase; padding: 6px 13px; border-radius: 999px; }
-  .lp-hero h1 { margin: 16px 0 12px; font-size: 2.15rem; line-height: 1.07; letter-spacing: -0.035em; }
-  .lp-hero h1 em { font-style: normal; color: var(--amarillo); }
-  .lp-hero p.sub { margin: 0 0 22px; font-size: 1.1rem; color: #D6E3FF; }
-  .lp-hero p.sub b { color: #fff; }
-  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
-  .chips span { background: rgba(255, 255, 255, 0.12); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 999px; padding: 6px 12px; font-size: 0.84rem; font-weight: 600; color: #E7EFFF; }
-  .lp-nota { margin: 12px 0 0; font-size: 0.88rem; color: #BBD0F7; } .lp-nota b { color: #fff; }
+  .heroe { background: var(--tinta); color: #fff; position: relative; overflow: hidden; }
+  .heroe::after { content: ""; position: absolute; inset: 0; background-image: linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px); background-size: 32px 32px; pointer-events: none; }
+  .heroe .envoltura { position: relative; z-index: 1; display: grid; gap: 40px; padding-block: 44px 56px; }
+  .heroe .etiqueta { color: #7FD8B5; }
+  .heroe h1 { font-size: clamp(2.6rem, 9vw, 4.6rem); line-height: 0.98; font-weight: 900; font-stretch: 80%; margin: 14px 0 18px; }
+  .heroe h1 span { color: #7FD8B5; }
+  .heroe .bajada { margin: 0; max-width: 34ch; font-size: 1.15rem; color: #C9D5E4; }
+  .heroe .acciones { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; margin-top: 26px; }
+  .heroe .letra { margin: 18px 0 0; font-size: 0.9rem; color: #9FB1C8; }
+  .heroe .letra b { color: #fff; font-weight: 600; }
 
-  /* Teléfono */
-  .lp-tel { width: min(100%, 320px); margin: 0 auto; border-radius: 32px; background: #fff; color: var(--texto); padding: 18px 16px 16px; box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4); border: 7px solid #0B1A3A; animation: flota 6s ease-in-out infinite; }
-  @keyframes flota { 50% { transform: translateY(-8px); } }
-  .lp-tel h3 { margin: 0 0 4px; font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--suave); }
-  .lp-tel .rnm { font-weight: 800; font-size: 1.15rem; margin-bottom: 10px; letter-spacing: 0.04em; }
-  .paso-t { display: flex; align-items: center; gap: 10px; padding: 8px 0; font-weight: 700; font-size: 0.97rem; opacity: 0.38; animation: enciende 8s infinite; }
-  .paso-t i { flex: none; width: 24px; height: 24px; border-radius: 50%; background: var(--azul2); display: grid; place-items: center; font-style: normal; font-size: 0.8rem; color: #fff; }
-  .paso-t:nth-of-type(1) { animation-delay: 0s; } .paso-t:nth-of-type(2) { animation-delay: 1.5s; } .paso-t:nth-of-type(3) { animation-delay: 3s; }
-  .paso-t.final { color: var(--verde); } .paso-t.final i { background: var(--verde); }
-  @keyframes enciende { 0%, 6% { opacity: .38; } 12%, 88% { opacity: 1; } 100% { opacity: .38; } }
-  .lp-ubi { margin: 8px 0 0; padding: 9px 12px; border-radius: 12px; background: #EEF4FF; font-size: 0.86rem; font-weight: 700; color: var(--azul); animation: sube 8s infinite; animation-delay: 3.2s; }
-  .lp-wa { margin-top: 10px; padding: 11px 13px; border-radius: 14px 14px 14px 4px; background: var(--verde-claro); color: #0E3B21; font-size: 0.9rem; font-weight: 600; animation: sube 8s infinite; animation-delay: 4s; }
-  .lp-wa small { display: block; font-weight: 500; color: #3D6B50; margin-top: 2px; }
-  @keyframes sube { 0%, 8% { opacity: 0; transform: translateY(10px); } 18%, 88% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+  /* Ficha de estado (lo más característico: lo que el cliente ve) */
+  .ficha { background: var(--blanco); color: var(--tinta); border-radius: 18px; padding: 22px; max-width: 420px; width: 100%; justify-self: center; box-shadow: 0 30px 60px rgba(0,0,0,.35); position: relative; }
+  .ficha .arriba { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; border-bottom: 1px dashed var(--linea); padding-bottom: 14px; }
+  .ficha .arriba small { font-family: var(--mono); font-size: .72rem; letter-spacing: .06em; color: var(--gris); text-transform: uppercase; }
+  .ficha .numero { font-family: var(--mono); font-weight: 600; font-size: 1.15rem; letter-spacing: .06em; }
+  .linea-t { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 14px; position: relative; }
+  .linea-t::before { content: ""; position: absolute; left: 9px; top: 6px; bottom: 6px; width: 2px; background: var(--linea); }
+  .linea-t li { position: relative; padding-left: 32px; font-weight: 600; }
+  .linea-t li small { display: block; font-weight: 400; color: var(--gris); font-size: .85rem; }
+  .linea-t li::before { content: ""; position: absolute; left: 0; top: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--azul); box-shadow: 0 0 0 4px var(--blanco); }
+  .linea-t li.ok::before { background: var(--verde); }
+  .unidad { margin-top: 16px; padding: 12px 14px; border-radius: 12px; background: var(--verde-suave); display: grid; gap: 2px; }
+  .unidad small { font-size: .78rem; color: var(--verde); font-weight: 600; }
+  .unidad b { font-size: 1.05rem; }
+  .unidad code { font-family: var(--mono); font-size: .72rem; color: var(--gris); }
+  .sello { position: absolute; right: 16px; top: 60px; border: 3px solid var(--verde); color: var(--verde); font-family: var(--display); font-weight: 900; font-stretch: 75%; text-transform: uppercase; letter-spacing: .04em; font-size: .95rem; line-height: 1.05; text-align: center; padding: 6px 10px; border-radius: 8px; transform: rotate(-8deg); background: rgba(255,255,255,.9); }
+  .aviso-wa { position: absolute; left: -10px; bottom: -22px; background: #fff; border-radius: 14px; padding: 10px 14px; box-shadow: 0 14px 30px rgba(0,0,0,.25); display: flex; gap: 10px; align-items: center; max-width: 280px; font-size: .86rem; font-weight: 600; }
+  .aviso-wa i { flex: none; width: 30px; height: 30px; border-radius: 50%; background: #25D366; display: grid; place-items: center; }
+  .aviso-wa i svg { width: 17px; height: 17px; }
+  .aviso-wa small { display: block; color: var(--gris); font-weight: 400; font-size: .76rem; }
+  .anima .sello { animation: sellar .5s cubic-bezier(.2,.9,.3,1.3) 1.1s both; }
+  .anima .aviso-wa { animation: entra .6s ease 1.8s both; }
+  @keyframes sellar { from { opacity: 0; transform: rotate(-8deg) scale(1.8); } to { opacity: 1; transform: rotate(-8deg) scale(1); } }
+  @keyframes entra { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
 
   /* Secciones */
-  .lp-sec { padding: 56px 0 8px; }
-  .lp-sec.oscura { background: var(--noche); color: #fff; padding: 56px 0 60px; margin-top: 48px; }
-  .lp-sec .etq { display: inline-block; color: var(--azul2); font-weight: 800; font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 8px; }
-  .oscura .etq { color: var(--amarillo); }
-  .lp-sec h2 { margin: 0 0 10px; font-size: 1.85rem; line-height: 1.12; letter-spacing: -0.03em; }
-  .lp-sec .lead { margin: 0 0 24px; color: var(--suave); font-size: 1.05rem; max-width: 640px; } .oscura .lead { color: #BBD0F7; }
+  .seccion { padding-block: 72px 8px; }
+  .seccion > .envoltura > h2, .seccion h2.t { font-size: clamp(1.9rem, 5vw, 2.8rem); line-height: 1.04; font-weight: 800; margin-top: 10px; max-width: 22ch; }
+  .lead { margin: 14px 0 0; max-width: 60ch; color: var(--gris); font-size: 1.06rem; }
+  .banda { background: var(--tinta); color: #fff; margin-top: 72px; padding-block: 72px; }
+  .banda .etiqueta { color: #7FD8B5; } .banda .lead { color: #B9C7D8; }
 
-  /* Historia + ruta */
-  .historia { display: grid; gap: 22px; }
-  .historia p { margin: 0 0 12px; color: var(--suave); } .historia p b { color: var(--texto); }
-  .dolores { display: grid; gap: 10px; margin: 18px 0 0; padding: 0; list-style: none; }
-  .dolores li { display: flex; gap: 12px; background: #fff; border: 1px solid var(--linea); border-radius: 16px; padding: 14px 16px; font-weight: 600; font-size: 0.97rem; }
-  .dolores li::before { content: "⚠️"; }
-  .ruta-caja { background: linear-gradient(160deg, #0B2E6B, #123F8E); border-radius: 24px; padding: 18px; color: #fff; }
-  .ruta-caja svg { width: 100%; height: auto; display: block; }
-  .ruta-pie { display: flex; justify-content: space-between; gap: 10px; font-size: 0.8rem; color: #BBD0F7; margin-top: 8px; }
-  #ruta-linea { stroke-dasharray: 520; stroke-dashoffset: 520; transition: stroke-dashoffset 2.2s ease .2s; }
-  .in #ruta-linea { stroke-dashoffset: 0; }
-  .pin { opacity: 0; transform: translateY(-14px); transition: all .5s ease; transform-box: fill-box; }
-  .in .pin.p1 { opacity: 1; transform: none; transition-delay: .2s; } .in .pin.p2 { opacity: 1; transform: none; transition-delay: 2.3s; }
-  .globo { opacity: 0; transition: opacity .6s ease 2.8s; } .in .globo { opacity: 1; }
+  /* Situaciones */
+  .casos { display: grid; gap: 14px; margin-top: 32px; }
+  .caso { background: var(--blanco); border: 1px solid var(--linea); border-radius: 16px; padding: 24px; display: grid; gap: 10px; align-content: start; }
+  .caso .etiqueta { color: var(--gris); }
+  .caso h3 { font-size: 1.35rem; font-weight: 800; line-height: 1.1; }
+  .caso p { margin: 0; color: var(--gris); }
+  .caso p b { color: var(--tinta); font-weight: 600; }
 
-  /* Tarjetas de beneficios */
-  .rejilla { display: grid; gap: 12px; }
-  .ben { background: #fff; border: 1px solid var(--linea); border-radius: 20px; padding: 20px; transition: transform .2s, box-shadow .2s; }
-  .ben:hover { transform: translateY(-4px); box-shadow: 0 14px 30px rgba(14, 63, 142, 0.14); }
-  .ben .ico { width: 46px; height: 46px; border-radius: 14px; background: #EAF1FF; display: grid; place-items: center; font-size: 1.4rem; margin-bottom: 10px; }
-  .ben h3 { margin: 0 0 4px; font-size: 1.08rem; } .ben p { margin: 0; color: var(--suave); font-size: 0.95rem; }
+  /* Ejemplos de estado */
+  .estados { display: grid; gap: 14px; margin-top: 32px; }
+  .estado { background: #fff; color: var(--tinta); border-radius: 16px; padding: 20px; display: grid; gap: 8px; align-content: start; }
+  .pildora { justify-self: start; font-family: var(--mono); font-size: .72rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; }
+  .pildora.ok { background: var(--verde-suave); color: var(--verde); } .pildora.mov { background: var(--ambar-suave); color: var(--ambar); } .pildora.pro { background: var(--azul-suave); color: var(--azul); }
+  .estado h3 { font-size: 1.2rem; font-weight: 800; line-height: 1.15; }
+  .estado p { margin: 0; color: var(--gris); font-size: .95rem; }
+  .estado .donde { margin-top: 4px; border-top: 1px dashed var(--linea); padding-top: 10px; font-size: .9rem; font-weight: 600; }
+  .estado .donde code { display: block; font-family: var(--mono); font-weight: 500; font-size: .72rem; color: var(--gris); }
+  .nota-ej { margin: 18px 0 0; font-size: .85rem; color: #93A6BE; }
 
-  /* Ejemplos de pantalla */
-  .ejemplos { display: grid; gap: 12px; }
-  .ej { background: #fff; color: var(--texto); border-radius: 20px; padding: 16px; border-left: 6px solid var(--azul2); }
-  .ej.ok { border-left-color: var(--verde); } .ej.mov { border-left-color: var(--amarillo2); }
-  .ej small { color: var(--suave); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.7rem; }
-  .ej h3 { margin: 2px 0 4px; font-size: 1.12rem; } .ej p { margin: 0; color: var(--suave); font-size: 0.93rem; }
-  .ej .ubi { margin-top: 8px; display: inline-block; background: #EEF4FF; color: var(--azul); border-radius: 10px; padding: 5px 10px; font-weight: 700; font-size: 0.86rem; }
+  /* Lo que incluye */
+  .incluye { display: grid; gap: 0; margin-top: 30px; border-top: 1px solid var(--linea); }
+  .item { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 14px; padding-block: 20px; border-bottom: 1px solid var(--linea); }
+  .item svg { width: 26px; height: 26px; color: var(--verde); margin-top: 2px; }
+  .item h3 { font-size: 1.15rem; font-weight: 800; }
+  .item p { margin: 4px 0 0; color: var(--gris); }
 
-  /* Pasos */
-  .pasos { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; counter-reset: p; }
-  .pasos li { counter-increment: p; display: flex; gap: 14px; align-items: flex-start; background: #fff; border: 1px solid var(--linea); border-radius: 18px; padding: 16px; }
-  .pasos li::before { content: counter(p); flex: none; width: 40px; height: 40px; border-radius: 50%; background: var(--azul); color: #fff; font-weight: 800; display: grid; place-items: center; font-size: 1.1rem; }
-  .pasos b { display: block; font-size: 1.04rem; } .pasos span { color: var(--suave); font-size: 0.95rem; }
+  /* Pasos (secuencia real) */
+  .pasos { list-style: none; margin: 32px 0 0; padding: 0; display: grid; gap: 14px; counter-reset: paso; }
+  .pasos li { counter-increment: paso; background: var(--blanco); border: 1px solid var(--linea); border-radius: 16px; padding: 22px; position: relative; }
+  .pasos li::before { content: "Paso " counter(paso); font-family: var(--mono); font-size: .72rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--verde); }
+  .pasos h3 { font-size: 1.2rem; font-weight: 800; margin-top: 8px; }
+  .pasos p { margin: 6px 0 0; color: var(--gris); font-size: .97rem; }
 
   /* Calificación */
-  .quiz { display: grid; gap: 10px; }
-  .quiz button { text-align: left; min-height: 56px; padding: 12px 16px; border-radius: 16px; background: #fff; border: 2px solid var(--linea); color: var(--texto); font: inherit; font-weight: 700; cursor: pointer; transition: border-color .15s, transform .15s; }
-  .quiz button:hover { border-color: var(--azul2); transform: translateX(3px); }
-  .quiz button.on { border-color: var(--azul2); background: #EAF1FF; }
-  .quiz-resp { margin-top: 14px; padding: 16px; border-radius: 16px; background: var(--verde-claro); border: 1px solid #BFE5CC; color: #0E3B21; display: none; }
-  .quiz-resp.ver { display: block; animation: aparece .35s both; } .quiz-resp b { display: block; margin-bottom: 4px; }
-  .quiz-resp .lp-cta { margin-top: 12px; }
-  .dos-col { display: grid; gap: 12px; }
-  .col-si, .col-no { background: #fff; border-radius: 20px; padding: 18px; border: 1px solid var(--linea); }
-  .col-si h3, .col-no h3 { margin: 0 0 8px; font-size: 1.05rem; } .col-si h3 { color: var(--verde); } .col-no h3 { color: #B3261E; }
-  .col-si ul, .col-no ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 7px; font-size: 0.95rem; }
-  .col-si li::before { content: "✓"; color: var(--verde); font-weight: 800; margin-right: 8px; } .col-no li::before { content: "✕"; color: #B3261E; font-weight: 800; margin-right: 8px; }
+  .quiz { display: grid; gap: 10px; margin-top: 28px; }
+  .quiz button { display: flex; align-items: center; gap: 12px; text-align: left; min-height: 60px; padding: 14px 18px; border-radius: 14px; background: var(--blanco); border: 1.5px solid var(--linea); color: var(--tinta); font: 600 1rem/1.35 var(--texto); cursor: pointer; transition: border-color .15s, background .15s; }
+  .quiz button::before { content: ""; flex: none; width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--linea); transition: all .15s; }
+  .quiz button:hover { border-color: var(--tinta); }
+  .quiz button.on { border-color: var(--verde); background: var(--verde-suave); }
+  .quiz button.on::before { border-color: var(--verde); background: var(--verde); box-shadow: inset 0 0 0 3px var(--verde-suave); }
+  .respuesta { margin-top: 16px; padding: 22px; border-radius: 16px; background: var(--tinta); color: #fff; }
+  .respuesta[hidden] { display: none; }
+  .respuesta h3 { font-size: 1.3rem; font-weight: 800; }
+  .respuesta p { margin: 6px 0 16px; color: #C9D5E4; }
+  .encaja { display: grid; gap: 14px; margin-top: 28px; }
+  .encaja > div { background: var(--blanco); border: 1px solid var(--linea); border-radius: 16px; padding: 22px; }
+  .encaja h3 { font-size: 1.1rem; font-weight: 800; margin-bottom: 10px; }
+  .encaja ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+  .encaja li { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 10px; color: var(--gris); }
+  .encaja li svg { width: 18px; height: 18px; margin-top: 4px; }
+  .si li svg { color: var(--verde); } .no li svg { color: #B4443A; }
 
   /* Planes */
-  .planes { display: grid; gap: 14px; }
-  .plan-lp { position: relative; background: #fff; border: 2px solid var(--linea); border-radius: 22px; padding: 22px 18px 18px; transition: transform .2s; }
-  .plan-lp:hover { transform: translateY(-4px); }
-  .plan-lp.rec { border-color: var(--azul2); box-shadow: 0 14px 34px rgba(31, 111, 235, 0.2); }
-  .plan-lp .rec-tag { position: absolute; top: -13px; left: 18px; background: var(--azul2); color: #fff; font-size: 0.74rem; font-weight: 800; padding: 4px 13px; border-radius: 999px; letter-spacing: 0.04em; text-transform: uppercase; }
-  .plan-lp h3 { margin: 0; font-size: 1.12rem; } .plan-lp .precio { font-size: 2.3rem; font-weight: 800; letter-spacing: -0.03em; line-height: 1.1; } .plan-lp .precio small { font-size: 0.9rem; font-weight: 600; color: var(--suave); }
-  .plan-lp ul { margin: 10px 0 0; padding: 0; list-style: none; display: grid; gap: 6px; font-size: 0.95rem; }
-  .plan-lp li::before { content: "✓"; color: var(--verde); font-weight: 800; margin-right: 8px; }
-  .plan-btn { margin-top: 16px; min-height: 52px; font-size: 1rem; }
-  .garantia-caja { margin-top: 20px; padding: 18px; border-radius: 18px; background: var(--verde-claro); border: 1px solid #BFE5CC; color: #0E3B21; display: grid; gap: 4px; }
-  .garantia-caja b { font-size: 1.05rem; } .garantia-caja span { font-size: 0.95rem; }
-  .garantias { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
-  .garantias span { background: #fff; border: 1px solid var(--linea); border-radius: 999px; padding: 6px 12px; font-size: 0.86rem; font-weight: 600; }
+  .planes { display: grid; gap: 14px; margin-top: 32px; }
+  .plan { background: var(--blanco); border: 1px solid var(--linea); border-radius: 18px; padding: 26px 22px 22px; display: grid; gap: 14px; align-content: start; position: relative; }
+  .plan.rec { border: 2px solid var(--verde); box-shadow: 0 18px 40px rgba(14, 124, 90, .14); }
+  .plan .rec-tag { position: absolute; top: -12px; left: 22px; background: var(--verde); color: #fff; font-family: var(--mono); font-size: .7rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; padding: 4px 10px; border-radius: 6px; }
+  .plan h3 { font-size: 1.15rem; font-weight: 800; }
+  .precio { font-family: var(--display); font-weight: 900; font-stretch: 85%; font-size: 2.6rem; line-height: 1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .precio small { font-family: var(--texto); font-size: .9rem; font-weight: 500; color: var(--gris); letter-spacing: 0; }
+  .plan ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; font-size: .95rem; }
+  .plan li { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 10px; }
+  .plan li svg { width: 16px; height: 16px; color: var(--verde); margin-top: 4px; }
+  .plan .lp-cta { width: 100%; }
+  .garantia { margin-top: 18px; display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 14px; align-items: start; padding: 22px; border-radius: 16px; background: var(--verde-suave); }
+  .garantia svg { width: 32px; height: 32px; color: var(--verde); }
+  .garantia h3 { font-size: 1.15rem; font-weight: 800; }
+  .garantia p { margin: 4px 0 0; color: #23493C; }
+  .medios { margin: 14px 0 0; font-size: .88rem; color: var(--gris); }
 
   /* Opiniones */
-  #sec-op { display: none; }
-  #sec-op.ver { display: block; }
-  .ops { display: grid; gap: 12px; }
-  .op { background: #fff; border: 1px solid var(--linea); border-radius: 20px; padding: 18px; }
-  .op .cab { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
-  .op .av { width: 44px; height: 44px; border-radius: 50%; color: #fff; font-weight: 800; display: grid; place-items: center; font-size: 1.1rem; }
-  .op b { display: block; } .op .est { color: #F5B301; letter-spacing: 2px; font-size: 0.95rem; } .op small { color: var(--suave); }
-  .op blockquote { margin: 0; font-size: 0.98rem; }
-  .op-res { margin: 0 0 14px; font-weight: 700; } .op-res span { color: #F5B301; }
+  #sec-op[hidden] { display: none; }
+  .ops { display: grid; gap: 14px; margin-top: 28px; }
+  .op { margin: 0; background: var(--blanco); border: 1px solid var(--linea); border-radius: 16px; padding: 22px; display: grid; gap: 12px; }
+  .op blockquote { margin: 0; font-size: 1.05rem; line-height: 1.5; }
+  .op figcaption { display: flex; align-items: center; gap: 12px; }
+  .op .av { width: 40px; height: 40px; border-radius: 50%; color: #fff; font-weight: 700; display: grid; place-items: center; flex: none; }
+  .op .est { color: #C98A0B; letter-spacing: 2px; font-size: .9rem; display: block; }
+  .op small { color: var(--gris); }
+  .op-res { margin: 10px 0 0; font-weight: 600; color: var(--gris); }
 
-  details.faq { background: #fff; border: 1px solid var(--linea); border-radius: 16px; padding: 0 18px; margin-bottom: 10px; }
-  details.faq summary { cursor: pointer; font-weight: 700; padding: 15px 0; list-style: none; display: flex; justify-content: space-between; gap: 10px; min-height: 52px; align-items: center; }
-  details.faq summary::-webkit-details-marker { display: none; } details.faq summary::after { content: "+"; font-size: 1.5rem; color: var(--azul2); transition: transform .2s; }
-  details.faq[open] summary::after { transform: rotate(45deg); }
-  details.faq p { margin: 0 0 15px; color: var(--suave); font-size: 0.97rem; }
+  /* Preguntas */
+  .faqs { margin-top: 28px; border-top: 1px solid var(--linea); }
+  details.faq { border-bottom: 1px solid var(--linea); }
+  details.faq summary { cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 16px; padding-block: 20px; font-weight: 700; font-size: 1.05rem; }
+  details.faq summary::-webkit-details-marker { display: none; }
+  details.faq summary::after { content: ""; flex: none; width: 12px; height: 12px; border-right: 2px solid var(--tinta); border-bottom: 2px solid var(--tinta); transform: rotate(45deg); transition: transform .2s; margin-right: 4px; }
+  details.faq[open] summary::after { transform: rotate(-135deg); }
+  details.faq p { margin: 0 0 20px; color: var(--gris); max-width: 68ch; }
 
-  .lp-final { margin-top: 56px; background: linear-gradient(165deg, var(--noche), var(--azul)); color: #fff; padding: 52px 0 56px; text-align: center; }
-  .lp-final h2 { margin: 0 0 10px; font-size: 1.9rem; letter-spacing: -0.03em; line-height: 1.12; } .lp-final p { margin: 0 auto 20px; color: #D6E3FF; max-width: 520px; }
-  .lp-final .acc { max-width: 460px; margin: 0 auto; display: grid; gap: 12px; }
-  .lp-final .peq { margin: 10px auto 0; font-size: 0.85rem; color: #BBD0F7; }
-  .lp-pie { padding: 24px 0; text-align: center; font-size: 0.8rem; color: var(--suave); } .lp-pie a { text-decoration: underline; }
+  /* Cierre */
+  .cierre { background: var(--tinta); color: #fff; margin-top: 80px; padding-block: 72px; }
+  .cierre .envoltura { display: grid; gap: 18px; justify-items: start; }
+  .cierre h2 { font-size: clamp(2.2rem, 7vw, 3.6rem); line-height: 1; font-weight: 900; font-stretch: 80%; max-width: 16ch; }
+  .cierre p { margin: 0; color: #C9D5E4; max-width: 52ch; font-size: 1.08rem; }
+  .cierre .acciones { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; }
+  .cierre .peq { font-size: .88rem; color: #93A6BE; }
+  .pie { padding-block: 26px; font-size: .82rem; color: var(--gris); text-align: center; }
+  .pie a { text-decoration: underline; }
 
-  /* Botón fijo */
-  .lp-fijo { position: fixed; left: 0; right: 0; bottom: 0; z-index: 50; padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px)); background: rgba(8, 34, 79, 0.97); backdrop-filter: blur(8px); transform: translateY(110%); transition: transform .25s; }
-  .lp-fijo.ver { transform: none; } .lp-fijo .lp-cta { max-width: 520px; margin: 0 auto; min-height: 54px; font-size: 1.05rem; }
+  /* Botón fijo en el celular */
+  .fijo { position: fixed; left: 0; right: 0; bottom: 0; z-index: 50; padding: 10px max(16px, env(safe-area-inset-right, 0px)) calc(10px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); background: rgba(243, 245, 242, .96); backdrop-filter: blur(10px); border-top: 1px solid var(--linea); transform: translateY(110%); transition: transform .25s; }
+  .fijo.ver { transform: none; }
+  .fijo .lp-cta { width: 100%; }
 
-  /* Efectos al desplazarse */
-  .rv { opacity: 0; transform: translateY(26px); transition: opacity .7s ease, transform .7s ease; transition-delay: var(--d, 0s); }
-  .rv.in { opacity: 1; transform: none; }
+  /* Movimiento al desplazarse: el contenido siempre es visible sin JS; con JS entra suavemente */
+  .js .rv { opacity: 0; transform: translateY(18px); transition: opacity .6s ease, transform .6s ease; transition-delay: var(--d, 0s); }
+  .js .rv.in { opacity: 1; transform: none; }
   @media (prefers-reduced-motion: reduce) {
-    .rv { opacity: 1; transform: none; transition: none; } .lp-tel, .paso-t, .lp-ubi, .lp-wa, .lp-cta::after { animation: none; opacity: 1; }
-    #ruta-linea { stroke-dashoffset: 0; transition: none; } .pin, .globo { opacity: 1; transform: none; transition: none; } html { scroll-behavior: auto; }
+    html { scroll-behavior: auto; }
+    .js .rv { opacity: 1; transform: none; transition: none; }
+    .anima .sello, .anima .aviso-wa { animation: none; }
+    .lp-cta, .quiz button { transition: none; }
   }
 
-  @media (min-width: 900px) {
-    .lp-hero { padding: 56px 0 72px; } .lp-hero h1 { font-size: 3rem; }
-    .hero-grid { grid-template-columns: 1.15fr 0.85fr; gap: 56px; }
-    .lp-cta { width: auto; min-width: 340px; padding: 0 30px; } .lp-final .acc .lp-cta { width: 100%; } .plan-btn { width: 100%; min-width: 0; }
-    .lp-sec h2 { font-size: 2.3rem; }
-    .historia { grid-template-columns: 1fr 1fr; align-items: center; gap: 40px; }
-    .rejilla { grid-template-columns: repeat(3, 1fr); } .ejemplos { grid-template-columns: repeat(3, 1fr); }
-    .planes { grid-template-columns: repeat(3, 1fr); align-items: start; } .ops { grid-template-columns: repeat(3, 1fr); }
-    .dos-col { grid-template-columns: 1fr 1fr; } .quiz { grid-template-columns: 1fr 1fr; }
-    body.lp { padding-bottom: 0; } .lp-fijo { display: none; }
+  @media (min-width: 760px) {
+    .casos, .estados { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .incluye { grid-template-columns: 1fr 1fr; column-gap: 40px; }
+    .pasos { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .quiz { grid-template-columns: 1fr 1fr; }
+    .encaja { grid-template-columns: 1fr 1fr; }
+    .planes { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; }
+    .ops { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
   }
+  @media (min-width: 960px) {
+    body.lp { padding-bottom: 0; } .fijo { display: none; }
+    .heroe .envoltura { grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); align-items: center; gap: 56px; padding-block: 72px 88px; }
+    .seccion { padding-block: 96px 8px; }
+  }
+  /* Aviso de medición (lo crea meta-pixel.js) */
+  .consent-pixel { position: fixed; left: max(12px, env(safe-area-inset-left, 0px)); right: max(12px, env(safe-area-inset-right, 0px)); bottom: calc(12px + env(safe-area-inset-bottom, 0px)); z-index: 900; max-width: 520px; margin: 0 auto; background: var(--blanco); border: 1px solid var(--linea); border-radius: 16px; box-shadow: 0 12px 32px rgba(11, 37, 69, .22); padding: 14px 16px; }
+  .consent-pixel p { margin: 0 0 10px; font-size: .86rem; line-height: 1.45; color: var(--tinta); }
+  .consent-pixel a { color: var(--azul); font-weight: 700; }
+  .consent-pixel-acc { display: flex; gap: 8px; }
+  .consent-pixel-acc .btn { flex: 1; min-height: 44px; border-radius: 10px; border: 0; font: 700 .92rem/1 var(--texto); cursor: pointer; background: var(--tinta); color: #fff; }
+  .consent-pixel-acc .btn.sec { background: transparent; color: var(--tinta); border: 1.5px solid var(--linea); }
 </style>
 </head>
 <body class="lp">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-flecha" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5a7 7 0 1114 0C19 14.8 12 21 12 21z" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="9.5" r="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+  <symbol id="i-ruta" viewBox="0 0 24 24"><circle cx="6" cy="18" r="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="18" cy="6" r="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8.5 18H15a3 3 0 000-6H9a3 3 0 010-6h6.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4V5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 9.5h8M8 12.5h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  <symbol id="i-texto" viewBox="0 0 24 24"><path d="M4 6h16M4 11h16M4 16h10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  <symbol id="i-familia" viewBox="0 0 24 24"><circle cx="8" cy="8" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="17" cy="9" r="2.4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M2.5 20c.6-3.4 2.8-5.5 5.5-5.5s4.9 2.1 5.5 5.5M14 15.2c.9-.5 1.9-.7 3-.7 2.3 0 4 1.9 4.5 5.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  <symbol id="i-escudo" viewBox="0 0 24 24"><path d="M12 3l7.5 3v5.5c0 4.6-3.2 8.2-7.5 9.5-4.3-1.3-7.5-4.9-7.5-9.5V6L12 3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8.5 12l2.5 2.5 4.5-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-wa" viewBox="0 0 24 24"><path fill="#fff" d="M12 3a9 9 0 00-7.8 13.5L3 21l4.6-1.2A9 9 0 1012 3zm0 16.4a7.4 7.4 0 01-3.8-1l-.3-.2-2.7.7.7-2.6-.2-.3A7.4 7.4 0 1112 19.4zm4.1-5.5c-.2-.1-1.3-.7-1.5-.7-.2-.1-.4-.1-.5.1l-.7.9c-.1.2-.3.2-.5.1a6 6 0 01-3-2.6c-.2-.4.2-.4.6-1.2.1-.1 0-.3 0-.4l-.7-1.6c-.2-.4-.4-.4-.5-.4h-.5a.9.9 0 00-.6.3 2.7 2.7 0 00-.8 2c0 1.2.9 2.3 1 2.5.1.2 1.7 2.6 4.1 3.6 1.5.7 2.1.7 2.9.6.5-.1 1.3-.6 1.5-1.1.2-.5.2-1 .1-1.1l-.5-.3z"/></symbol>
+</svg>
 <div id="prog" aria-hidden="true"></div>
-<header class="lp-top" id="top"><div class="caja"><img src="icon-192.png" alt="" width="34" height="34"><b>¿Dónde está mi RNM?</b><a class="mini" href="/" data-cta="top" data-plan="quincenal">Empezar mi seguimiento</a></div></header>
 
-<section class="lp-hero">
-  <span class="forma a" data-vel="0.12"></span><span class="forma b" data-vel="-0.08"></span>
-  <div class="caja hero-grid">
+<header class="cab" id="top">
+  <div class="envoltura">
+    <a class="marca" href="#inicio"><img src="icon-192.png" alt="" width="32" height="32"><span>¿Dónde está mi RNM?</span></a>
+    <a class="lp-cta pequeno mini" href="/" data-cta="top" data-plan="quincenal">Empezar mi seguimiento</a>
+  </div>
+</header>
+
+<main id="inicio">
+<section class="heroe">
+  <div class="envoltura">
     <div>
-      <span class="lp-etiqueta">Para extranjeros con RNM en Brasil</span>
-      <h1>Hiciste tu RNM en la frontera. Te mudaste. <em>¿Y ahora, dónde está tu documento?</em></h1>
-      <p class="sub">Lo seguimos por ti en la Polícia Federal y <b>te avisamos por WhatsApp</b> cuando cambie de estado, de unidad o esté listo para retirar. Desde <b>R$ 4,99</b>.</p>
-      <a class="lp-cta" href="/" data-cta="hero" data-plan="quincenal">Empezar mi seguimiento →</a>
-      <p class="lp-nota"><b>Pagas con Pix en 1 minuto</b> · Si no te convence, cancelas en la primera hora y te devolvemos tu dinero</p>
-      <div class="chips"><span>💬 Aviso por WhatsApp</span><span>🇪🇸 Todo en español</span><span>🛡️ Reembolso en 1 hora</span></div>
+      <p class="etiqueta">Seguimiento de RNM · Polícia Federal</p>
+      <h1>¿Dónde está <span>tu RNM?</span></h1>
+      <p class="bajada">Te decimos en qué estado va tu documento y en qué unidad de la Polícia Federal está. Y te avisamos por WhatsApp cuando cambie, para que dejes de entrar a mirar cada día.</p>
+      <div class="acciones">
+        <a class="lp-cta" href="/" data-cta="hero" data-plan="quincenal">Empezar mi seguimiento <svg aria-hidden="true"><use href="#i-flecha"/></svg></a>
+        <a class="enlace" href="#como">Cómo funciona</a>
+      </div>
+      <p class="letra">Desde <b>R$ 4,99 al mes</b> · Pix, tarjeta o boleto · <b>Reembolso</b> si no te convence en la primera hora</p>
     </div>
-    <div class="lp-tel" aria-hidden="true">
-      <h3>Tu seguimiento</h3>
-      <div class="rnm">RNM …XXXX</div>
-      <div class="paso-t"><i>✓</i>En trámite</div>
-      <div class="paso-t"><i>✓</i>En impresión</div>
-      <div class="paso-t final"><i>✓</i>¡Listo para retirar!</div>
-      <div class="lp-ubi">📍 Retíralo en Curitiba/PR</div>
-      <div class="lp-wa">¡Tu RNM está listo para retirar! 🎉<small>WhatsApp · ahora</small></div>
+    <div class="ficha" aria-label="Ejemplo de lo que verás en la app">
+      <div class="arriba"><small>Tu seguimiento</small><span class="numero">RNM ···248V</span></div>
+      <ol class="linea-t">
+        <li class="ok">En análisis<small>Recibido por la PF</small></li>
+        <li class="ok">Enviado a impresión<small>Una de las últimas etapas</small></li>
+        <li class="ok">Listo para retirar<small>Revisado hoy</small></li>
+      </ol>
+      <div class="unidad"><small>Retíralo en</small><b>Curitiba / PR</b><code>DELEMIG/DREX/SR/PF/PR</code></div>
+      <div class="sello" aria-hidden="true">Listo<br>para retirar</div>
+      <div class="aviso-wa" aria-hidden="true"><i><svg><use href="#i-wa"/></svg></i><div>Tu RNM está listo para retirar<small>WhatsApp · ahora</small></div></div>
     </div>
   </div>
 </section>
 
-<section class="lp-sec"><div class="caja">
-  <div class="historia">
-    <div class="rv">
-      <span class="etq">Te suena familiar</span>
-      <h2>Haces el trámite en un lugar, vives en otro y nadie te dice dónde está tu RNM</h2>
-      <p>Muchas personas llegan a Brasil y hacen su trámite del RNM en la ciudad de la frontera. Después se mudan a otra ciudad para trabajar o para estar con su familia.</p>
-      <p><b>El documento puede quedar en la unidad donde hiciste el trámite</b>, y nadie te avisa. Para recibirlo en tu ciudad nueva hay que pedir un <b>cambio de dirección</b>, y la Polícia Federal responde en portugués técnico que cuesta entender.</p>
-      <ul class="dolores">
-        <li>No sabes en qué unidad está tu RNM ni si ya salió.</li>
-        <li>Pediste un cambio de dirección y no sabes si lo aprobaron ni a dónde va tu documento.</li>
-        <li>Entras a la página de la PF cada semana y los mensajes no se entienden.</li>
-      </ul>
-    </div>
-    <div class="ruta-caja rv" style="--d:.15s" aria-hidden="true">
-      <svg viewBox="0 0 360 250" fill="none">
-        <path id="ruta-linea" d="M58 52 C 130 40, 120 150, 180 150 S 280 190, 300 196" stroke="#FFC83D" stroke-width="4" stroke-linecap="round"/>
-        <g class="pin p1"><circle cx="58" cy="52" r="15" fill="#FFC83D"/><text x="58" y="57" text-anchor="middle" font-size="15" font-weight="800" fill="#1A1300">1</text></g>
-        <g class="pin p2"><circle cx="300" cy="196" r="15" fill="#2FD27A"/><text x="300" y="201" text-anchor="middle" font-size="15" font-weight="800" fill="#06301A">2</text></g>
-        <text x="78" y="40" font-size="13" font-weight="700" fill="#fff">Frontera · hiciste el trámite</text>
-        <text x="200" y="226" font-size="13" font-weight="700" fill="#fff">Tu ciudad nueva</text>
-        <g class="globo"><rect x="84" y="102" width="150" height="34" rx="12" fill="#fff"/><text x="159" y="124" text-anchor="middle" font-size="14" font-weight="800" fill="#0E3F8E">¿Dónde está mi RNM?</text></g>
-      </svg>
-      <div class="ruta-pie"><span>1 · Trámite en la frontera</span><span>2 · Te mudas</span></div>
-    </div>
+<section class="seccion"><div class="envoltura">
+  <p class="etiqueta rv">Para quién es</p>
+  <h2 class="rv">Hiciste tu trámite y ahora toca esperar. Sin saber nada.</h2>
+  <p class="lead rv">Da igual dónde lo pediste. Estas son las tres situaciones que más vemos, y en las tres te ayudamos igual.</p>
+  <div class="casos">
+    <article class="caso rv"><p class="etiqueta">En tu ciudad</p><h3>Lo pediste donde vives y sigues esperando</h3><p>Pasan las semanas y la página de la PF dice lo mismo. <b>Lo revisamos por ti</b> y te escribimos cuando cambie de estado o esté listo.</p></article>
+    <article class="caso rv" style="--d:.08s"><p class="etiqueta">En la frontera</p><h3>Lo hiciste al entrar a Brasil y después te mudaste</h3><p>El documento puede quedar en la unidad donde hiciste el trámite. <b>Te decimos en cuál está</b>, para que sepas a dónde ir.</p></article>
+    <article class="caso rv" style="--d:.16s"><p class="etiqueta">Cambio de dirección</p><h3>Pediste que te lo envíen a otra unidad</h3><p>Ves si <b>lo aprobaron</b>, si el documento está en traslado y a qué unidad va. Te avisamos cuando llegue.</p></article>
   </div>
 </div></section>
 
-<section class="lp-sec oscura"><div class="caja">
-  <span class="etq rv">Lo que hacemos por ti</span>
-  <h2 class="rv">Tu RNM, explicado y vigilado</h2>
-  <p class="lead rv">Consultamos la Polícia Federal por ti y te lo contamos en español, con lo que importa: en qué estado está y dónde retirarlo.</p>
-  <div class="ejemplos">
-    <div class="ej ok rv"><small>Ejemplo · documento listo</small><h3>¡Tu RNM está listo para retirar!</h3><p>Te decimos en qué unidad y cómo retirarlo.</p><span class="ubi">📍 Retíralo en Curitiba/PR</span></div>
-    <div class="ej mov rv" style="--d:.12s"><small>Ejemplo · cambio de dirección aprobado</small><h3>Tu cambio de dirección fue aprobado</h3><p>Tu RNM sigue en otra unidad y será trasladado. Todavía no vayas a retirarlo.</p><span class="ubi">📍 En camino de Boa Vista/RR a Curitiba/PR</span></div>
-    <div class="ej rv" style="--d:.24s"><small>Ejemplo · en proceso</small><h3>Tu carné fue enviado a impresión</h3><p>Es de las últimas etapas. Te avisamos apenas esté listo.</p><span class="ubi">📍 En la unidad donde hiciste el trámite</span></div>
+<section class="banda"><div class="envoltura">
+  <p class="etiqueta rv">Lo que verás</p>
+  <h2 class="t rv">Lo que dice la PF, explicado en español</h2>
+  <p class="lead rv">La consulta de la Polícia Federal responde en portugués técnico. Nosotros te decimos qué significa, dónde está tu documento y qué hacer.</p>
+  <div class="estados">
+    <article class="estado rv"><span class="pildora ok">Listo</span><h3>Tu RNM está listo para retirar</h3><p>Te decimos en qué unidad y cómo retirarlo.</p><p class="donde">Retíralo en Curitiba / PR<code>DELEMIG/DREX/SR/PF/PR</code></p></article>
+    <article class="estado rv" style="--d:.08s"><span class="pildora mov">En traslado</span><h3>Tu cambio de dirección fue aprobado</h3><p>Todavía no vayas a retirarlo: el documento va camino de la unidad nueva.</p><p class="donde">De Boa Vista / RR a Curitiba / PR<code>SR/PF/RR → SR/PF/PR</code></p></article>
+    <article class="estado rv" style="--d:.16s"><span class="pildora pro">En proceso</span><h3>Tu carné fue enviado a impresión</h3><p>Es de las últimas etapas. Te avisamos apenas pase a listo.</p><p class="donde">En la unidad donde hiciste el trámite</p></article>
+  </div>
+  <p class="nota-ej rv">Ejemplos con datos ficticios. Tú verás los de tu propio RNM.</p>
+</div></section>
+
+<section class="seccion"><div class="envoltura">
+  <p class="etiqueta rv">Qué incluye</p>
+  <h2 class="rv">Todo lo que necesitas para dejar de preguntarte si ya salió</h2>
+  <div class="incluye">
+    <div class="item rv"><svg aria-hidden="true"><use href="#i-pin"/></svg><div><h3>Dónde está tu documento</h3><p>La ciudad y la unidad de la PF donde puedes retirarlo.</p></div></div>
+    <div class="item rv"><svg aria-hidden="true"><use href="#i-ruta"/></svg><div><h3>Tu cambio de dirección, al día</h3><p>Si fue aprobado, si está en traslado y a qué unidad va.</p></div></div>
+    <div class="item rv"><svg aria-hidden="true"><use href="#i-chat"/></svg><div><h3>Avisos por WhatsApp</h3><p>Te escribimos cuando cambie el estado y cuando esté listo.</p></div></div>
+    <div class="item rv"><svg aria-hidden="true"><use href="#i-texto"/></svg><div><h3>Explicado en español</h3><p>Qué significa cada mensaje de la PF y qué te toca hacer.</p></div></div>
+    <div class="item rv"><svg aria-hidden="true"><use href="#i-familia"/></svg><div><h3>Hasta 4 RNM por cuenta</h3><p>El tuyo y el de tu pareja, tus hijos o tus padres con un solo plan.</p></div></div>
+    <div class="item rv"><svg aria-hidden="true"><use href="#i-escudo"/></svg><div><h3>Sin riesgo</h3><p>Si no te convence en la primera hora, te devolvemos el pago completo.</p></div></div>
   </div>
 </div></section>
 
-<section class="lp-sec"><div class="caja">
-  <span class="etq rv">Qué incluye</span>
-  <h2 class="rv">Todo para dejar de preguntarte «¿ya salió?»</h2>
-  <div class="rejilla" style="margin-top:20px">
-    <div class="ben rv"><div class="ico">📍</div><h3>Sabes dónde está</h3><p>Te mostramos la ciudad y la unidad de la PF donde puedes retirarlo.</p></div>
-    <div class="ben rv" style="--d:.1s"><div class="ico">🔁</div><h3>Sigues tu cambio de dirección</h3><p>Ves si fue aprobado, si está en traslado y a qué unidad va tu documento.</p></div>
-    <div class="ben rv" style="--d:.2s"><div class="ico">💬</div><h3>Avisos por WhatsApp</h3><p>Te escribimos cuando cambie el estado y apenas esté listo. Tú no haces nada.</p></div>
-    <div class="ben rv"><div class="ico">🇪🇸</div><h3>Todo en español</h3><p>Traducimos y explicamos lo que dice la PF, con qué hacer en cada caso.</p></div>
-    <div class="ben rv" style="--d:.1s"><div class="ico">👨‍👩‍👧</div><h3>Hasta 4 RNM</h3><p>Sigue el tuyo y el de tu pareja, tus hijos o tus padres con un solo plan.</p></div>
-    <div class="ben rv" style="--d:.2s"><div class="ico">🛡️</div><h3>Sin riesgo</h3><p>Si no te convence en la primera hora, cancelas y te devolvemos tu dinero.</p></div>
-  </div>
-</div></section>
-
-<section class="lp-sec"><div class="caja">
-  <span class="etq rv">Cómo funciona</span>
-  <h2 class="rv">Listo en 3 pasos</h2>
-  <ol class="pasos" style="margin-top:20px">
-    <li class="rv"><div><b>Entra con Google y activa tu plan</b><span>Pagas con Pix en 1 minuto (o con tarjeta o boleto).</span></div></li>
-    <li class="rv" style="--d:.1s"><div><b>Registra tu RNM y tu fecha de nacimiento</b><span>Hacemos tu primera revisión y te decimos en qué estado va y en qué unidad está.</span></div></li>
-    <li class="rv" style="--d:.2s"><div><b>Nosotros lo vigilamos por ti</b><span>Te escribimos por WhatsApp cada vez que cambie. Si no te convence, tienes 1 hora después de tu primera revisión para cancelar con reembolso.</span></div></li>
+<section class="seccion" id="como"><div class="envoltura">
+  <p class="etiqueta rv">Cómo funciona</p>
+  <h2 class="rv">Empiezas en un par de minutos</h2>
+  <ol class="pasos">
+    <li class="rv"><h3>Entra con Google y activa tu plan</h3><p>Pagas con Pix en un minuto, o con tarjeta o boleto.</p></li>
+    <li class="rv" style="--d:.08s"><h3>Registra tu RNM y tu fecha de nacimiento</h3><p>Hacemos tu primera revisión: estado actual y unidad donde está.</p></li>
+    <li class="rv" style="--d:.16s"><h3>Nosotros lo vigilamos</h3><p>Te escribimos por WhatsApp cuando cambie. Tienes 1 hora tras tu primera revisión para cancelar con reembolso.</p></li>
   </ol>
 </div></section>
 
-<section class="lp-sec"><div class="caja">
-  <span class="etq rv">¿Es para ti?</span>
+<section class="seccion"><div class="envoltura">
+  <p class="etiqueta rv">¿Es para ti?</p>
   <h2 class="rv">Cuéntanos tu caso</h2>
-  <p class="lead rv">Elige lo que más se parece a tu situación y te decimos cómo te ayudamos.</p>
-  <div class="quiz rv" id="quiz">
-    <button type="button" data-seg="frontera">Hice el trámite en la frontera y me mudé de ciudad</button>
+  <p class="lead rv">Elige lo que más se parece a tu situación.</p>
+  <div class="quiz rv" id="quiz" role="group" aria-label="Tu situación">
+    <button type="button" data-seg="en_ciudad">Lo pedí en mi ciudad y sigo esperando</button>
+    <button type="button" data-seg="frontera">Lo hice en la frontera y me mudé de ciudad</button>
     <button type="button" data-seg="cambio_dir">Pedí un cambio de dirección de entrega</button>
-    <button type="button" data-seg="en_tramite">Mi RNM lleva semanas o meses en trámite</button>
     <button type="button" data-seg="agendamiento">Hice el agendamiento y quiero saber si ya salió</button>
   </div>
-  <div class="quiz-resp" id="quiz-resp" aria-live="polite"><b id="quiz-t"></b><span id="quiz-d"></span><a class="lp-cta" href="/" data-cta="quiz" data-plan="quincenal">Empezar mi seguimiento →</a></div>
-  <div class="dos-col" style="margin-top:22px">
-    <div class="col-si rv"><h3>Es para ti si…</h3><ul><li>Tu RNM está en trámite o no sabes dónde está</li><li>Te mudaste de ciudad después del trámite</li><li>Pediste un cambio de dirección</li><li>Quieres enterarte sin entrar a la PF cada día</li><li>Sigues el trámite de tu familia</li></ul></div>
-    <div class="col-no rv" style="--d:.12s"><h3>No es para ti si…</h3><ul><li>Ya retiraste tu RNM</li><li>Buscas que hagamos el trámite o la cita por ti: aquí solo seguimos y te informamos</li><li>Esperas una respuesta oficial: somos un servicio independiente, no la Polícia Federal</li></ul></div>
+  <div class="respuesta" id="quiz-resp" hidden aria-live="polite"><h3 id="quiz-t"></h3><p id="quiz-d"></p><a class="lp-cta" href="/" data-cta="quiz" data-plan="quincenal">Empezar mi seguimiento <svg aria-hidden="true"><use href="#i-flecha"/></svg></a></div>
+  <div class="encaja">
+    <div class="si rv"><h3>Es para ti si</h3><ul>
+      <li><svg aria-hidden="true"><use href="#i-check"/></svg><span>Tu RNM está en trámite y no sabes cuándo sale</span></li>
+      <li><svg aria-hidden="true"><use href="#i-check"/></svg><span>No sabes en qué unidad está tu documento</span></li>
+      <li><svg aria-hidden="true"><use href="#i-check"/></svg><span>Pediste un cambio de dirección</span></li>
+      <li><svg aria-hidden="true"><use href="#i-check"/></svg><span>Quieres enterarte sin entrar a la PF cada día</span></li>
+      <li><svg aria-hidden="true"><use href="#i-check"/></svg><span>Sigues el trámite de tu familia</span></li></ul></div>
+    <div class="no rv" style="--d:.08s"><h3>No es para ti si</h3><ul>
+      <li><svg aria-hidden="true"><use href="#i-x"/></svg><span>Ya retiraste tu RNM</span></li>
+      <li><svg aria-hidden="true"><use href="#i-x"/></svg><span>Buscas que hagamos el trámite o la cita por ti: este servicio sigue tu RNM y te informa</span></li>
+      <li><svg aria-hidden="true"><use href="#i-x"/></svg><span>Necesitas una respuesta oficial: somos un servicio independiente, no la Polícia Federal</span></li></ul></div>
   </div>
 </div></section>
 
-<section class="lp-sec" id="planes"><div class="caja">
-  <span class="etq rv">Planes</span>
+<section class="seccion" id="planes"><div class="envoltura">
+  <p class="etiqueta rv">Planes</p>
   <h2 class="rv">Elige tu plan</h2>
-  <p class="lead rv">Todos incluyen hasta 4 RNM y avisos por WhatsApp. Sin permanencia.</p>
+  <p class="lead rv">Todos cubren hasta 4 RNM e incluyen avisos por WhatsApp. Sin permanencia: cancelas cuando quieras.</p>
   <div class="planes">
-    <div class="plan-lp rec rv"><span class="rec-tag">El más elegido</span>
-      <h3>Quincenal</h3><div class="precio">R$ 4,99<small> /mes</small></div>
-      <ul><li>Revisamos tu RNM cada 15 días</li><li>Aviso por WhatsApp si cambia</li><li>Hasta 4 RNM</li></ul>
-      <a class="lp-cta plan-btn" href="/" data-cta="plan-quincenal" data-plan="quincenal">Elegir quincenal</a></div>
-    <div class="plan-lp rv" style="--d:.1s">
-      <h3>Semanal</h3><div class="precio">R$ 9,99<small> /mes</small></div>
-      <ul><li>Revisamos tu RNM cada 7 días</li><li>Aviso por WhatsApp si cambia</li><li>Hasta 4 RNM</li></ul>
-      <a class="lp-cta plan-btn sec" href="/" data-cta="plan-semanal" data-plan="semanal">Elegir semanal</a></div>
-    <div class="plan-lp rv" style="--d:.2s">
-      <h3>Manual</h3><div class="precio">R$ 19,99<small> /mes</small></div>
-      <ul><li>Revisión semanal</li><li>Botón «Verificar ahora» cuando quieras</li><li>Hasta 4 RNM</li></ul>
-      <a class="lp-cta plan-btn sec" href="/" data-cta="plan-manual" data-plan="manual">Elegir manual</a></div>
+    <article class="plan rec rv"><span class="rec-tag">El más elegido</span><h3>Quincenal</h3><div class="precio">R$ 4,99 <small>al mes</small></div>
+      <ul><li><svg aria-hidden="true"><use href="#i-check"/></svg><span>Revisamos tu RNM cada 15 días</span></li><li><svg aria-hidden="true"><use href="#i-check"/></svg><span>Aviso por WhatsApp cuando cambie</span></li><li><svg aria-hidden="true"><use href="#i-check"/></svg><span>Hasta 4 RNM</span></li></ul>
+      <a class="lp-cta" href="/" data-cta="plan-quincenal" data-plan="quincenal">Elegir quincenal</a></article>
+    <article class="plan rv" style="--d:.08s"><h3>Semanal</h3><div class="precio">R$ 9,99 <small>al mes</small></div>
+      <ul><li><svg aria-hidden="true"><use href="#i-check"/></svg><span>Revisamos tu RNM cada 7 días</span></li><li><svg aria-hidden="true"><use href="#i-check"/></svg><span>Aviso por WhatsApp cuando cambie</span></li><li><svg aria-hidden="true"><use href="#i-check"/></svg><span>Hasta 4 RNM</span></li></ul>
+      <a class="lp-cta contorno" href="/" data-cta="plan-semanal" data-plan="semanal">Elegir semanal</a></article>
+    <article class="plan rv" style="--d:.16s"><h3>Manual</h3><div class="precio">R$ 19,99 <small>al mes</small></div>
+      <ul><li><svg aria-hidden="true"><use href="#i-check"/></svg><span>Revisión semanal</span></li><li><svg aria-hidden="true"><use href="#i-check"/></svg><span>Botón «Verificar ahora» cuando quieras</span></li><li><svg aria-hidden="true"><use href="#i-check"/></svg><span>Hasta 4 RNM</span></li></ul>
+      <a class="lp-cta contorno" href="/" data-cta="plan-manual" data-plan="manual">Elegir manual</a></article>
   </div>
-  <div class="garantia-caja rv"><b>🛡️ Garantía de 1 hora</b><span>Activa tu plan y registra tu RNM. Si en la hora siguiente a tu primera revisión no te convence, lo cancelas desde la app y te devolvemos el pago completo.</span></div>
-  <div class="garantias rv"><span>Pix, tarjeta o boleto</span><span>Sin permanencia</span><span>Reembolso en la primera hora</span></div>
+  <div class="garantia rv"><svg aria-hidden="true"><use href="#i-escudo"/></svg><div><h3>Garantía de la primera hora</h3><p>Activa tu plan y registra tu RNM. Si en la hora siguiente a tu primera revisión no te convence, lo cancelas desde la app y te devolvemos el pago completo.</p></div></div>
+  <p class="medios rv">Pagos procesados por Mercado Pago · Pix, tarjeta o boleto</p>
 </div></section>
 
-<section class="lp-sec" id="sec-op"><div class="caja">
-  <span class="etq rv">Opiniones</span>
-  <h2 class="rv">Lo que dicen quienes ya lo usan</h2>
-  <p class="op-res rv" id="op-res"></p>
+<section class="seccion" id="sec-op" hidden><div class="envoltura">
+  <p class="etiqueta">Opiniones</p>
+  <h2>Lo que dicen quienes ya lo usan</h2>
+  <p class="op-res" id="op-res" hidden></p>
   <div class="ops" id="ops"></div>
 </div></section>
 
-<section class="lp-sec"><div class="caja">
-  <span class="etq rv">Dudas</span>
-  <h2 class="rv">Preguntas frecuentes</h2>
-  <div style="margin-top:18px">
-    <details class="faq rv"><summary>¿Es de la Polícia Federal?</summary><p>No. Somos FLUJO Migração, un servicio independiente. Consultamos la información que la PF publica sobre tu trámite y te la explicamos en español. La decisión y la entrega del documento son siempre de la PF.</p></details>
-    <details class="faq rv"><summary>Hice el trámite en la frontera y ahora vivo en otra ciudad. ¿Me sirve?</summary><p>Sí, es justo para eso. Te mostramos en qué unidad está tu documento y, si pediste un cambio de dirección, si fue aprobado y a qué unidad va. Así sabes dónde retirarlo y cuándo ir.</p></details>
-    <details class="faq rv"><summary>¿Hacen el cambio de dirección por mí?</summary><p>El servicio es de seguimiento: te informamos cómo va tu cambio de dirección y dónde está tu RNM. Si necesitas ayuda con ese trámite, puedes escribirle al equipo desde la app.</p></details>
-    <details class="faq rv"><summary>¿Qué datos me piden?</summary><p>Tu número de RNM y tu fecha de nacimiento, lo mismo que pide la consulta pública de la PF, más tus datos de contacto para avisarte. Nunca te pedimos contraseñas de la PF.</p></details>
-    <details class="faq rv"><summary>¿Cómo funciona la garantía de 1 hora?</summary><p>Activas tu plan, registras tu RNM y hacemos tu primera revisión. Si en la hora siguiente no te convence, entras a la app, cancelas y te devolvemos el pago completo. Se aplica a tu primer pago.</p></details>
-    <details class="faq rv"><summary>¿Y si mi RNM ya está listo?</summary><p>Entonces no necesitas el seguimiento: es para quien todavía lo tiene en trámite. Si activaste el plan y tu RNM ya estaba listo, te mostramos dónde retirarlo y puedes cancelar en la primera hora para que te devolvamos tu dinero.</p></details>
-    <details class="faq rv"><summary>¿Y si no hay novedades?</summary><p>Revisamos tu RNM con la frecuencia de tu plan y te escribimos cuando cambie algo. Mientras no cambie, no te molestamos.</p></details>
-    <details class="faq rv"><summary>¿Puedo cancelar cuando quiera?</summary><p>Sí, desde la app. El plan sigue activo hasta la fecha que ya pagaste y no hay permanencia.</p></details>
+<section class="seccion"><div class="envoltura">
+  <p class="etiqueta rv">Preguntas frecuentes</p>
+  <h2 class="rv">Lo que más nos preguntan</h2>
+  <div class="faqs">
+    <details class="faq"><summary>¿Es de la Polícia Federal?</summary><p>No. Somos FLUJO Migração, un servicio independiente. Consultamos la información que la PF publica sobre tu trámite y te la explicamos en español. La decisión y la entrega del documento son siempre de la PF.</p></details>
+    <details class="faq"><summary>Lo pedí en mi ciudad. ¿Me sirve?</summary><p>Sí. La mayoría de las personas solo está esperando que su RNM salga. Lo revisamos por ti y te avisamos cuando cambie de estado o esté listo para retirar.</p></details>
+    <details class="faq"><summary>Hice el trámite en la frontera y ahora vivo en otra ciudad</summary><p>Te mostramos en qué unidad está tu documento y, si pediste un cambio de dirección, si fue aprobado y a qué unidad va. Así sabes dónde retirarlo y cuándo ir.</p></details>
+    <details class="faq"><summary>¿Hacen el cambio de dirección por mí?</summary><p>Este servicio es de seguimiento: te informamos cómo va tu cambio de dirección y dónde está tu RNM. Si necesitas ayuda con ese trámite, puedes escribirle al equipo desde la app.</p></details>
+    <details class="faq"><summary>¿Qué datos me piden?</summary><p>Tu número de RNM y tu fecha de nacimiento, lo mismo que pide la consulta pública de la PF, más tus datos de contacto para avisarte. Nunca te pedimos contraseñas.</p></details>
+    <details class="faq"><summary>¿Cómo funciona la garantía de la primera hora?</summary><p>Activas tu plan, registras tu RNM y hacemos tu primera revisión. Si en la hora siguiente no te convence, cancelas desde la app y te devolvemos el pago completo. Vale para tu primer pago.</p></details>
+    <details class="faq"><summary>¿Y si mi RNM ya está listo?</summary><p>Entonces no necesitas el seguimiento. Si activaste el plan y tu RNM ya estaba listo, te mostramos dónde retirarlo y puedes cancelar en la primera hora para que te devolvamos tu dinero.</p></details>
+    <details class="faq"><summary>¿Puedo cancelar cuando quiera?</summary><p>Sí, desde la app. El plan sigue activo hasta la fecha que ya pagaste y no hay permanencia.</p></details>
   </div>
 </div></section>
+</main>
 
-<section class="lp-final"><div class="caja">
-  <h2 class="rv">No esperes a ciegas</h2>
-  <p class="rv">Activa el seguimiento y olvídate de entrar cada día. Si no te convence en la primera hora, te devolvemos tu dinero.</p>
-  <div class="acc rv">
-    <a class="lp-cta" href="/" data-cta="final" data-plan="quincenal">Empezar mi seguimiento →</a>
-    <a class="lp-cta fantasma" href="/" data-cta="gratis" data-plan="quincenal" data-gratis="1">Prefiero empezar gratis y ver mi RNM primero</a>
+<section class="cierre"><div class="envoltura">
+  <p class="etiqueta" style="color:#7FD8B5">Empieza hoy</p>
+  <h2>Deja de esperar a ciegas.</h2>
+  <p>Activa el seguimiento y nosotros te avisamos. Si no te convence en la primera hora, te devolvemos tu dinero.</p>
+  <div class="acciones">
+    <a class="lp-cta" href="/" data-cta="final" data-plan="quincenal">Empezar mi seguimiento <svg aria-hidden="true"><use href="#i-flecha"/></svg></a>
+    <a class="lp-cta claro" href="/" data-cta="gratis" data-plan="quincenal" data-gratis="1">Prefiero empezar gratis</a>
   </div>
-  <p class="peq rv">Con la consulta gratis ves el estado de tu RNM hoy. El seguimiento con avisos es el que tiene plan.</p>
+  <p class="peq">Con la opción gratis ves el estado de tu RNM hoy. Los avisos por WhatsApp y el seguimiento son con plan.</p>
 </div></section>
 
-<footer class="lp-pie caja">FLUJO Migração · Servicio independiente, no afiliado a la Polícia Federal ni al gobierno.<br><a href="terminos.html">Términos</a> · <a href="privacidad.html">Privacidad</a></footer>
+<footer class="pie envoltura">FLUJO Migração · Servicio independiente, no afiliado a la Polícia Federal ni al gobierno · <a href="terminos.html">Términos</a> · <a href="privacidad.html">Privacidad</a></footer>
 
-<div class="lp-fijo" id="fijo"><a class="lp-cta" href="/" data-cta="fijo" data-plan="quincenal">Empezar mi seguimiento →</a></div>
+<div class="fijo" id="fijo"><a class="lp-cta" href="/" data-cta="fijo" data-plan="quincenal">Empezar mi seguimiento <svg aria-hidden="true"><use href="#i-flecha"/></svg></a></div>
 
 <script src="meta-pixel.js"></script>
 <script>
 (function () {
   "use strict";
+  var raiz = document.documentElement;
+  var movimiento = !(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  if ("IntersectionObserver" in window && movimiento) raiz.classList.add("js");
+  document.querySelector(".ficha").classList.add("anima");
+
   var SB = "https://rumpfqevyspdmhaggxtq.supabase.co", KEY = "sb_publishable_7znj3ENrTWXDE2dibUzv_A_a7HUoud_";
   var segmento = "";
   var p = new URLSearchParams(location.search);
   var UTMS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"];
 
-  // ---- Enlaces: pasan los datos del anuncio y el segmento elegido a la app ----
+  // Enlaces: pasan a la app los datos del anuncio, el segmento elegido y el plan preferido.
   function armarEnlaces() {
     Array.prototype.forEach.call(document.querySelectorAll("a[data-cta]"), function (a) {
       var d = new URLSearchParams();
@@ -376,75 +456,70 @@
   });
   if (window.rnmTrack) { try { window.rnmTrack("ViewContent", { content_name: "landing-seguimiento" }); } catch (e) { /* sin píxel */ } }
 
-  // ---- ¿Es para ti? ----
+  // ¿Es para ti?
   var MENSAJES = {
-    frontera: ["Es justo tu caso", "Te mostramos en qué unidad quedó tu documento y si ya está listo, para que sepas dónde ir aunque vivas en otra ciudad."],
-    cambio_dir: ["Te ayudamos a seguirlo", "Ves si tu cambio de dirección fue aprobado, si el documento está en traslado y a qué unidad va. Te avisamos cuando llegue."],
-    en_tramite: ["Deja de mirar cada día", "Lo revisamos por ti con la frecuencia de tu plan y te escribimos por WhatsApp apenas cambie el estado."],
-    agendamiento: ["Sabrás cuándo salió", "Te avisamos en cuanto aparezca listo para retirar y te decimos en qué unidad hacerlo."]
+    en_ciudad: ["Lo vigilamos mientras esperas", "Revisamos tu RNM con la frecuencia de tu plan y te escribimos por WhatsApp apenas cambie de estado o esté listo para retirar."],
+    frontera: ["Te decimos dónde quedó", "Te mostramos en qué unidad está tu documento y si ya está listo, para que sepas a dónde ir aunque vivas en otra ciudad."],
+    cambio_dir: ["Seguimos tu cambio de dirección", "Ves si fue aprobado, si el documento está en traslado y a qué unidad va. Te avisamos cuando llegue."],
+    agendamiento: ["Sabrás cuándo sale", "Te avisamos en cuanto aparezca listo para retirar y te decimos en qué unidad hacerlo."]
   };
   var botonesQ = document.querySelectorAll("#quiz button"), resp = document.getElementById("quiz-resp");
   Array.prototype.forEach.call(botonesQ, function (b) {
+    b.setAttribute("aria-pressed", "false");
     b.addEventListener("click", function () {
       segmento = b.getAttribute("data-seg");
-      Array.prototype.forEach.call(botonesQ, function (x) { x.classList.toggle("on", x === b); });
+      Array.prototype.forEach.call(botonesQ, function (x) { x.classList.toggle("on", x === b); x.setAttribute("aria-pressed", String(x === b)); });
       var m = MENSAJES[segmento];
       document.getElementById("quiz-t").textContent = m[0]; document.getElementById("quiz-d").textContent = m[1];
-      resp.classList.add("ver"); armarEnlaces();
+      resp.hidden = false; armarEnlaces();
     });
   });
 
-  // ---- Efectos al desplazarse ----
-  var movimiento = !(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  // Entrada suave de las secciones al desplazarse
   var io = null;
-  var rv = document.querySelectorAll(".rv");
-  if ("IntersectionObserver" in window && movimiento) {
-    io = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }); }, { threshold: 0.15, rootMargin: "0px 0px -40px 0px" });
-    Array.prototype.forEach.call(rv, function (n) { io.observe(n); });
-  } else Array.prototype.forEach.call(rv, function (n) { n.classList.add("in"); });
+  if (raiz.classList.contains("js")) {
+    io = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }); }, { threshold: 0.12, rootMargin: "0px 0px -30px 0px" });
+    Array.prototype.forEach.call(document.querySelectorAll(".rv"), function (n) { io.observe(n); });
+  }
 
+  // Progreso, cabecera y botón fijo
   var prog = document.getElementById("prog"), top = document.getElementById("top"), fijo = document.getElementById("fijo");
-  var primero = document.querySelector(".lp-hero .lp-cta"), formas = document.querySelectorAll(".forma");
-  var lista = false;
+  var primero = document.querySelector(".heroe .lp-cta"), pendiente = false;
   function alDesplazar() {
     var y = window.pageYOffset, max = document.documentElement.scrollHeight - window.innerHeight;
     prog.style.width = (max > 0 ? Math.min(100, (y / max) * 100) : 0) + "%";
     top.classList.toggle("sombra", y > 8);
     var pasado = primero.getBoundingClientRect().bottom < 0;
     top.classList.toggle("con-cta", pasado); fijo.classList.toggle("ver", pasado);
-    if (movimiento) Array.prototype.forEach.call(formas, function (f) { f.style.transform = "translateY(" + (y * parseFloat(f.getAttribute("data-vel"))) + "px)"; });
-    lista = false;
+    pendiente = false;
   }
-  window.addEventListener("scroll", function () { if (!lista) { lista = true; requestAnimationFrame(alDesplazar); } }, { passive: true });
+  window.addEventListener("scroll", function () { if (!pendiente) { pendiente = true; requestAnimationFrame(alDesplazar); } }, { passive: true });
   alDesplazar();
 
-  // ---- Opiniones reales (solo las aprobadas en el panel; si no hay, la sección no se muestra) ----
+  // Opiniones reales: solo las aprobadas en el panel. Sin opiniones, la sección no aparece.
   fetch(SB + "/rest/v1/rpc/rnm_opiniones_publicas", { method: "POST", headers: { "Content-Type": "application/json", apikey: KEY, Authorization: "Bearer " + KEY }, body: "{}" })
     .then(function (r) { return r.ok ? r.json() : null; })
     .then(function (d) {
       var ops = d && d.opiniones ? d.opiniones.filter(function (o) { return o.comentario; }).slice(0, 6) : [];
       if (!ops.length) return;
       var box = document.getElementById("ops");
-      ops.forEach(function (o, i) {
+      ops.forEach(function (o) {
         var n = String(o.nombre || "Cliente"), h = 0; for (var k = 0; k < n.length; k++) h = (h * 31 + n.charCodeAt(k)) % 360;
-        var c = document.createElement("figure"); c.className = "op rv"; c.style.margin = "0"; c.style.setProperty("--d", (i * 0.08) + "s");
-        var cab = document.createElement("div"); cab.className = "cab";
-        var av = document.createElement("span"); av.className = "av"; av.textContent = n.charAt(0).toUpperCase(); av.style.background = "hsl(" + h + " 55% 40%)"; cab.appendChild(av);
+        var f = document.createElement("figure"); f.className = "op";
+        var bq = document.createElement("blockquote"); bq.textContent = "«" + o.comentario + "»"; f.appendChild(bq);
+        var fc = document.createElement("figcaption");
+        var av = document.createElement("span"); av.className = "av"; av.textContent = n.charAt(0).toUpperCase(); av.style.background = "hsl(" + h + " 45% 36%)"; fc.appendChild(av);
         var dv = document.createElement("div"); var b = document.createElement("b"); b.textContent = n; dv.appendChild(b);
-        var st = document.createElement("span"); st.className = "est"; st.textContent = "★★★★★".slice(0, Math.max(0, Math.min(5, o.estrellas || 0))); dv.appendChild(st);
-        var sm = document.createElement("small"); sm.textContent = o.equipo ? " · Equipo FLUJO" : " · Cliente de la app"; dv.appendChild(sm); cab.appendChild(dv);
-        c.appendChild(cab);
-        var bq = document.createElement("blockquote"); bq.textContent = "«" + o.comentario + "»"; c.appendChild(bq);
-        box.appendChild(c);
-        if (io) io.observe(c); else c.classList.add("in");
+        var st = document.createElement("span"); st.className = "est"; st.setAttribute("aria-label", (o.estrellas || 0) + " de 5 estrellas"); st.textContent = "★★★★★".slice(0, Math.max(0, Math.min(5, o.estrellas || 0))); dv.appendChild(st);
+        var sm = document.createElement("small"); sm.textContent = o.equipo ? "Equipo FLUJO" : "Cliente de la app"; dv.appendChild(sm);
+        fc.appendChild(dv); f.appendChild(fc); box.appendChild(f);
       });
-      var r = document.getElementById("op-res");
       if (d.resumen && Number(d.resumen.promedio) >= 4) {
-        r.textContent = "";
-        var s = document.createElement("span"); s.textContent = "★ " + String(d.resumen.promedio).replace(".", ","); r.appendChild(s);
-        r.appendChild(document.createTextNode(" · " + d.resumen.total + " opiniones de clientes"));
-      } else r.style.display = "none";
-      document.getElementById("sec-op").classList.add("ver");
+        var r = document.getElementById("op-res");
+        r.textContent = "★ " + String(d.resumen.promedio).replace(".", ",") + " de media · " + d.resumen.total + " opiniones de clientes";
+        r.hidden = false;
+      }
+      document.getElementById("sec-op").hidden = false;
     }).catch(function () { /* sin red: la sección queda oculta */ });
 })();
 </script>
