@@ -625,8 +625,8 @@ if (btnConfEnviar) {
     btn.disabled = false;
 
     if (r.error) {
-      if (/limite_[46]_rnm/.test(r.error.message || "")) {
-        return msg("msg-confirmar", "Has alcanzado el límite máximo de " + MAX_RNM + " RNM por cuenta.");
+      if (/limite_(rnm_)?d/.test(r.error.message || "")) {
+        return msg("msg-confirmar", "Tu cuenta ya tiene " + maxRnm(planCargado) + " RNM, el máximo de tu plan. Para agregar más, pasa al plan semanal (hasta 4) o manual (hasta 6) en Planes.");
       }
       return msg("msg-confirmar", r.error.code === "23505"
         ? "Ese RNM ya está registrado en una cuenta. Si es tuyo y no lo ves en tu lista, contáctanos a " + CONTACTO_EMAIL + "."
@@ -663,7 +663,14 @@ async function mostrarConsultando(trabajo) {
 var gratisDisponible = true;
 // Muestra un solo aviso: primera consulta gratis, cubierto por el plan, RNM adicional con plan, o límite de la cuenta.
 function mostrarCosteAplicable() {
-  var lleno = registrosCargados.length >= MAX_RNM;
+  var tope = maxRnm(planCargado), lleno = registrosCargados.length >= tope;
+  var tp = $("tope-4");
+  if (tp) {
+    tp.textContent = "";
+    var b = document.createElement("b"); b.textContent = "Límite alcanzado. "; tp.appendChild(b);
+    tp.appendChild(document.createTextNode(tope >= 6 ? "Tu cuenta ya tiene 6 RNM, el máximo." : "Tu cuenta ya tiene " + tope + " RNM, el máximo " + (tope === 2 ? "sin plan o con el plan quincenal" : "de tu plan") + ". "));
+    if (tope < 6) { var a = document.createElement("a"); a.href = "#"; a.textContent = tope === 2 ? "Pasa al semanal (hasta 4) o al manual (hasta 6)" : "Pasa al manual (hasta 6)"; a.addEventListener("click", function (ev) { ev.preventDefault(); navegarA("planes"); }); tp.appendChild(a); }
+  }
   var activo = !!planCargado && new Date(planCargado.vence_at) > new Date();
   var cual = lleno ? "tope-4" : "reg-gratis"; // cada RNM tiene su primera verificación gratis
   ["reg-gratis", "reg-cubierto", "reg-adicional", "tope-4"].forEach(function (id) { var n = $(id); if (n) n.classList.toggle("oculto", id !== cual); });
@@ -675,7 +682,11 @@ async function actualizarAvisoRegistro() {
 
 /* Tres planes: Quincenal (hasta 2 RNM, revisión cada 15 días), Semanal (hasta 4, cada 7 días) y Manual (hasta 6, semanal + "Verificar ahora"). */
 var CUPOS = { quincenal: 2, semanal: 4, manual: 6 }; // RNM incluidos por plan (igual que en la base de datos)
-var MAX_RNM = 6; // máximo por cuenta
+// Cuántos RNM puede registrar la cuenta: 2 sin plan (o con quincenal); con plan activo, los del plan (semanal 4, manual 6). Igual que en la base de datos.
+function maxRnm(plan) {
+  var activo = !!plan && new Date(plan.vence_at) > new Date();
+  return Math.max(2, activo ? (plan.cupos || CUPOS[plan.tipo] || 2) : 2);
+}
 var PRECIOS = { quincenal: 499, semanal: 999, manual: 1999 }; // centavos al mes
 var ORDEN_PLAN = { quincenal: 1, semanal: 2, manual: 3 };
 function planSuperior(tipo) { return tipo === "quincenal" ? "semanal" : (tipo === "semanal" ? "manual" : null); }
@@ -1247,7 +1258,7 @@ async function cargarRegistros(soloSiCambia) {
     var clavePago = "rnm_purchase_" + plan.vence_at;
     if (!localStorage.getItem(clavePago)) { try { localStorage.setItem(clavePago, "1"); } catch (e) { /* sin almacenamiento */ } rnmTrack("Purchase", { value: plan.precio_centavos / 100, currency: "BRL", content_name: plan.tipo }, "compra-" + plan.vence_at); }
   }
-  var lleno = r.data.length >= MAX_RNM;
+  var lleno = r.data.length >= maxRnm(plan);
   $("form-rnm").classList.toggle("oculto", lleno);
   mostrarCosteAplicable();
   actualizarDashboard(r.data, plan);
