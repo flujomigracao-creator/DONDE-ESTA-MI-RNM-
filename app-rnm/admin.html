@@ -496,6 +496,16 @@
     app.appendChild(barra); app.appendChild(barra2); app.appendChild(cont); pintarAvisos(cont);
   }
 
+  var origenesCargados = [];
+  function dibujarOrigenes() {
+    seccion("De dónde llegan las cuentas (camino actual vs landing)");
+    var caja = e("div", "caja");
+    if (!origenesCargados.length) { caja.appendChild(e("p", "vacio", "Todavía no hay cuentas con origen guardado: se registran las que entran desde un anuncio o desde la landing (seguimiento.html).")); app.appendChild(caja); return; }
+    app.appendChild(caja);
+    tabla(["Camino / anuncio", "Cuentas", "Con RNM", "En trámite", "Pagaron", "Ingresos"], origenesCargados.map(function (o) {
+      return [(o.via === "landing" ? "Landing" : (o.via === "app directa" ? "App directa" : o.via)) + (o.contenido !== "—" ? " · " + o.contenido : ""), num(o.cuentas), num(o.con_rnm), num(o.en_tramite), num(o.pagaron), reales(o.ingresos_centavos)];
+    }));
+  }
   var embudoCargado = null;
   function dibujarEmbudo() {
     var d = embudoCargado;
@@ -617,6 +627,7 @@
     dos.appendChild(emb);
 
     dibujarEmbudo();
+    dibujarOrigenes();
     }
     if (P === "ventas") {
 
@@ -887,8 +898,9 @@
   }
 
   function cargar() {
-    Promise.all([sb.rpc("rnm_admin_resumen"), sb.rpc("rnm_admin_planes"), sb.rpc("rnm_admin_clientes2"), sb.rpc("rnm_admin_opiniones"), sb.rpc("rnm_admin_embudo", { p_dias: 30 }), sb.rpc("rnm_admin_avisos")]).then(function (rs) {
+    Promise.all([sb.rpc("rnm_admin_resumen"), sb.rpc("rnm_admin_planes"), sb.rpc("rnm_admin_clientes2"), sb.rpc("rnm_admin_opiniones"), sb.rpc("rnm_admin_embudo", { p_dias: 30 }), sb.rpc("rnm_admin_avisos"), sb.rpc("rnm_admin_origenes")]).then(function (rs) {
       avisosCargados = (rs[5] && rs[5].data) || [];
+      origenesCargados = (rs[6] && rs[6].data) || [];
       var x = rs[0]; planesCargados = (rs[1] && rs[1].data) || []; clientesCargados = (rs[2] && rs[2].data) || []; opinionesCargadas = (rs[3] && rs[3].data) || { resumen: null, lista: [] }; embudoCargado = (rs[4] && rs[4].data) || null;
       if (x.error) {
         if (x.error.code === "42501" || /no_autorizado/.test(x.error.message || "")) return pantalla("Sin acceso", "Esta cuenta no tiene permiso para ver el panel.", [btn("Salir", function () { sb.auth.signOut().then(function () { location.reload(); }); })]);
