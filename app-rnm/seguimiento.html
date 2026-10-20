@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sigue tu RNM sin mirar cada día</title>
+<meta name="description" content="Tu RNM en trámite, seguido por nosotros: te avisamos por WhatsApp cuando cambie. Primera consulta gratis. Planes desde R$ 4,99.">
+<meta name="theme-color" content="#0E3F8E">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="figma.css">
+<style>
+  :root { --azul: #0E3F8E; --azul2: #1F6FEB; --noche: #08224F; --amarillo: #FFC83D; --verde: #13803D; --verde-claro: #E4F6EA; --texto: #0F1B33; --suave: #51617C; --linea: #DCE4F2; --fondo: #F4F7FC; }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  body.lp { margin: 0; background: var(--fondo); color: var(--texto); font: 17px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding-bottom: 84px; }
+  .lp a { color: inherit; }
+  .lp .caja { width: 100%; max-width: 560px; margin: 0 auto; padding: 0 20px; }
+  /* Barra superior */
+  .lp-top { background: var(--noche); padding: calc(10px + env(safe-area-inset-top, 0px)) 0 10px; }
+  .lp-top .caja { display: flex; align-items: center; gap: 10px; }
+  .lp-top img { width: 34px; height: 34px; border-radius: 9px; }
+  .lp-top b { color: #fff; font-size: 1rem; letter-spacing: -0.01em; }
+  /* Héroe */
+  .lp-hero { background: linear-gradient(180deg, var(--noche) 0%, var(--azul) 100%); color: #fff; padding: 26px 0 34px; }
+  .lp-etiqueta { display: inline-block; background: var(--amarillo); color: #1A1300; font-weight: 800; font-size: 0.78rem; letter-spacing: 0.05em; text-transform: uppercase; padding: 5px 12px; border-radius: 999px; }
+  .lp-hero h1 { margin: 14px 0 10px; font-size: 2.1rem; line-height: 1.08; letter-spacing: -0.03em; }
+  .lp-hero h1 em { font-style: normal; color: var(--amarillo); }
+  .lp-hero p.sub { margin: 0 0 20px; font-size: 1.08rem; color: #D6E3FF; }
+  .lp-cta { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 58px; padding: 0 22px; border-radius: 16px; background: var(--amarillo); color: #1A1300 !important; font-size: 1.15rem; font-weight: 800; text-decoration: none; box-shadow: 0 6px 0 #C9951A, 0 14px 28px rgba(0,0,0,0.25); transition: transform .12s; }
+  .lp-cta:active { transform: translateY(3px); box-shadow: 0 3px 0 #C9951A, 0 8px 16px rgba(0,0,0,0.25); }
+  .lp-nota { margin: 12px 0 0; text-align: center; font-size: 0.86rem; color: #BBD0F7; }
+  .lp-nota b { color: #fff; }
+  /* Teléfono animado */
+  .lp-tel { margin: 28px auto 0; width: min(100%, 320px); border-radius: 30px; background: #fff; color: var(--texto); padding: 18px 16px 16px; box-shadow: 0 24px 50px rgba(0,0,0,0.35); border: 6px solid #0B1A3A; }
+  .lp-tel h3 { margin: 0 0 4px; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--suave); }
+  .lp-tel .rnm { font-weight: 800; font-size: 1.15rem; margin-bottom: 12px; letter-spacing: 0.04em; }
+  .paso-t { display: flex; align-items: center; gap: 10px; padding: 9px 0; font-weight: 700; font-size: 0.98rem; opacity: 0.38; animation: enciende 7s infinite; }
+  .paso-t i { flex: none; width: 24px; height: 24px; border-radius: 50%; background: var(--linea); display: grid; place-items: center; font-style: normal; font-size: 0.8rem; color: #fff; }
+  .paso-t:nth-of-type(1) { animation-delay: 0s; } .paso-t:nth-of-type(2) { animation-delay: 1.4s; } .paso-t:nth-of-type(3) { animation-delay: 2.8s; }
+  .paso-t.final { color: var(--verde); }
+  @keyframes enciende { 0%, 8% { opacity: .38; } 14%, 86% { opacity: 1; } 100% { opacity: .38; } }
+  .paso-t.final i { background: var(--verde); } .paso-t:not(.final) i { background: var(--azul2); }
+  .lp-wa { margin-top: 12px; padding: 11px 13px; border-radius: 14px 14px 14px 4px; background: var(--verde-claro); color: #0E3B21; font-size: 0.9rem; font-weight: 600; animation: sube 7s infinite; }
+  .lp-wa small { display: block; font-weight: 500; color: #3D6B50; margin-top: 2px; }
+  @keyframes sube { 0%, 38% { opacity: 0; transform: translateY(10px); } 48%, 90% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { .paso-t, .lp-wa { animation: none; opacity: 1; } }
+  /* Secciones */
+  .lp-sec { padding: 38px 0 6px; }
+  .lp-sec h2 { margin: 0 0 6px; font-size: 1.55rem; line-height: 1.15; letter-spacing: -0.02em; }
+  .lp-sec .lead { margin: 0 0 18px; color: var(--suave); }
+  .pasos { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; counter-reset: p; }
+  .pasos li { counter-increment: p; display: flex; gap: 14px; align-items: flex-start; background: #fff; border: 1px solid var(--linea); border-radius: 18px; padding: 16px; }
+  .pasos li::before { content: counter(p); flex: none; width: 38px; height: 38px; border-radius: 50%; background: var(--azul); color: #fff; font-weight: 800; display: grid; place-items: center; font-size: 1.1rem; }
+  .pasos b { display: block; font-size: 1.04rem; } .pasos span { color: var(--suave); font-size: 0.95rem; }
+  .planes { display: grid; gap: 12px; }
+  .plan-lp { position: relative; background: #fff; border: 2px solid var(--linea); border-radius: 20px; padding: 18px; }
+  .plan-lp.rec { border-color: var(--azul2); box-shadow: 0 10px 28px rgba(31, 111, 235, 0.18); }
+  .plan-lp .rec-tag { position: absolute; top: -12px; left: 16px; background: var(--azul2); color: #fff; font-size: 0.74rem; font-weight: 800; padding: 3px 12px; border-radius: 999px; letter-spacing: 0.04em; text-transform: uppercase; }
+  .plan-lp .cab { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+  .plan-lp h3 { margin: 0; font-size: 1.1rem; }
+  .plan-lp .precio { font-size: 2rem; font-weight: 800; letter-spacing: -0.03em; } .plan-lp .precio small { font-size: 0.9rem; font-weight: 600; color: var(--suave); }
+  .plan-lp ul { margin: 8px 0 0; padding: 0; list-style: none; display: grid; gap: 5px; font-size: 0.95rem; }
+  .plan-lp li::before { content: "✓"; color: var(--verde); font-weight: 800; margin-right: 8px; }
+  .garantias { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+  .garantias span { background: #fff; border: 1px solid var(--linea); border-radius: 999px; padding: 6px 12px; font-size: 0.86rem; font-weight: 600; }
+  .para { background: #fff; border: 1px solid var(--linea); border-radius: 18px; padding: 6px 16px; }
+  .para div { display: flex; gap: 12px; padding: 11px 0; border-top: 1px solid var(--linea); font-weight: 600; } .para div:first-child { border-top: 0; }
+  .para div::before { content: "👉"; }
+  details.faq { background: #fff; border: 1px solid var(--linea); border-radius: 14px; padding: 0 16px; margin-bottom: 8px; }
+  details.faq summary { cursor: pointer; font-weight: 700; padding: 14px 0; list-style: none; display: flex; justify-content: space-between; gap: 10px; min-height: 48px; align-items: center; }
+  details.faq summary::-webkit-details-marker { display: none; } details.faq summary::after { content: "+"; font-size: 1.4rem; color: var(--azul2); }
+  details.faq[open] summary::after { content: "–"; }
+  details.faq p { margin: 0 0 14px; color: var(--suave); font-size: 0.96rem; }
+  .lp-final { margin-top: 38px; background: var(--azul); color: #fff; padding: 34px 0 40px; text-align: center; }
+  .lp-final h2 { margin: 0 0 8px; font-size: 1.6rem; letter-spacing: -0.02em; } .lp-final p { margin: 0 0 18px; color: #D6E3FF; }
+  .lp-pie { padding: 22px 0; text-align: center; font-size: 0.8rem; color: var(--suave); } .lp-pie a { text-decoration: underline; }
+  /* Botón fijo en el celular */
+  .lp-fijo { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px)); background: rgba(8, 34, 79, 0.96); backdrop-filter: blur(8px); transform: translateY(110%); transition: transform .25s; }
+  .lp-fijo.ver { transform: none; } .lp-fijo .lp-cta { max-width: 520px; margin: 0 auto; min-height: 54px; font-size: 1.08rem; }
+  @media (min-width: 720px) { .lp-hero h1 { font-size: 2.6rem; } .lp .caja { max-width: 640px; } }
+</style>
+</head>
+<body class="lp">
+<header class="lp-top"><div class="caja"><img src="icon-192.png" alt="" width="34" height="34"><b>¿Dónde está mi RNM?</b></div></header>
+
+<section class="lp-hero">
+  <div class="caja">
+    <span class="lp-etiqueta">Para quien espera su RNM</span>
+    <h1>Tu RNM lleva meses en trámite. <em>Deja de mirar cada día.</em></h1>
+    <p class="sub">Lo seguimos por ti en la Polícia Federal y <b>te avisamos por WhatsApp</b> apenas cambie. Planes desde <b>R$ 4,99</b>.</p>
+    <a class="lp-cta" href="/?pref=quincenal" data-cta="hero">Empezar gratis →</a>
+    <p class="lp-nota"><b>Primera consulta gratis</b> · Sin tarjeta · Tarda 1 minuto</p>
+
+    <div class="lp-tel" aria-hidden="true">
+      <h3>Tu seguimiento</h3>
+      <div class="rnm">RNM …XXXX</div>
+      <div class="paso-t"><i>✓</i>En trámite</div>
+      <div class="paso-t"><i>✓</i>En impresión</div>
+      <div class="paso-t final"><i>✓</i>¡Listo para retirar!</div>
+      <div class="lp-wa">¡Tu RNM está listo para retirar! 🎉<small>WhatsApp · ahora</small></div>
+    </div>
+  </div>
+</section>
+
+<section class="lp-sec"><div class="caja">
+  <h2>Así de simple</h2>
+  <p class="lead">Sin llamadas, sin filas y sin entrar a la página de la Polícia Federal cada mañana.</p>
+  <ol class="pasos">
+    <li><div><b>Pon tu RNM y tu fecha de nacimiento</b><span>Te toma 1 minuto. Entras con tu cuenta de Google.</span></div></li>
+    <li><div><b>Vemos cómo está hoy, gratis</b><span>Te decimos en qué estado va y en qué unidad está.</span></div></li>
+    <li><div><b>Si sigue en trámite, lo vigilamos por ti</b><span>Activas el seguimiento y te escribimos por WhatsApp cada vez que cambie.</span></div></li>
+  </ol>
+</div></section>
+
+<section class="lp-sec"><div class="caja">
+  <h2>Elige cómo quieres el seguimiento</h2>
+  <p class="lead">Todos incluyen hasta 4 RNM (tú, tu pareja, tus hijos…).</p>
+  <div class="planes">
+    <div class="plan-lp rec"><span class="rec-tag">El más elegido</span>
+      <div class="cab"><h3>Quincenal</h3><div class="precio">R$ 4,99<small> /mes</small></div></div>
+      <ul><li>Revisamos tu RNM cada 15 días</li><li>Aviso por WhatsApp si cambia</li><li>Hasta 4 RNM</li></ul></div>
+    <div class="plan-lp">
+      <div class="cab"><h3>Semanal</h3><div class="precio">R$ 9,99<small> /mes</small></div></div>
+      <ul><li>Revisamos tu RNM cada 7 días</li><li>Aviso por WhatsApp si cambia</li><li>Hasta 4 RNM</li></ul></div>
+    <div class="plan-lp">
+      <div class="cab"><h3>Manual</h3><div class="precio">R$ 19,99<small> /mes</small></div></div>
+      <ul><li>Revisión semanal</li><li>Botón «Verificar ahora» cuando quieras</li><li>Hasta 4 RNM</li></ul></div>
+  </div>
+  <div class="garantias"><span>Pix, tarjeta o boleto</span><span>Cancelas cuando quieras</span><span>Primera consulta gratis</span></div>
+  <a class="lp-cta" href="/?pref=quincenal" data-cta="planes" style="margin-top:18px">Probar gratis ahora →</a>
+</div></section>
+
+<section class="lp-sec"><div class="caja">
+  <h2>¿Te pasa esto?</h2>
+  <div class="para">
+    <div>Tu RNM lleva semanas o meses «en trámite»</div>
+    <div>Entras a la página de la PF y no entiendes qué significa</div>
+    <div>Pediste cambio de dirección y no sabes dónde retirarlo</div>
+    <div>Hiciste el agendamiento y quieres saber si ya salió</div>
+  </div>
+</div></section>
+
+<section class="lp-sec"><div class="caja">
+  <h2>Preguntas frecuentes</h2>
+  <details class="faq"><summary>¿Es de la Polícia Federal?</summary><p>No. Somos FLUJO Migração, un servicio independiente. Consultamos la información que la PF publica sobre tu trámite y te la explicamos en español. La decisión y la entrega del documento son siempre de la PF.</p></details>
+  <details class="faq"><summary>¿Qué datos me piden?</summary><p>Tu número de RNM y tu fecha de nacimiento, que es lo mismo que pide la consulta pública de la PF. Nunca te pedimos contraseñas de la PF.</p></details>
+  <details class="faq"><summary>¿De verdad la primera consulta es gratis?</summary><p>Sí. Registras tu RNM y te decimos cómo está hoy, sin pagar. El seguimiento semanal o quincenal es lo que tiene costo.</p></details>
+  <details class="faq"><summary>¿Y si mi RNM ya está listo?</summary><p>Te lo decimos gratis y te explicamos dónde y cómo retirarlo. El seguimiento solo hace falta si todavía está en trámite.</p></details>
+  <details class="faq"><summary>¿Puedo cancelar?</summary><p>Sí, cuando quieras desde la app. El plan sigue activo hasta la fecha que ya pagaste.</p></details>
+</div></section>
+
+<section class="lp-final"><div class="caja">
+  <h2>No esperes a ciegas</h2>
+  <p>Haz tu primera consulta gratis y decide después.</p>
+  <a class="lp-cta" href="/?pref=quincenal" data-cta="final">Empezar gratis →</a>
+</div></section>
+
+<footer class="lp-pie caja">FLUJO Migração · Servicio independiente, no afiliado a la Polícia Federal ni al gobierno.<br><a href="terminos.html">Términos</a> · <a href="privacidad.html">Privacidad</a></footer>
+
+<div class="lp-fijo" id="fijo"><a class="lp-cta" href="/?pref=quincenal" data-cta="fijo">Empezar gratis →</a></div>
+
+<script src="meta-pixel.js"></script>
+<script>
+(function () {
+  "use strict";
+  // Los datos del anuncio (utm_*) pasan a la app para saber de qué anuncio llegó cada persona.
+  var q = location.search || "";
+  var usadas = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "fbclid"];
+  var p = new URLSearchParams(q), salida = new URLSearchParams();
+  salida.set("pref", "quincenal");
+  usadas.forEach(function (k) { if (p.get(k)) salida.set(k, p.get(k).slice(0, 80)); });
+  salida.set("via", "landing");
+  var destino = "/?" + salida.toString();
+  Array.prototype.forEach.call(document.querySelectorAll("a[data-cta]"), function (a) {
+    a.href = destino;
+    a.addEventListener("click", function () { if (window.rnmTrack) { try { window.rnmTrack("Lead", { content_name: "landing-" + a.getAttribute("data-cta") }); } catch (e) { /* sin píxel */ } } });
+  });
+  if (window.rnmTrack) { try { window.rnmTrack("ViewContent", { content_name: "landing-seguimiento" }); } catch (e) { /* sin píxel */ } }
+  // El botón fijo aparece al bajar del primer botón.
+  var fijo = document.getElementById("fijo"), primero = document.querySelector(".lp-hero .lp-cta");
+  function revisar() { var r = primero.getBoundingClientRect(); fijo.classList.toggle("ver", r.bottom < 0); }
+  window.addEventListener("scroll", revisar, { passive: true }); revisar();
+})();
+</script>
+</body>
+</html>

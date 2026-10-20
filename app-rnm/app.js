@@ -18,6 +18,14 @@ var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     var q = new URLSearchParams(location.search), planParam = String(q.get("plan") || "").toLowerCase(), metodo = q.get("pago");
     var tipoPlan = planParam === "manual" ? "manual" : planParam === "quincenal" ? "quincenal" : ((planParam === "semanal" || (Number(planParam) >= 1 && Number(planParam) <= 4)) ? "semanal" : null);
     if (q.get("opinar") === "1") { localStorage.setItem("rnm_opinar", String(Date.now())); history.replaceState(null, "", location.pathname + location.hash); }
+    // Origen del anuncio o de la landing: se guarda al crear la cuenta para comparar caminos.
+    if (q.get("utm_source") || q.get("via") || q.get("pref")) {
+      var pref = String(q.get("pref") || "").toLowerCase();
+      localStorage.setItem("rnm_origen", JSON.stringify({
+        f: String(q.get("utm_source") || "").slice(0, 60), m: String(q.get("utm_medium") || "").slice(0, 60), c: String(q.get("utm_campaign") || "").slice(0, 80),
+        k: String(q.get("utm_content") || "").slice(0, 80), v: String(q.get("via") || "").slice(0, 30), p: (pref === "quincenal" || pref === "semanal" || pref === "manual") ? pref : "", t: Date.now() }));
+      history.replaceState(null, "", location.pathname + location.hash);
+    }
     var ref = String(q.get("ref") || "").toLowerCase();
     if (/^[a-z0-9_-]{3,40}$/.test(ref)) {
       localStorage.setItem("rnm_ref", ref);
@@ -33,6 +41,17 @@ var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     }
   } catch (e) { /* sin almacenamiento: simplemente no se abre el pago solo */ }
 })();
+function origenGuardado() {
+  try { var o = JSON.parse(localStorage.getItem("rnm_origen") || "null"); if (o && Date.now() - o.t < 30 * 86400000) return o; } catch (e) { /* sin almacenamiento */ }
+  return null;
+}
+function guardarOrigen() {
+  var o = origenGuardado(); if (!o || o.guardado || !usuarioActual) return;
+  sb.rpc("rnm_guardar_origen", { p_fuente: o.f, p_medio: o.m, p_campana: o.c, p_contenido: o.k, p_via: o.v, p_plan_pref: o.p }).then(function (r) {
+    if (!r.error) { try { var x = JSON.parse(localStorage.getItem("rnm_origen")); x.guardado = 1; localStorage.setItem("rnm_origen", JSON.stringify(x)); } catch (e) { /* sin almacenamiento */ } }
+  });
+}
+function planPreferido() { var o = origenGuardado(); return o && (o.p === "quincenal" || o.p === "semanal" || o.p === "manual") ? o.p : "semanal"; }
 function asignarAliado() {
   var ref;
   try { ref = localStorage.getItem("rnm_ref"); } catch (e) { return; }
@@ -237,6 +256,7 @@ async function mostrar(session) {
     return vista("login");
   }
   asignarAliado();
+  guardarOrigen();
   if (!cambio) return;
   var r = await sb.from("rnm_perfiles").select("*").eq("user_id", session.user.id).maybeSingle();
   perfilActual = r.data || null;
@@ -1201,6 +1221,9 @@ function abrirOfertaSeguimiento(x) {
   if (!yaWa && tel && tel.length >= 10) { quiereWa.classList.remove("oculto"); $("sg-wa").checked = true; $("sg-wa-texto").textContent = "Quiero recibir los avisos por WhatsApp al +" + (tel.length <= 11 ? "55" + tel : tel) + "."; }
   else quiereWa.classList.add("oculto");
   msg("msg-seguir", "");
+  var pl = planPreferido(), cad = pl === "quincenal" ? "cada 15 días" : (pl === "manual" ? "cada semana + Verificar ahora" : "cada semana");
+  $("sg-suscribir").textContent = "Suscribirme por " + reales(PRECIOS[pl]) + " al mes";
+  document.querySelector("#modal-seguir .sg-nota").textContent = "Revisamos tu RNM " + cad + " · Pagas con Pix, tarjeta o boleto · Cancelas cuando quieras";
   pintarPruebaSocial($("sg-opiniones"));
   m.classList.remove("oculto"); document.body.style.overflow = "hidden";
   m.querySelector(".modal-caja").focus();
@@ -1221,11 +1244,12 @@ async function suscribirDesdeOferta() {
   } catch (e) { /* si falla, el pago sigue su camino */ }
   b.disabled = false;
   cerrarOfertaSeguimiento(0);
-  planElegido = "semanal"; ampliando = false;
+  var pref = planPreferido();
+  planElegido = pref; ampliando = false;
   var regs = registrosCargados || [];
   cartelPlanes(regs, planCargado);
   abrirModalPlanes();
-  mostrarPago("semanal");
+  mostrarPago(pref);
 }
 $("sg-suscribir").addEventListener("click", suscribirDesdeOferta);
 $("sg-cerrar").addEventListener("click", function () { cerrarOfertaSeguimiento(2); });
