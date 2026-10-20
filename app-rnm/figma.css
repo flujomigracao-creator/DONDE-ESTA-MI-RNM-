@@ -1283,3 +1283,7 @@ body:has(.modal:not(.oculto)) .consent-pixel, body:has(.camara:not(.oculto)) .co
 .garantia-ok p { margin: 4px 0 10px; font-size: 0.93rem; }
 .garantia-ok .msg { margin: 8px 0 0; }
 .pay-garantia { margin: 8px 0 0; padding: 10px 12px; border-radius: 12px; background: var(--success-soft, #E4F6EA); color: #0E3B21; font-size: 0.9rem; font-weight: 600; }
+
+/* Landing: el plan se activa antes de entrar */
+body.paywall #modal-planes .cerrar, body.paywall #modal-planes .acciones .sec { display: none !important; }
+.paywall-salir { margin-top: 14px; width: 100%; font-size: 0.88rem; }

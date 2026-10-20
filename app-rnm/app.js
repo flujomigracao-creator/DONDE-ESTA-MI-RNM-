@@ -1032,7 +1032,9 @@ async function mostrarGarantia(cont) {
   if (hasta <= new Date()) return;
   cont.textContent = "";
   cont.appendChild(el("b", "", "🛡️ Garantía de 1 hora"));
-  cont.appendChild(el("p", "", "Si no te convence, cancela tu plan y te devolvemos " + reales(g.monto_centavos) + " completos. Tienes hasta las " + hasta.toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit" }) + "."));
+  cont.appendChild(el("p", "", g.sin_revision
+    ? "Registra tu RNM: haremos tu primera revisión y tendrás 1 hora para decidir. Si no te convence, cancelas y te devolvemos " + reales(g.monto_centavos) + " completos."
+    : "Si no te convence, cancela tu plan y te devolvemos " + reales(g.monto_centavos) + " completos. Tienes hasta las " + hasta.toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit" }) + "."));
   var b = el("button", "sec", "Cancelar y recibir mi dinero"); b.type = "button";
   var aviso = el("p", "msg", ""); aviso.setAttribute("role", "alert");
   b.addEventListener("click", async function () {
@@ -1060,7 +1062,7 @@ function cartelPlanes(regs, plan) {
   var cont = $("cartel");
   cont.textContent = "";
   var abiertos = regs.filter(function (r) { return !r.cerrado; }).length;
-  if (!regs.length || !abiertos) return; // sin RNM por vigilar no hay nada que ofrecer
+  if (regs.length && !abiertos) return; // todos listos: no hay nada que vigilar (sin RNM sí se puede activar el plan primero)
   var activo = !!plan && new Date(plan.vence_at) > new Date();
   var logrado = activo && (!ultimoTipoPedido || plan.tipo === ultimoTipoPedido);
   if (esperandoPago && Date.now() - esperandoPago < 180000 && !logrado) {
@@ -1079,6 +1081,7 @@ function cartelPlanes(regs, plan) {
     ok.innerHTML = '<div class="pay-icono ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>';
     ok.appendChild(el("h2", "pay-titulo", nombrePlan(plan.tipo) + " activo"));
     ok.appendChild(el("p", "sub", "Cubre hasta 4 RNM (" + reales(plan.precio_centavos) + " al mes) y está pagado hasta el " + fechaCorta(plan.vence_at) + "."));
+    if (!regs.length) ok.appendChild(el("p", "sub", "Ahora registra tu RNM y tu fecha de nacimiento: haremos tu primera revisión y empezamos a vigilarlo por ti."));
     var gar = el("div", "garantia-ok oculto"); ok.appendChild(gar); mostrarGarantia(gar);
     var sup = planSuperior(plan.tipo);
     if (sup) {
@@ -1086,7 +1089,7 @@ function cartelPlanes(regs, plan) {
       aSup.addEventListener("click", function () { ampliando = true; planElegido = sup; cartelPlanes(regs, plan); });
       ok.appendChild(aSup);
     }
-    var cerrarOk = el("button", sup ? "sec" : "", "Entendido"); cerrarOk.type = "button";
+    var cerrarOk = el("button", sup ? "sec" : "", regs.length ? "Entendido" : "Registrar mi RNM"); cerrarOk.type = "button";
     cerrarOk.addEventListener("click", cerrarModalPlanes);
     ok.appendChild(cerrarOk);
     cont.appendChild(ok);
@@ -1100,7 +1103,7 @@ function cartelPlanes(regs, plan) {
   c.appendChild(el("h2", "pay-titulo", activo ? "Pasa a un plan superior" : (primeraHecha ? "Activa un plan para seguir tus RNM" : "Elige tu plan")));
   c.appendChild(el("p", "sub", activo
     ? "Pagas el nuevo plan completo y reemplaza al actual durante 1 mes desde hoy."
-    : "Cada RNM ya tuvo su primera verificación gratis. Con un plan, lo seguimos por ti."));
+    : (regs.length ? "Cada RNM ya tuvo su primera verificación gratis. Con un plan, lo seguimos por ti." : "Activa tu plan, registra tu RNM y lo vigilamos por ti desde el primer día. Si no te convence, cancelas en la primera hora y te devolvemos tu dinero.")));
   var socialPlanes = el("div", "opiniones-publicas oculto"); c.appendChild(socialPlanes); pintarPruebaSocial(socialPlanes);
   var grid = el("div", "planes-op");
   ["quincenal", "semanal", "manual"].forEach(function (tipo) {
@@ -1141,6 +1144,30 @@ function marcarVistos(ids) {
   try { localStorage.setItem("rnm_planes_vistos", JSON.stringify(planesVistos.slice(-50))); } catch (e) { /* sin almacenamiento */ }
 }
 var focoAntesModal = null;
+/* Camino de la landing: primero se activa el plan y después se registra el RNM. */
+var paywallAbierto = false;
+function debePagarAntes(plan) {
+  var o = origenGuardado();
+  return !!(o && o.v === "landing" && !plan);
+}
+function revisarPaywall(plan) {
+  if (!debePagarAntes(plan)) {
+    if (document.body.classList.contains("paywall") && plan && new Date(plan.vence_at) > new Date()) document.body.classList.remove("paywall");
+    return;
+  }
+  if (paywallAbierto || pagandoPlan) return;
+  paywallAbierto = true;
+  document.body.classList.add("paywall");
+  var pref = planPreferido(); planElegido = pref; ampliando = false;
+  cartelPlanes(registrosCargados || [], planCargado);
+  abrirModalPlanes();
+  setTimeout(function () { mostrarPago(pref); }, 300);
+  if (!$("paywall-salir")) {
+    var sal = el("button", "sec paywall-salir", "Salir de mi cuenta"); sal.type = "button"; sal.id = "paywall-salir";
+    sal.addEventListener("click", function () { salidaManual = true; sb.auth.signOut(); });
+    $("modal-planes").querySelector(".modal-caja").appendChild(sal);
+  }
+}
 function abrirModalPlanes() {
   if ($("modal-planes").classList.contains("oculto")) focoAntesModal = document.activeElement;
   $("modal-planes").classList.remove("oculto");
@@ -1148,6 +1175,11 @@ function abrirModalPlanes() {
   $("modal-planes").querySelector(".modal-caja").focus();
 }
 function cerrarModalPlanes() {
+  if (document.body.classList.contains("paywall")) {
+    var vivo = !!planCargado && new Date(planCargado.vence_at) > new Date();
+    if (!vivo) return; // quien llega de la landing activa su plan antes de entrar
+    document.body.classList.remove("paywall");
+  }
   ampliando = false;
   if (pagandoPlan) { salirDePago(); cargarRegistros(); }
   var estabaAbierto = !$("modal-planes").classList.contains("oculto");
@@ -1224,6 +1256,7 @@ async function cargarRegistros(soloSiCambia) {
   if (seccionActual === "planes") renderizarPlanes(r.data, plan);
   if (seccionActual === "detalle-rnm" && detalleActual) construirDetalle(detalleActual);
   consumirIrAPago();
+  revisarPaywall(plan);
   revisarOfertaSeguimiento(r.data, plan, activo);
 }
 
