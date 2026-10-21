@@ -36,7 +36,20 @@
     if (!session || Notification.permission === "denied") return;
     if (Notification.permission === "granted") return suscribir();
     var t = 0; try { t = +localStorage.getItem("rnm_push_no") || 0; } catch (_) {}
-    if (Date.now() - t > 3 * 24 * 3600 * 1000) setTimeout(banner, 4000);
+    if (Date.now() - t <= 3 * 24 * 3600 * 1000) return;
+    if (instalada()) {
+      // App instalada: se pide el permiso directamente (diálogo del sistema), como cualquier app.
+      setTimeout(function () {
+        Notification.requestPermission().then(function (p) {
+          if (p === "granted") suscribir();
+          else if (p === "default") { try { localStorage.setItem("rnm_push_no", String(Date.now())); } catch (_) {} banner(); }
+        }).catch(function () { banner(); });
+      }, 2500);
+    } else setTimeout(banner, 4000);
+  }
+  function instalada() {
+    return (window.matchMedia && (matchMedia("(display-mode: standalone)").matches || matchMedia("(display-mode: fullscreen)").matches)) ||
+      (document.referrer || "").indexOf("android-app://") === 0;
   }
   sb.auth.onAuthStateChange(function (ev, s) { if (ev === "SIGNED_IN") revisar(s); });
   sb.auth.getSession().then(function (r) { revisar(r.data && r.data.session); });
