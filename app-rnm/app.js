@@ -272,8 +272,8 @@ function abrirPerfil(editando) {
   var meta = (usuarioActual && usuarioActual.user_metadata) || {};
   $("p-nombre").value = p ? p.nombre : (meta.full_name || meta.name || "");
   $("p-tel").value = p ? p.telefono : "";
-  $("p-dir").value = p ? p.direccion : "";
-  $("p-ciudad").value = p ? p.ciudad : "";
+  $("p-dir").value = p && p.direccion ? p.direccion : "";
+  $("p-ciudad").value = p && p.ciudad ? p.ciudad : "";
   $("p-uf").value = p && p.estado ? p.estado : "";
   $("p-cep").value = p && p.cep ? p.cep.slice(0, 5) + "-" + p.cep.slice(5) : "";
   $("p-consiento").checked = !!p;
@@ -293,12 +293,13 @@ function irAPaso(n) {
   });
   document.querySelectorAll(".progreso i").forEach(function (b, i) { b.classList.toggle("on", i < n); });
   var pg = document.querySelector(".progreso"); if (pg) pg.setAttribute("aria-valuenow", String(n));
-  $("perfil-paso").textContent = "Paso " + n + " de 3";
+  $("perfil-paso").textContent = "Paso " + n + " de 2";
   $("btn-perfil-atras").classList.toggle("oculto", n === 1);
-  $("btn-perfil").textContent = n < 3 ? "Siguiente" : "Guardar y continuar";
+  $("btn-perfil").textContent = n < 2 ? "Siguiente" : "Guardar y continuar";
+  $("btn-perfil-omitir").classList.toggle("oculto", !(n === 2 && !perfilActual));
   msg("msg-perfil", "");
   limpiarErroresPerfil();
-  var foco = { 1: "p-nombre", 2: "p-tel", 3: "p-cep" }[n];
+  var foco = { 1: "p-nombre", 2: "p-cep" }[n];
   setTimeout(function () { $(foco).focus(); }, 0);
 }
 
@@ -308,15 +309,17 @@ function errorPaso(n) {
   function fallo(id, txt) { campoConError = id; return txt; }
   if (n === 1) {
     if ($("p-nombre").value.trim().length < 3) return fallo("p-nombre", "Escribe tu nombre completo (mínimo 3 letras).");
-  } else if (n === 2) {
     if (!/^\d{10,15}$/.test($("p-tel").value.replace(/\D/g, ""))) return fallo("p-tel", "Revisa tu teléfono: incluye el código de ciudad (y el de país si es de otro país).");
+    if (!$("p-consiento").checked) return fallo("p-consiento", "Debes aceptar la autorización para continuar.");
   } else {
+    // La dirección es opcional: si no escribe nada se omite; si escribe algo, tiene que estar completa.
     var uf = $("p-uf").value.trim().toUpperCase(), cep = $("p-cep").value.replace(/\D/g, "");
+    var algo = !!(cep || uf || $("p-dir").value.trim() || $("p-ciudad").value.trim());
+    if (!algo) return "";
     if (cep && !/^\d{8}$/.test(cep)) return fallo("p-cep", "El CEP tiene 8 números.");
-    if ($("p-dir").value.trim().length < 5) return fallo("p-dir", "Escribe tu dirección actual.");
+    if ($("p-dir").value.trim().length < 5) return fallo("p-dir", "Escribe tu dirección actual o toca «Omitir por ahora».");
     if ($("p-ciudad").value.trim().length < 2) return fallo("p-ciudad", "Escribe tu ciudad.");
     if (uf && !/^[A-Z]{2}$/.test(uf)) return fallo("p-uf", "El estado son 2 letras, por ejemplo SP.");
-    if (!$("p-consiento").checked) return fallo("p-consiento", "Debes aceptar la autorización para continuar.");
   }
   return "";
 }
@@ -350,6 +353,10 @@ document.querySelectorAll("#form-perfil input, #form-rnm input").forEach(functio
 });
 
 $("btn-perfil-atras").addEventListener("click", function () { irAPaso(pasoActual - 1); });
+$("btn-perfil-omitir").addEventListener("click", function () {
+  ["p-cep", "p-dir", "p-ciudad", "p-uf"].forEach(function (id) { $(id).value = ""; });
+  $("form-perfil").requestSubmit();
+});
 /* Autocompletar con el CEP (ViaCEP, servicio público de Brasil: solo recibe el CEP) */
 var ultimoCep = "";
 $("p-cep").addEventListener("input", async function (e) {
@@ -385,8 +392,8 @@ $("form-perfil").addEventListener("submit", async function (e) {
   limpiarErroresPerfil();
   var err = errorPaso(pasoActual);
   if (err) return marcarCampo(campoConError, err);
-  if (pasoActual < 3) return irAPaso(pasoActual + 1);
-  for (var n = 1; n < 3; n++) { // por si algo quedó mal en un paso anterior
+  if (pasoActual < 2) return irAPaso(pasoActual + 1);
+  for (var n = 1; n < 2; n++) { // por si algo quedó mal en un paso anterior
     var e2 = errorPaso(n);
     if (e2) { irAPaso(n); return marcarCampo(campoConError, e2); }
   }
@@ -396,7 +403,7 @@ $("form-perfil").addEventListener("submit", async function (e) {
   var ciudad = $("p-ciudad").value.trim();
   var uf = $("p-uf").value.trim().toUpperCase();
   var cep = $("p-cep").value.replace(/\D/g, "");
-  var datos = { nombre: nombre, telefono: tel, direccion: dir, ciudad: ciudad, estado: uf || null, cep: cep || null };
+  var datos = { nombre: nombre, telefono: tel, direccion: dir || null, ciudad: ciudad || null, estado: uf || null, cep: cep || null };
   var quiereAvisos = $("p-avisos").checked;
   datos.avisos_whatsapp = quiereAvisos;
   if (quiereAvisos && !(perfilActual && perfilActual.avisos_whatsapp)) datos.avisos_whatsapp_at = new Date().toISOString();
@@ -1312,12 +1319,12 @@ function revisarOfertaSeguimiento(regs, plan, activo) {
   ofertaSeguirTimer = setTimeout(function () {
     if (ofertaSeguirMostrada || hayModalAbierto() || seccionActual === "planes" || $("vista-app").classList.contains("oculto")) return;
     ofertaSeguirMostrada = true; abrirOfertaSeguimiento(x);
-  }, 2500);
+  }, 7000); // tiempo para leer el resultado de su RNM antes de ofrecerle el seguimiento
 }
 function abrirOfertaSeguimiento(x) {
   var m = $("modal-seguir"); if (!m) return;
   var e0 = estadoPresentacion(x);
-  $("sg-estado").textContent = "Estado de tu RNM " + (x.rnm ? "terminado en " + String(x.rnm).slice(-4) : "") + ": " + e0.t + ".";
+  $("sg-estado").textContent = "Tu RNM " + (x.rnm ? "terminado en " + String(x.rnm).slice(-4) : "") + ": " + e0.t + (e0.ubicacion ? " · " + e0.ubicacion : "") + ".";
   var quiereWa = $("sg-wa-fila"), tel = perfilActual && String(perfilActual.telefono || "").replace(/\D/g, "");
   var yaWa = !!(perfilActual && perfilActual.avisos_whatsapp);
   if (!yaWa && tel && tel.length >= 10) { quiereWa.classList.remove("oculto"); $("sg-wa").checked = true; $("sg-wa-texto").textContent = "Quiero recibir los avisos por WhatsApp al +" + (tel.length <= 11 ? "55" + tel : tel) + "."; }

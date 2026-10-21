@@ -54,37 +54,39 @@
   <!-- ==================== ONBOARDING / PERFIL ==================== -->
   <section id="vista-perfil" class="oculto">
     <div class="tarjeta onboarding-card">
-      <div class="progreso" role="progressbar" aria-label="Progreso del perfil" aria-valuemin="1" aria-valuemax="3" aria-valuenow="1">
+      <div class="progreso" role="progressbar" aria-label="Progreso del perfil" aria-valuemin="1" aria-valuemax="2" aria-valuenow="1">
         <i class="on"></i>
         <i></i>
-        <i></i>
       </div>
-      <p class="sub paso-etiqueta" id="perfil-paso">Paso 1 de 3</p>
+      <p class="sub paso-etiqueta" id="perfil-paso">Paso 1 de 2</p>
 
       <form id="form-perfil" autocomplete="on" novalidate>
         <div class="paso-ob" data-paso="1">
-          <h2 id="perfil-titulo" class="paso-titulo">¿Cómo te llamas?</h2>
-          <p class="sub">Escribe tu nombre completo, exactamente como figura en tu documento.</p>
+          <h2 id="perfil-titulo" class="paso-titulo">Crea tu perfil</h2>
+          <p class="sub">Dos datos y listo: tu nombre como figura en tu documento y tu WhatsApp.</p>
           <div class="form-field">
             <label for="p-nombre">Nombre completo</label>
             <input type="text" id="p-nombre" autocomplete="name" maxlength="120" placeholder="Nombre y apellidos" required>
             <p class="sub ayuda-campo">Incluye todos tus nombres y apellidos.</p>
           </div>
-        </div>
-
-        <div class="paso-ob oculto" data-paso="2">
-          <h2 class="paso-titulo">¿Cuál es tu teléfono?</h2>
-          <p class="sub">De preferencia con WhatsApp para avisarte sobre tu trámite.</p>
           <div class="form-field">
             <label for="p-tel">Teléfono / WhatsApp</label>
             <input type="text" id="p-tel" inputmode="tel" autocomplete="tel" maxlength="20" placeholder="Ej: +55 11 91234-5678">
             <p class="sub ayuda-campo">Incluye el código de ciudad (y el de país si no es de Brasil). Ejemplo: +55 11 91234-5678.</p>
           </div>
+          <label class="check">
+            <input type="checkbox" id="p-avisos">
+            <span><b>Quiero avisos por WhatsApp (opcional).</b> FLUJO me escribirá al número que indiqué cuando cambie el estado de mi RNM (documento listo, pendencia o cambio de dirección) y para ayudarme a activar el seguimiento de mi RNM. Puedo desactivarlo cuando quiera.</span>
+          </label>
+          <label class="check">
+            <input type="checkbox" id="p-consiento">
+            <span><b>Autorización necesaria para usar el servicio.</b> Autorizo a FLUJO a resguardar estos datos exclusivamente para informarme sobre mi trámite. Puedo solicitar su eliminación en cualquier momento.</span>
+          </label>
         </div>
 
-        <div class="paso-ob oculto" data-paso="3">
-          <h2 class="paso-titulo">¿Dónde resides actualmente?</h2>
-          <p class="sub">Escribe tu CEP y completamos automáticamente la dirección.</p>
+        <div class="paso-ob oculto" data-paso="2">
+          <h2 class="paso-titulo">¿Dónde vives? <span class="opcional">Opcional</span></h2>
+          <p class="sub">Escribe tu CEP y completamos la dirección. Sirve para decirte si tu RNM está en tu ciudad. Puedes omitirlo y completarlo después en Mi cuenta.</p>
           <div class="form-field">
             <label for="p-cep">CEP</label>
             <input type="text" id="p-cep" inputmode="numeric" autocomplete="postal-code" maxlength="9" placeholder="00000-000">
@@ -104,18 +106,11 @@
               <input type="text" id="p-uf" maxlength="2" autocapitalize="characters" placeholder="SP">
             </div>
           </div>
-          <label class="check">
-            <input type="checkbox" id="p-avisos">
-            <span><b>Quiero avisos por WhatsApp (opcional).</b> FLUJO me escribirá al número que indiqué cuando cambie el estado de mi RNM (documento listo, pendencia o cambio de dirección) y para ayudarme a activar el seguimiento de mi RNM. Puedo desactivarlo cuando quiera.</span>
-          </label>
-          <label class="check">
-            <input type="checkbox" id="p-consiento">
-            <span><b>Autorización necesaria para usar el servicio.</b> Autorizo a FLUJO a resguardar estos datos exclusivamente para informarme sobre mi trámite. Puedo solicitar su eliminación en cualquier momento.</span>
-          </label>
         </div>
 
         <div class="acciones acciones-form">
           <button type="submit" id="btn-perfil">Siguiente</button>
+          <button type="button" class="sec oculto" id="btn-perfil-omitir">Omitir por ahora</button>
           <button type="button" class="sec oculto" id="btn-perfil-atras">Atrás</button>
           <button type="button" class="sec oculto" id="btn-perfil-cancelar">Cancelar</button>
         </div>
