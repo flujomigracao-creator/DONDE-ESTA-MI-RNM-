@@ -113,7 +113,7 @@ input[type="text"], select { border-radius: 14px; min-height: 52px; border-color
 .timeline-content { border-radius: 14px; }
 
 /* ---------- Bienvenida y perfil (pantallas sin barra) ---------- */
-body { overscroll-behavior-y: none; }
+html, body { overscroll-behavior: none; } /* sin "tirar para actualizar" de Chrome: se comporta como app */
 #vista-login { background: var(--canvas); min-height: 100vh; }
 .fig-login { max-width: 560px; margin: 0 auto; padding: 0 20px 36px; }
 .fig-barra { display: flex; align-items: center; gap: 12px; padding: 14px 20px; background: #fff; border-bottom: 1px solid var(--line); margin: 0 -20px 20px; font-weight: 600; font-size: 1.02rem; }
