@@ -1314,3 +1314,5 @@ body.paywall #modal-planes .cerrar, body.paywall #modal-planes .acciones .sec { 
 .aviso-pago b { font-size: 1.02rem; }
 .aviso-pago p { margin: 0 0 8px; font-size: 0.92rem; line-height: 1.4; }
 .aviso-pago button { justify-self: start; min-height: 46px; padding: 0 20px; background: #0E3F8E !important; color: #fff !important; }
+
+.donde-retirar .dr-destino { display: block; margin-top: 4px; font-size: 0.82rem; font-weight: 700; color: #8A5200; line-height: 1.3; }

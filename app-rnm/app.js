@@ -1580,6 +1580,13 @@ function titularRastreador(e) {
 /* ---------- Cambio de dirección animado (mini rastreador) ---------- */
 function fechaNum(f) { var m = /(\d{2})\/(\d{2})\/(\d{4})/.exec(f || ""); return m ? Number(m[3] + m[2] + m[1]) : 0; }
 function cambioReciente(lc) { var mejor = null; lc.forEach(function (l) { if (!mejor || fechaNum(l.fecha) >= fechaNum(mejor.fecha)) mejor = l; }); return mejor; } // el más reciente; con la misma fecha, el último de la lista
+/* Cambios de dirección que se muestran: el último aprobado (deferido) y, después, el último que pidió la persona si es otro. */
+function cambiosParaMostrar(lc) {
+  if (!lc || !lc.length) return [];
+  var ult = cambioReciente(lc), aprobados = lc.filter(function (l) { return l.estado === "aprobada"; });
+  var apr = aprobados.length ? aprobados[aprobados.length - 1] : null;
+  return apr && apr !== ult ? [apr, ult] : [ult];
+}
 var SVG_CASA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-7 8 7"/><path d="M6 10v10h12V10"/><path d="M10 20v-5h4v5"/></svg>';
 function cambioAnimado(l) {
   var est = l.estado;
@@ -1635,7 +1642,7 @@ function rastreador(x, opciones) {
   c.appendChild(el("h2", "rt-titular", tt.t));
   var sub = el("p", "rt-sub"); sub.innerHTML = (e.tono === "ok" ? SVG_OK : (e.tono === "mal" || e.corto === "Falta algo" || e.corto === "No encontrado" ? "" : SVG_PIN)); sub.appendChild(document.createTextNode(tt.s)); c.appendChild(sub);
   var lc = x.cambio_direccion ? lineasCambio(x.cambio_direccion) : [];
-  if (lc.length) c.appendChild(cambioAnimado(cambioReciente(lc)));
+  cambiosParaMostrar(lc).forEach(function (l) { c.appendChild(cambioAnimado(l)); });
   var av = avisoValidez(x); if (av) c.appendChild(av);
   if (idx !== undefined && !opciones.compacto) {
     var pista = el("div", "rt-pista");
@@ -1875,6 +1882,11 @@ function dondeRetirarCompacto(x) {
   var t = el("div", ""); t.appendChild(el("b", "", "Retira en " + lugar));
   t.appendChild(el("span", "", misma ? "Es tu ciudad" : (otra ? "No es tu ciudad" + (miCiudad ? " (" + miCiudad + ")" : "") : "Confirma que te queda cerca")));
   c.appendChild(t);
+  var aprobadoOtro = x.cambio_direccion ? lineasCambio(x.cambio_direccion).filter(function (l) { return l.estado === "aprobada" && l.codigo && l.codigo !== x.unidad_pf; }).pop() : null;
+  if (aprobadoOtro) {
+    var dest = el("span", "dr-destino", "Cambio aprobado hacia " + (aprobadoOtro.destino || aprobadoOtro.codigo) + ". Aún no llegó: espera nuestro aviso antes de ir.");
+    t.appendChild(dest);
+  }
   if (otra || !sabe || x.cambio_direccion) {
     var msj = "Hola, mi RNM " + x.rnm + " está listo en " + x.unidad_pf + (ciudadU ? " (" + ciudadU + ")" : "") + " y quiero cambiar la dirección de entrega.";
     if (WHATSAPP) { var a = enlaceWhatsapp(x, msj); a.className = "dr-btn"; a.textContent = "Pedir cambio de dirección"; c.appendChild(a); }

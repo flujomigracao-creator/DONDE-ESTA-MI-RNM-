@@ -511,6 +511,8 @@
     top.classList.toggle("sombra", y > 8);
     var pasado = primero.getBoundingClientRect().bottom < 0;
     top.classList.toggle("con-cta", pasado); fijo.classList.toggle("ver", pasado);
+    // Si un desplazamiento rápido se saltó algún bloque, se muestra igual: nada que ya pasó se queda invisible.
+    if (raiz.classList.contains("js")) Array.prototype.forEach.call(document.querySelectorAll(".rv:not(.in)"), function (n) { if (n.getBoundingClientRect().top < window.innerHeight) n.classList.add("in"); });
     pendiente = false;
   }
   window.addEventListener("scroll", function () { if (!pendiente) { pendiente = true; requestAnimationFrame(alDesplazar); } }, { passive: true });
