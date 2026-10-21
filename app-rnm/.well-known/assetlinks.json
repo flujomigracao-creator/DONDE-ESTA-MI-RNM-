@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "br.com.flujomigracao.rnm",
+        "sha256_cert_fingerprints": ["2E:42:E0:B5:A3:83:A9:DA:D5:39:57:AE:F0:C4:CB:60:F7:FF:9F:0D:75:AF:F9:8E:F1:3A:4D:85:59:B8:05:4A"]
+      }
+    }]
