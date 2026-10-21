@@ -271,7 +271,7 @@ function abrirPerfil(editando) {
   var p = perfilActual;
   var meta = (usuarioActual && usuarioActual.user_metadata) || {};
   $("p-nombre").value = p ? p.nombre : (meta.full_name || meta.name || "");
-  $("p-tel").value = p ? p.telefono : "";
+  $("p-tel").value = p ? telefonoParaEditar(p.telefono) : "";
   $("p-dir").value = p && p.direccion ? p.direccion : "";
   $("p-ciudad").value = p && p.ciudad ? p.ciudad : "";
   $("p-uf").value = p && p.estado ? p.estado : "";
@@ -303,13 +303,27 @@ function irAPaso(n) {
   setTimeout(function () { $(foco).focus(); }, 0);
 }
 
+/* Teléfono de Brasil: DDD + número (8 o 9 dígitos). El +55 se pone solo y se acepta si la persona lo escribe. Devuelve "55" + DDD + número, o "" si no es válido. */
+function telefonoBR(texto) {
+  var crudo = String(texto || "").trim();
+  if (/^\+/.test(crudo) && !/^\+\s*55/.test(crudo)) return ""; // un número con + de otro país no es de Brasil
+  var d = crudo.replace(/\D/g, "").replace(/^0+/, "");
+  if ((d.length === 12 || d.length === 13) && d.indexOf("55") === 0) d = d.slice(2);
+  if (!/^[1-9][1-9](9\d{8}|[2-5]\d{7})$/.test(d)) return "";
+  return "55" + d;
+}
+function telefonoParaEditar(tel) {
+  var d = String(tel || "").replace(/\D/g, "");
+  if ((d.length === 12 || d.length === 13) && d.indexOf("55") === 0) d = d.slice(2);
+  return d.length > 2 ? d.slice(0, 2) + " " + d.slice(2, d.length - 4) + "-" + d.slice(-4) : d;
+}
 var campoConError = "";
 function errorPaso(n) {
   campoConError = "";
   function fallo(id, txt) { campoConError = id; return txt; }
   if (n === 1) {
     if ($("p-nombre").value.trim().length < 3) return fallo("p-nombre", "Escribe tu nombre completo (mínimo 3 letras).");
-    if (!/^\d{10,15}$/.test($("p-tel").value.replace(/\D/g, ""))) return fallo("p-tel", "Revisa tu teléfono: incluye el código de ciudad (y el de país si es de otro país).");
+    if (!telefonoBR($("p-tel").value)) return fallo("p-tel", "Revisa tu WhatsApp: escribe el código de ciudad (DDD) y el número, por ejemplo 41 99999-1234.");
     if (!$("p-consiento").checked) return fallo("p-consiento", "Debes aceptar la autorización para continuar.");
   } else {
     // La dirección es opcional: si no escribe nada se omite; si escribe algo, tiene que estar completa.
@@ -398,7 +412,7 @@ $("form-perfil").addEventListener("submit", async function (e) {
     if (e2) { irAPaso(n); return marcarCampo(campoConError, e2); }
   }
   var nombre = $("p-nombre").value.trim().replace(/\s+/g, " ");
-  var tel = $("p-tel").value.replace(/\D/g, "");
+  var tel = telefonoBR($("p-tel").value);
   var dir = $("p-dir").value.trim();
   var ciudad = $("p-ciudad").value.trim();
   var uf = $("p-uf").value.trim().toUpperCase();
