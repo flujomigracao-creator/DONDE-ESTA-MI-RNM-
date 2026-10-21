@@ -1310,8 +1310,31 @@ async function cargarRegistros(soloSiCambia) {
   if (seccionActual === "planes") renderizarPlanes(r.data, plan);
   if (seccionActual === "detalle-rnm" && detalleActual) construirDetalle(detalleActual);
   consumirIrAPago();
+  revisarPagoPendiente();
   revisarPaywall(plan);
   revisarOfertaSeguimiento(r.data, plan, activo);
+}
+
+/* ---------- Pago pendiente: quien empezó a pagar y no terminó ve un aviso con un botón para completarlo ---------- */
+function pintarPagoPendiente(p) {
+  var caja = $("aviso-pago-pendiente"); if (!caja) return;
+  caja.textContent = "";
+  if (!p) { caja.classList.add("oculto"); return; }
+  var plan = (PLANES[p.tipo] || PLANES.semanal).nombre.toLowerCase(), monto = reales(p.monto_centavos);
+  var titulo, texto;
+  if (p.metodo === "boleto") { titulo = "Tienes un boleto pendiente"; texto = "Tu plan " + plan + " (" + monto + ") se activa apenas se pague el boleto. Si prefieres, paga ahora con Pix."; }
+  else if (p.vencido) { titulo = "Tu Pix venció sin pagar"; texto = "Empezaste a activar el plan " + plan + " (" + monto + "). Genera uno nuevo en un toque y termina."; }
+  else { titulo = "Te falta pagar tu Pix"; texto = "Tu plan " + plan + " (" + monto + ") se activa apenas se confirme el pago. Si no lo alcanzaste a pagar, genera uno nuevo."; }
+  caja.appendChild(el("b", "", titulo)); caja.appendChild(el("p", "", texto));
+  var b = el("button", "", p.vencido || p.metodo === "boleto" ? "Pagar con Pix ahora" : "Generar otro Pix"); b.type = "button";
+  b.addEventListener("click", function () {
+    planElegido = p.tipo; ampliando = false;
+    cartelPlanes(registrosCargados || [], planCargado); abrirModalPlanes(); mostrarPago(p.tipo);
+  });
+  caja.appendChild(b); caja.classList.remove("oculto");
+}
+async function revisarPagoPendiente() {
+  try { var r = await sb.rpc("rnm_mi_pago_pendiente"); pintarPagoPendiente(r && !r.error ? r.data : null); } catch (e) { /* sin red: no se muestra */ }
 }
 
 /* ---------- Oferta de seguimiento tras la primera consulta ---------- */

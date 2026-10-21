@@ -1308,3 +1308,9 @@ body.paywall #modal-planes .cerrar, body.paywall #modal-planes .acciones .sec { 
 }
 
 .paso-titulo .opcional { font-size: 0.7rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); background: var(--surface-alt, #EEF2F8); border-radius: 999px; padding: 3px 9px; margin-left: 6px; vertical-align: middle; }
+
+/* Aviso de pago pendiente */
+.aviso-pago { margin: 12px 0; padding: 16px; border-radius: 18px; background: #FFF4DB; border: 1px solid #F2D58A; color: #5B3B00; display: grid; gap: 4px; }
+.aviso-pago b { font-size: 1.02rem; }
+.aviso-pago p { margin: 0 0 8px; font-size: 0.92rem; line-height: 1.4; }
+.aviso-pago button { justify-self: start; min-height: 46px; padding: 0 20px; background: #0E3F8E !important; color: #fff !important; }
