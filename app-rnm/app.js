@@ -1166,9 +1166,13 @@ function revisarPaywall(plan) {
   var o = origenGuardado();
   if (!o || o.v !== "landing" || plan || planesLandingMostrados || pagandoPlan) return;
   if (!registroParaOferta(registrosCargados || [])) return; // aún sin resultado, o el RNM ya está listo / no se encontró
+  // Una vez por día: si ya la vio hoy y la cerró, no reaparece al recargar o volver a abrir la app.
+  var visto = ""; try { visto = localStorage.getItem("rnm_landing_planes_dia") || ""; } catch (e) { /* sin almacenamiento */ }
+  if (visto === hoyClave()) return;
   planesLandingMostrados = true;
   setTimeout(function () {
     if (planCargado || pagandoPlan || hayModalAbierto() || $("vista-app").classList.contains("oculto")) { planesLandingMostrados = false; return; }
+    try { localStorage.setItem("rnm_landing_planes_dia", hoyClave()); } catch (e) { /* sin almacenamiento */ }
     var elegido = (o.p === "quincenal" || o.p === "semanal" || o.p === "manual") ? o.p : "";
     planElegido = elegido || "quincenal"; ampliando = false;
     cartelPlanes(registrosCargados || [], planCargado);
@@ -1198,6 +1202,27 @@ function cerrarModalPlanes() {
 }
 $("modal-cerrar").addEventListener("click", cerrarModalPlanes);
 $("modal-planes").addEventListener("click", function (e) { if (e.target === this && !pagandoPlan) cerrarModalPlanes(); });
+// Deslizar hacia abajo cierra la ventana (como una hoja inferior de app nativa).
+(function () {
+  var caja = $("modal-planes").querySelector(".modal-caja"), lista = $("cartel"), y0 = null, dy = 0;
+  caja.addEventListener("touchstart", function (e) {
+    y0 = (e.touches.length === 1 && lista.scrollTop <= 0) ? e.touches[0].clientY : null; dy = 0;
+  }, { passive: true });
+  caja.addEventListener("touchmove", function (e) {
+    if (y0 === null) return;
+    dy = e.touches[0].clientY - y0;
+    if (dy <= 0) { caja.style.transform = ""; return; }
+    if (e.cancelable) e.preventDefault();
+    caja.style.transition = "none"; caja.style.transform = "translateY(" + dy + "px)";
+  }, { passive: false });
+  function soltar() {
+    if (y0 === null) return;
+    var cerrar = dy > 110; y0 = null;
+    caja.style.transition = "transform .18s ease"; caja.style.transform = "";
+    if (cerrar && !pagandoPlan) cerrarModalPlanes();
+  }
+  caja.addEventListener("touchend", soltar); caja.addEventListener("touchcancel", soltar);
+})();
 document.addEventListener("keydown", function (e) {
   if (e.key === "Escape" && !pagandoPlan) cerrarModalPlanes();
   if (e.key !== "Tab") return;
