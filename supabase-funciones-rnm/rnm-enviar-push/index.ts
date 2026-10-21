@@ -1,6 +1,6 @@
 // Envía notificaciones push (Web Push + VAPID, sin Firebase) por cada aviso de public.rnm_avisos
 // a los dispositivos suscritos del usuario. Independiente de rnm-enviar-avisos (WhatsApp): solo lee la misma cola.
-// Solo uso interno (clave de servicio). Secretos: VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT (mailto:...).
+// Lo programa pg_cron (rnm_enviar_push). Secretos: VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT (mailto:...).
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import webpush from 'npm:web-push@3.6.7';
@@ -18,7 +18,14 @@ Deno.serve(async (req) => {
   if (req.method !== 'POST') return json({ error: 'Método no permitido' }, 405);
   const url = Deno.env.get('SUPABASE_URL')!, serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   const clave = (req.headers.get('apikey') || req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '').trim();
-  if (clave !== serviceKey) return json({ error: 'Solo para uso interno' }, 403);
+  const cron = (req.headers.get('x-cron-token') || '').trim();
+  let autorizado = clave === serviceKey;
+  if (!autorizado && cron.length >= 32) {
+    // pg_cron manda un token propio guardado en rnm_config (tabla privada), distinto de la clave de servicio.
+    const { data: cfg } = await createClient(url, serviceKey).from('rnm_config').select('valor').eq('clave', 'push_cron_token').maybeSingle();
+    autorizado = !!cfg?.valor && cfg.valor === cron;
+  }
+  if (!autorizado) return json({ error: 'Solo para uso interno' }, 403);
   const pub = Deno.env.get('VAPID_PUBLIC_KEY'), priv = Deno.env.get('VAPID_PRIVATE_KEY');
   if (!pub || !priv) return json({ ok: true, omitido: 'Faltan VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY' });
   webpush.setVapidDetails(Deno.env.get('VAPID_SUBJECT') || 'mailto:devplataformacubanosbr@gmail.com', pub, priv);
