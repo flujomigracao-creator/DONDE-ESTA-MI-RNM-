@@ -1199,7 +1199,7 @@ function revisarPaywall(plan) {
     cartelPlanes(registrosCargados || [], planCargado);
     abrirModalPlanes();
     if (elegido) setTimeout(function () { mostrarPago(elegido); }, 300);
-  }, 7000); // tiempo para que lea el resultado de su RNM
+  }, 3000); // 3 s después de verse el resultado de su primera consulta
 }
 function abrirModalPlanes() {
   if ($("modal-planes").classList.contains("oculto")) focoAntesModal = document.activeElement;
@@ -1356,7 +1356,7 @@ function revisarOfertaSeguimiento(regs, plan, activo) {
   ofertaSeguirTimer = setTimeout(function () {
     if (ofertaSeguirMostrada || hayModalAbierto() || seccionActual === "planes" || $("vista-app").classList.contains("oculto")) return;
     ofertaSeguirMostrada = true; abrirOfertaSeguimiento(x);
-  }, 7000); // tiempo para leer el resultado de su RNM antes de ofrecerle el seguimiento
+  }, 3000); // 3 s después de verse el resultado de su primera consulta
 }
 function abrirOfertaSeguimiento(x) {
   var m = $("modal-seguir"); if (!m) return;
