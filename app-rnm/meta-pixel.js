@@ -4,7 +4,8 @@
    SIEMPRE encriptados (SHA-256) en el navegador. Nunca se envía el RNM, el estado del trámite, la dirección completa ni el CPF. */
 (function () {
   "use strict";
-  var PIXEL_ID = "1799560864530535";
+  /* Píxel PROPIO de la app (mirnm.com.br). El conjunto 1799560864530535 queda solo para el WhatsApp de trámites. */
+  var PIXEL_ID = "1603342470739530";
   var CLAVE = "rnm_consent_pixel";
   var cargado = false;
   var identidad = null;   // { user, perfil } de la última sesión conocida
