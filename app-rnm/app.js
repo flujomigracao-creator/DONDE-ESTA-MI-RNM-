@@ -160,6 +160,44 @@ function actualizarAnuncios() {
   };
   document.head.appendChild(sc);
 }
+/* Muro «instala la app para ver tu resultado»: SOLO si el interruptor de play.js está encendido, la persona entra desde el navegador de un Android
+   (no desde la app instalada) y su cuenta es nueva (la base decide con rnm_estado_app). Quien ya abrió la app, o es cliente anterior, nunca lo ve. */
+var appRequerida = false;
+function enAppInstalada() {
+  try { if ((document.referrer || "").indexOf("android-app://") === 0) sessionStorage.setItem("rnm_en_app", "1"); } catch (e) { /* sin almacenamiento */ }
+  var visto = false; try { visto = sessionStorage.getItem("rnm_en_app") === "1"; } catch (e) { /* sin almacenamiento */ }
+  return visto || !!(window.matchMedia && (matchMedia("(display-mode: standalone)").matches || matchMedia("(display-mode: fullscreen)").matches || matchMedia("(display-mode: minimal-ui)").matches));
+}
+function muroPlayActivo() {
+  var P = window.RNM_PLAY || {}, test = false;
+  try { test = localStorage.getItem("rnm_play_test") === "1"; } catch (e) { /* sin almacenamiento */ }
+  return (!!P.publicada || test) && /Android/i.test(navigator.userAgent || "") && !enAppInstalada();
+}
+function actualizarMuroPlay() {
+  var m = $("muro-play"); if (!m) return;
+  var mostrar = muroPlayActivo() && appRequerida && !!usuarioActual && registrosCargados.length > 0;
+  if (mostrar) {
+    var P = window.RNM_PLAY || {};
+    $("muro-play-enlace").href = P.url || "play.html";
+    $("muro-correo").textContent = usuarioActual.email ? usuarioActual.email : "";
+    $("muro-ayuda-wa").href = "https://wa.me/" + WHATSAPP + "?text=" + encodeURIComponent("Hola, no puedo instalar la app desde Google Play. ¿Me ayudan a ver mi RNM?");
+    embudo("muro_play_visto");
+  }
+  m.classList.toggle("oculto", !mostrar);
+  document.body.style.overflow = mostrar ? "hidden" : (document.querySelector(".modal:not(.oculto), .camara:not(.oculto)") ? document.body.style.overflow : "");
+}
+var estadoAppConsultado = false;
+async function consultarEstadoApp() {
+  if (estadoAppConsultado || !usuarioActual) return;
+  try {
+    if (enAppInstalada()) { estadoAppConsultado = true; appRequerida = false; embudo("app_abierta"); await sb.rpc("rnm_marcar_app"); actualizarMuroPlay(); return; }
+    if (!muroPlayActivo()) return;
+    estadoAppConsultado = true;
+    var r = await sb.rpc("rnm_estado_app");
+    appRequerida = !!(r && !r.error && r.data && r.data.requiere_app);
+    actualizarMuroPlay();
+  } catch (e) { /* sin red: no se muestra el muro */ }
+}
 var sesionConPlanConocido = false; // hasta saber si hay plan no se muestra nada (así un cliente con plan nunca ve un destello de publicidad)
 var filtroMisRnm = "todos";
 var detalleActual = null;
@@ -1020,6 +1058,8 @@ async function abrirCamara(modo) {
 $("camara-cancelar").addEventListener("click", cerrarCamara);
 document.addEventListener("keydown", function (e) { if (e.key === "Escape" && camaraAbierta) cerrarCamara(); });
 
+var muroSalir = $("muro-salir"); if (muroSalir) muroSalir.addEventListener("click", confirmarSalir);
+var muroEnlace = $("muro-play-enlace"); if (muroEnlace) muroEnlace.addEventListener("click", function () { embudo("play_clic"); });
 var btnQuitarAnuncios = $("btn-quitar-anuncios");
 if (btnQuitarAnuncios) btnQuitarAnuncios.addEventListener("click", function () { ampliando = false; cartelPlanes(registrosCargados || [], planCargado); abrirModalPlanes(); });
 $("btn-escanear-qr").addEventListener("click", async function () {
@@ -1659,6 +1699,7 @@ var focoAntesModal = null;
 var planesLandingMostrados = false;
 function debePagarAntes() { return false; } // ya no se cobra antes de registrar el RNM
 function revisarPaywall(plan) {
+  if (muroPlayActivo() && appRequerida) return;
   document.body.classList.remove("paywall");
   var o = origenGuardado();
   if (!o || o.v !== "landing" || plan || planesLandingMostrados || pagandoPlan) return;
@@ -1771,6 +1812,7 @@ async function cargarRegistros(soloSiCambia) {
   registrosCargados = r.data;
   planCargado = plan;
   sesionConPlanConocido = true; actualizarAnuncios();
+  consultarEstadoApp(); actualizarMuroPlay();
   if (activo && ultimoTipoPedido && window.rnmTrack && (!planAntes || new Date(plan.vence_at) > new Date(planAntes.vence_at))) {
     var clavePago = "rnm_purchase_" + plan.vence_at;
     if (!localStorage.getItem(clavePago)) { try { localStorage.setItem(clavePago, "1"); } catch (e) { /* sin almacenamiento */ } rnmTrack("Purchase", { value: plan.precio_centavos / 100, currency: "BRL", content_name: plan.tipo }, "compra-" + plan.vence_at); }
@@ -1826,6 +1868,7 @@ function registroParaOferta(regs) {
   }) || null;
 }
 function revisarOfertaSeguimiento(regs, plan, activo) {
+  if (muroPlayActivo() && appRequerida) return;
   if (ofertaSeguirMostrada || activo || pagandoPlan) return;
   var origen = origenGuardado(); if (origen && origen.v === "landing") return; // a ellos se les abre directamente la elección de planes
   var x = registroParaOferta(regs); if (!x) return;
@@ -2608,6 +2651,7 @@ async function enviarOpinion() {
   mostrarGraciasOpinion(opinionEstrellas);
 }
 async function revisarOpinionPendiente(soloTipo) {
+  if (muroPlayActivo() && appRequerida) return;
   if (opinionPendienteMostrada || !usuarioActual) return;
   try { if (Number(localStorage.getItem("rnm_opinion_snooze") || 0) > Date.now()) return; } catch (e) { /* sin almacenamiento */ }
   if (document.querySelector(".modal:not(.oculto), .camara:not(.oculto)")) return; // no interrumpe un pago ni una conversación

@@ -1384,3 +1384,19 @@ body.paywall #modal-planes .cerrar, body.paywall #modal-planes .acciones .sec { 
 .sin-anuncios b { font-size: 1rem; }
 .sin-anuncios span { font-size: 0.9rem; line-height: 1.35; }
 .sin-anuncios button { justify-self: start; margin-top: 8px; min-height: 46px; padding: 0 20px; }
+
+/* ===== Muro «instala la app para ver tu resultado» (web en Android, cuentas nuevas) ===== */
+.muro-play { position: fixed; inset: 0; z-index: 900; display: grid; place-items: center; padding: 20px; background: linear-gradient(160deg, #0A2A5E, #0E3F8E); overflow-y: auto; }
+.muro-play.oculto { display: none; }
+.muro-caja { width: min(100%, 400px); padding: 28px 22px 22px; border-radius: 26px; background: #fff; text-align: center; box-shadow: 0 24px 70px rgba(0, 0, 0, .4); }
+.muro-icono { width: 76px; height: 76px; margin: 0 auto 12px; border-radius: 50%; display: grid; place-items: center; background: #DDF5E7; color: #1E9E57; }
+.muro-icono svg { width: 42px; height: 42px; }
+.muro-caja h2 { margin: 0 0 6px; font-size: 1.5rem; line-height: 1.15; color: #0A2A5E; }
+.muro-sub { margin: 0 0 14px; font-size: 1.02rem; color: #314a75; font-weight: 600; }
+.muro-pasos { list-style: none; counter-reset: p; margin: 0 0 16px; padding: 0; display: grid; gap: 8px; text-align: left; }
+.muro-pasos li { counter-increment: p; position: relative; padding: 10px 12px 10px 44px; border-radius: 12px; background: #F2F5FB; color: #314a75; font-size: .95rem; line-height: 1.35; }
+.muro-pasos li::before { content: counter(p); position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: #0E3F8E; color: #fff; font-weight: 800; font-size: .85rem; }
+.muro-pasos span { display: block; font-weight: 700; color: #0A2A5E; word-break: break-all; }
+.muro-boton { display: inline-flex !important; width: 100%; justify-content: center; }
+.muro-ayuda { margin: 14px 0 6px; font-size: .88rem; color: #5b6b85; }
+.muro-salir { background: none !important; box-shadow: none !important; color: #5b6b85 !important; text-decoration: underline; min-height: 40px; font-size: .88rem; }
