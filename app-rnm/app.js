@@ -626,13 +626,20 @@ function cargarJsQR() {
     document.head.appendChild(sc);
   });
 }
-async function leerQR(canvas) {
+var detectorQR = null;
+async function leerQR(fuente) {
   if ("BarcodeDetector" in window) {
-    try { var r = await new BarcodeDetector({ formats: ["qr_code"] }).detect(canvas); if (r.length) return r[0].rawValue; } catch (e) { /* se prueba con jsQR */ }
+    try { detectorQR = detectorQR || new BarcodeDetector({ formats: ["qr_code"] }); var r = await detectorQR.detect(fuente); if (r.length) return r[0].rawValue; } catch (e) { /* se prueba con jsQR */ }
   }
+  var canvas = fuente;
+  if (fuente.tagName === "VIDEO") { canvas = capturarFotograma(fuente, 1920); }
   var jq = await cargarJsQR();
-  var d = canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height);
-  var q = jq(d.data, d.width, d.height, { inversionAttempts: "attemptBoth" });
+  var q = null, c = canvas;
+  for (var i = 0; i < 2 && !q; i++) {
+    var d = c.getContext("2d").getImageData(0, 0, c.width, c.height);
+    q = jq(d.data, d.width, d.height, { inversionAttempts: "attemptBoth" });
+    if (!q && i === 0 && c.width > 700) { var p = document.createElement("canvas"); p.width = Math.round(c.width / 2); p.height = Math.round(c.height / 2); p.getContext("2d").drawImage(c, 0, 0, p.width, p.height); c = p; }
+  }
   return q ? q.data : null;
 }
 function dmyAISO(t) {
@@ -773,6 +780,7 @@ async function abrirCamara(modo) {
   var stream;
   try { stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false }); }
   catch (e) { return false; }
+  try { var pista = stream.getVideoTracks()[0], cap = pista.getCapabilities ? pista.getCapabilities() : {}; if (cap.focusMode && cap.focusMode.indexOf("continuous") >= 0) await pista.applyConstraints({ advanced: [{ focusMode: "continuous" }] }); } catch (e) { /* el enfoque automático normal sigue activo */ }
   var cam = { stream: stream, parar: false, modo: modo, devolverFoco: document.activeElement };
   camaraAbierta = cam;
   var video = $("camara-video"); video.srcObject = stream;
@@ -780,7 +788,7 @@ async function abrirCamara(modo) {
   $("camara-disparo").classList.toggle("oculto", modo !== "frente");
   $("camara-pasos").classList.toggle("oculto", modo !== "auto");
   $("camara-listo").classList.toggle("oculto", modo !== "auto");
-  $("camara-texto").textContent = modo === "qr" ? "Muestra el VERSO completo del carné, con el código QR visible. Se leerá solo." : (modo === "auto" ? "Paso 1: muestra el FRENTE de tu carné dentro del marco, con buena luz y sin reflejos." : "Pon el frente del carné dentro del marco, con buena luz y sin reflejos.");
+  $("camara-texto").textContent = modo === "qr" ? "Pon el código QR del verso dentro del cuadro, bien nítido y sin reflejos. Se leerá solo." : (modo === "auto" ? "Paso 1: muestra el FRENTE de tu carné dentro del marco, con buena luz y sin reflejos." : "Pon el frente del carné dentro del marco, con buena luz y sin reflejos.");
   try { await video.play(); } catch (e) { /* algunos navegadores ya lo reproducen */ }
   $("camara-cancelar").focus();
   if (modo === "frente") {
@@ -797,11 +805,11 @@ async function abrirCamara(modo) {
       while (!cam.parar) {
         if (video.videoWidth) {
           try {
-            var texto = await leerQR(capturarFotograma(video, 900));
+            var texto = await leerQR(video) || await leerQR(capturarGuia(video, 1100)) || await leerQR(capturarFotograma(video, 1920));
             if (texto && !cam.parar) { if (navigator.vibrate) navigator.vibrate(60); cerrarCamara(); validarQR(texto); return; }
           } catch (e) { /* se sigue intentando */ }
         }
-        if (!aviso && Date.now() - inicio > 12000) { aviso = true; $("camara-texto").textContent = "Acerca un poco el carné y evita reflejos. Mantén el QR centrado."; }
+        if (!aviso && Date.now() - inicio > 12000) { aviso = true; $("camara-texto").textContent = "Acerca o aleja un poco el carné hasta que el QR se vea nítido y llene el cuadro."; }
         await new Promise(function (ok) { setTimeout(ok, 220); });
       }
     })();

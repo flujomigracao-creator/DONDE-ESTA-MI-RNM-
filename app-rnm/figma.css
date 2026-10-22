@@ -951,7 +951,7 @@ button.sec:hover:not(:disabled) { border-color: var(--brand-line); background: v
 
 .camara-pasos li.actual { background: rgba(255, 200, 61, 0.28); box-shadow: inset 0 0 0 2px #FFC83D; }
 
-.camara[data-modo="qr"] .camara-guia { width: min(86vw, 520px); aspect-ratio: 1.586; }
+.camara[data-modo="qr"] .camara-guia { width: min(78vw, 380px); aspect-ratio: 1; }
 
 /* ===== Planes: dos tarjetas vistosas ===== */
 .planes-op { display: grid; gap: 12px; margin: 14px 0 6px; }
