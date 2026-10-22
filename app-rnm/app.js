@@ -113,12 +113,13 @@ var registrosCargados = [];
 var planCargado = null;
 /* Anuncios: SOLO para cuentas sin plan vigente. Con plan (o al contratarlo) la zona se oculta y no se carga nada de terceros.
    Para encender los anuncios de Google hay que rellenar "cliente" (ca-pub-…) y "slot" cuando AdSense apruebe el sitio. */
-var ANUNCIOS = { cliente: "", slot: "" };
+var ANUNCIOS = { cliente: "ca-pub-5473919721364071", slot: "" };
 var anuncioPintado = false;
 function tienePlanVigente() { return !!(planCargado && new Date(planCargado.vence_at) > new Date()); }
 function actualizarAnuncios() {
   var zona = $("zona-anuncios"); if (!zona) return;
-  var mostrar = typeof planCargado !== "undefined" && sesionConPlanConocido && !tienePlanVigente();
+  var res = $("validar-resultado"), hayResultado = !!res && !res.classList.contains("oculto"); // nunca junto al RNM de la persona
+  var mostrar = sesionConPlanConocido && !tienePlanVigente() && !hayResultado;
   zona.classList.toggle("oculto", !mostrar);
   if (!mostrar) { var slot0 = $("anuncio-slot"); if (slot0) slot0.textContent = ""; anuncioPintado = false; return; }
   if (!ANUNCIOS.cliente || !ANUNCIOS.slot || anuncioPintado) return;
@@ -748,6 +749,7 @@ function mostrarResultadoValidacion(d) {
   var b = el("button", "", "Agregar este RNM"); b.type = "button";
   b.addEventListener("click", function () { navegarA("nueva-consulta"); });
   caja.appendChild(b); caja.classList.remove("oculto");
+  actualizarAnuncios(); // con el resultado a la vista no se muestra publicidad
 }
 /* Aviso grande y centrado del proceso de validación: lo ve cualquiera, esté donde esté en la pantalla. */
 var ICONO_OK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
