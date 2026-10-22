@@ -164,7 +164,7 @@ function actualizarAnuncios() {
    (no desde la app instalada) y su cuenta es nueva (la base decide con rnm_estado_app). Quien ya abrió la app, o es cliente anterior, nunca lo ve. */
 var appRequerida = false;
 function enAppInstalada() {
-  try { if ((document.referrer || "").indexOf("android-app://") === 0) sessionStorage.setItem("rnm_en_app", "1"); } catch (e) { /* sin almacenamiento */ }
+  try { if ((document.referrer || "").indexOf("android-app://") === 0) { sessionStorage.setItem("rnm_en_app", "1"); sessionStorage.setItem("rnm_twa", "1"); } } catch (e) { /* sin almacenamiento */ }
   var visto = false; try { visto = sessionStorage.getItem("rnm_en_app") === "1"; } catch (e) { /* sin almacenamiento */ }
   return visto || !!(window.matchMedia && (matchMedia("(display-mode: standalone)").matches || matchMedia("(display-mode: fullscreen)").matches || matchMedia("(display-mode: minimal-ui)").matches));
 }
@@ -561,6 +561,7 @@ if (btnSalirPerfil) btnSalirPerfil.addEventListener("click", confirmarSalir);
 async function cancelarPlan(boton) {
   var plan = planCargado;
   if (!plan || new Date(plan.vence_at) <= new Date() || plan.cancelado_at) return;
+  if (esPlanPlay(plan)) { window.open(enlaceGestionPlay(plan.tipo), "_blank", "noopener"); return; } // la suscripción vive en Google Play
   var ok = await mostrarConfirmacion({
     titulo: "¿Cancelar tu plan?",
     desc: "No se volverá a cobrar. Sigues con todo activo hasta el " + fechaCorta(plan.vence_at) + " (ya lo pagaste); después tus RNM dejan de revisarse cada semana. Puedes volver a activarlo cuando quieras.",
@@ -1335,7 +1336,124 @@ var ICONOS_PAGO = {
   boleto: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5v14M7.5 5v14M11 5v14M14 5v14M17.5 5v14M20 5v14"/></svg>'
 };
 
+/* ---------- Google Play Billing: dentro de la app instalada de Google Play los planes se compran SOLO con Play (Mercado Pago no se ofrece) ----------
+   Se usa la API de bienes digitales + PaymentRequest de Chrome (Trusted Web Activity). El servidor (play-validar-compra) comprueba la compra con Google.
+   Para probar en un navegador: localStorage.rnm_play_billing_test = "1" (muestra el panel de Play; la compra real solo funciona dentro de la app). */
+var PAQUETE_PLAY = "br.com.flujomigracao.rnm";
+var SKU_PLAY = { quincenal: "rnm_plan_quincenal", semanal: "rnm_plan_semanal", manual: "rnm_plan_manual" };
+var DG_URL = "https://play.google.com/billing";
+// Solo la app de Google Play (TWA): se reconoce por el origen android-app:// o porque Chrome le da la API de bienes digitales.
+// Una web instalada como acceso directo (PWA) NO cuenta: ahí no existe Play Billing y sigue el pago normal.
+function esAppDePlay() {
+  enAppInstalada();
+  var twa = false; try { twa = sessionStorage.getItem("rnm_twa") === "1"; } catch (e) { /* sin almacenamiento */ }
+  return twa || !!window.getDigitalGoodsService;
+}
+function modoPlayBilling() {
+  var t = false; try { t = localStorage.getItem("rnm_play_billing_test") === "1"; } catch (e) { /* sin almacenamiento */ }
+  return esAppDePlay() || t;
+}
+function esPlanPlay(plan) { return !!plan && /^play:/.test(String(plan.pago_ref || "")); }
+function enlaceGestionPlay(tipo) { return "https://play.google.com/store/account/subscriptions?sku=" + encodeURIComponent(SKU_PLAY[tipo] || SKU_PLAY.semanal) + "&package=" + PAQUETE_PLAY; }
+var servicioPlay = null;
+async function obtenerServicioPlay() {
+  if (servicioPlay) return servicioPlay;
+  if (!window.getDigitalGoodsService) return null;
+  try { servicioPlay = await window.getDigitalGoodsService(DG_URL); } catch (e) { servicioPlay = null; }
+  return servicioPlay;
+}
+async function validarCompraPlay(sku, token) {
+  var s = await sb.auth.getSession(), tk = s.data.session && s.data.session.access_token;
+  var r = await fetch(SUPABASE_URL + "/functions/v1/play-validar-compra", {
+    method: "POST", headers: { "Content-Type": "application/json", apikey: SUPABASE_KEY, Authorization: "Bearer " + tk },
+    body: JSON.stringify({ sku: sku, purchase_token: token })
+  });
+  var j = await r.json().catch(function () { return {}; });
+  return { ok: r.ok && j.ok === true, j: j };
+}
+function textoErrorCompraPlay(j) {
+  var e = j && j.error;
+  if (e === "play_no_configurado" || e === "play_no_disponible") return "No pudimos confirmar tu compra con Google Play ahora. Si ya te cobraron, no pagues otra vez: reabre la app en unos minutos y tu plan se activará.";
+  if (e === "token_de_otra_cuenta") return "Esa suscripción ya está usada en otra cuenta.";
+  if (e === "precio_distinto" || e === "producto_distinto") return "El precio de la compra no coincide con el plan. Escríbenos y lo resolvemos.";
+  if (e === "compra_no_vigente") return "Tu compra todavía está pendiente en Google Play. Cuando se confirme, tu plan se activará solo.";
+  return "No pudimos confirmar tu compra. Si ya te cobraron, escríbenos y lo resolvemos.";
+}
+async function comprarConPlay(tipo, aviso) {
+  var sku = SKU_PLAY[tipo], servicio = await obtenerServicioPlay();
+  if (!servicio || !window.PaymentRequest) { aviso("Las compras no están disponibles en esta versión de la app. Actualiza la app desde Google Play e intenta de nuevo."); return false; }
+  embudo("play_compra_inicio");
+  var resp = null;
+  try {
+    var pedido = new PaymentRequest([{ supportedMethods: DG_URL, data: { sku: sku } }], { total: { label: "Total", amount: { currency: "BRL", value: "0" } } });
+    resp = await pedido.show();
+    var token = resp.details && resp.details.purchaseToken;
+    if (!token) { await resp.complete("fail"); aviso("No pudimos completar la compra. Intenta de nuevo."); return false; }
+    aviso("Confirmando tu compra…", true);
+    var v = await validarCompraPlay(sku, token);
+    await resp.complete(v.ok ? "success" : "fail");
+    if (!v.ok) { aviso(textoErrorCompraPlay(v.j)); return false; }
+    embudo("play_compra_ok");
+    return true;
+  } catch (e) {
+    try { if (resp) await resp.complete("fail"); } catch (e2) { /* ya cerrada */ }
+    aviso(e && e.name === "AbortError" ? "Cancelaste la compra." : "No pudimos completar la compra. Intenta de nuevo.");
+    return false;
+  }
+}
+function mostrarPagoPlay(tipo) {
+  embudo("pago_iniciado");
+  salirDePago();
+  pagandoPlan = tipo; ultimoTipoPedido = tipo;
+  if (window.rnmTrack) rnmTrack("InitiateCheckout", { value: PRECIOS[tipo] / 100, currency: "BRL", content_name: tipo });
+  var cont = $("cartel"); cont.textContent = "";
+  var precio = reales(PRECIOS[tipo]);
+  var c = el("div", "pay");
+  c.innerHTML =
+    '<div class="pay-top"><button type="button" class="sec" id="btn-volver-planes"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg> Cambiar plan</button></div>' +
+    '<h2 class="pay-titulo">Finaliza tu suscripción</h2>' +
+    '<div class="pay-resumen"><div><b>' + nombrePlan(tipo) + '</b><span>' + (tipo === "manual" ? "Hasta 6 RNM · revisión semanal + Verificar ahora" : (tipo === "quincenal" ? "Hasta 2 RNM · revisión automática cada 15 días" : "Hasta 4 RNM · revisión automática cada semana")) + '</span></div>' +
+      '<div class="pay-precio"><b>' + precio + '</b><span>por mes</span></div></div>' +
+    '<p class="pay-nota">Se cobra cada mes con tu cuenta de Google Play. Puedes cancelar cuando quieras desde Google Play, en «Suscripciones».</p>' +
+    '<button type="button" id="btn-play-comprar" class="pay-boton">Suscribirme · ' + precio + ' al mes</button>' +
+    '<p class="pay-seguro"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg> Pago procesado por Google Play.</p>' +
+    '<p class="msg" id="msg-pago" aria-live="polite"></p>';
+  cont.appendChild(c);
+  function aviso(t, bien) { var m = $("msg-pago"); if (m) { m.textContent = t || ""; m.className = "msg" + (bien ? " bien" : ""); } }
+  $("btn-volver-planes").addEventListener("click", function () { salirDePago(); cargarRegistros(); });
+  $("btn-play-comprar").addEventListener("click", async function () {
+    var b = this; b.disabled = true; b.setAttribute("aria-busy", "true");
+    var ok = await comprarConPlay(tipo, aviso);
+    b.disabled = false; b.removeAttribute("aria-busy");
+    if (ok) { aviso("¡Listo! Tu plan está activo.", true); setTimeout(function () { salirDePago(); cargarRegistros(); cerrarModalPlanes(); }, 900); }
+  });
+}
+// Si ya compró antes (otro celular, reinstalación) o la compra quedó sin confirmar, se vuelve a validar al abrir la app.
+var comprasPlayRestauradas = false;
+async function restaurarComprasPlay() {
+  if (comprasPlayRestauradas || !usuarioActual || !enAppInstalada()) return;
+  var servicio = await obtenerServicioPlay(); if (!servicio) return;
+  comprasPlayRestauradas = true;
+  try {
+    var lista = await servicio.listPurchases(), cambio = false, skus = Object.keys(SKU_PLAY).map(function (k) { return SKU_PLAY[k]; });
+    for (var i = 0; i < lista.length; i++) {
+      if (skus.indexOf(lista[i].itemId) < 0) continue;
+      var v = await validarCompraPlay(lista[i].itemId, lista[i].purchaseToken);
+      if (v.ok) cambio = true;
+    }
+    if (cambio) cargarRegistros();
+  } catch (e) { /* sin compras que restaurar */ }
+}
+// Textos que mencionan Mercado Pago: dentro de la app solo se habla de Google Play.
+(function () {
+  if (!modoPlayBilling()) return;
+  var f = $("faq-pago"), n = $("sg-nota-pago");
+  if (f) f.textContent = "Pagas dentro de la app con Google Play. El plan se renueva cada mes y puedes cancelarlo cuando quieras desde «Suscripciones» en Google Play. Cuando el pago se confirma, tu plan aparece activo en Planes y pagos. Si tarda más de unos minutos, escríbenos.";
+  if (n) n.textContent = "Pagas con Google Play · Cancelas cuando quieras";
+})();
+
 function mostrarPago(tipo) {
+  if (modoPlayBilling()) return mostrarPagoPlay(tipo);
   embudo("pago_iniciado");
   var cont = $("cartel");
   if (!window.MercadoPago) { // el script de Mercado Pago no cargó (sin internet o bloqueado)
@@ -1790,7 +1908,7 @@ async function cargarRegistros(soloSiCambia) {
     sb.from("rnm_registros")
       .select("id, rnm, estado_pago, requiere_pago, estado_pf, unidad_pf, cambio_direccion, ultimo_resultado, ultima_consulta_at, cerrado, created_at, validez, validez_verificada_at, carne_validacion, carne_foto_path, carne_foto_verso_path, carne_cpf, ultima_manual_at, fecha_nacimiento, correcciones")
       .order("created_at", { ascending: true }),
-    sb.from("rnm_planes").select("cupos, tipo, precio_centavos, vence_at, cancelado_at").maybeSingle()
+    sb.from("rnm_planes").select("cupos, tipo, precio_centavos, vence_at, cancelado_at, pago_ref").maybeSingle()
   ]);
   var r = q[0];
   if (r.error || !r.data) return;
@@ -1812,7 +1930,7 @@ async function cargarRegistros(soloSiCambia) {
   registrosCargados = r.data;
   planCargado = plan;
   sesionConPlanConocido = true; actualizarAnuncios();
-  consultarEstadoApp(); actualizarMuroPlay();
+  consultarEstadoApp(); actualizarMuroPlay(); restaurarComprasPlay();
   if (activo && ultimoTipoPedido && window.rnmTrack && (!planAntes || new Date(plan.vence_at) > new Date(planAntes.vence_at))) {
     var clavePago = "rnm_purchase_" + plan.vence_at;
     if (!localStorage.getItem(clavePago)) { try { localStorage.setItem(clavePago, "1"); } catch (e) { /* sin almacenamiento */ } rnmTrack("Purchase", { value: plan.precio_centavos / 100, currency: "BRL", content_name: plan.tipo }, "compra-" + plan.vence_at); }
@@ -1854,6 +1972,7 @@ function pintarPagoPendiente(p) {
   caja.appendChild(b); caja.classList.remove("oculto");
 }
 async function revisarPagoPendiente() {
+  if (modoPlayBilling()) { pintarPagoPendiente(null); return; }
   try { var r = await sb.rpc("rnm_mi_pago_pendiente"); pintarPagoPendiente(r && !r.error ? r.data : null); } catch (e) { /* sin red: no se muestra */ }
 }
 
