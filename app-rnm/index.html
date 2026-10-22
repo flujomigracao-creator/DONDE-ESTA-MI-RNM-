@@ -270,26 +270,14 @@
                 <div class="wiz-puntos" id="wiz-puntos" role="progressbar" aria-label="Pasos para registrar tu RNM" aria-valuemin="1" aria-valuemax="3" aria-valuenow="1"><i class="on"></i><i></i><i></i></div>
                 <h2 class="wiz-titulo" id="wiz-titulo">¿Cuál es tu número de RNM?</h2>
                 <div class="escaner" id="escaner">
-                  <p class="escaner-titulo"><b>Más rápido:</b> escanea tu carné</p>
-                  <button type="button" class="escaner-auto" id="btn-escanear-auto">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8V6a2 2 0 012-2h2M16 4h2a2 2 0 012 2v2M20 16v2a2 2 0 01-2 2h-2M8 20H6a2 2 0 01-2-2v-2"/><path d="M8 9h8M8 12h8M8 15h5"/></svg>
-                    <span><b>Escanear todo automáticamente</b><small>Primero el frente, después el verso completo</small></span>
+                  <p class="escaner-titulo"><b>Más rápido:</b> escanea el QR de tu carné</p>
+                  <button type="button" class="escaner-auto" id="btn-escanear-qr">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8V6a2 2 0 012-2h2M16 4h2a2 2 0 012 2v2M20 16v2a2 2 0 01-2 2h-2M8 20H6a2 2 0 01-2-2v-2"/><path d="M8 11h3V8H8zM13 8h3v3h-3zM8 16h3v-3H8zM13 13h1.5M16 16v-1M13 16h.01"/></svg>
+                    <span><b>Escanear el QR del verso</b><small>Sale tu número de RNM y su validez</small></span>
                   </button>
-                  <p class="escaner-o">o por separado</p>
-                  <div class="escaner-botones">
-                    <button type="button" class="escaner-btn" id="btn-escanear-frente">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8a2 2 0 012-2h1.5l1-1.5h7L16.5 6H18a2 2 0 012 2v9a2 2 0 01-2 2H6a2 2 0 01-2-2z"/><circle cx="12" cy="12.5" r="3.2"/></svg>
-                      <span><b>1 · Frente</b><small>Lee tu RNM y fecha de nacimiento</small></span>
-                    </button>
-                    <button type="button" class="escaner-btn" id="btn-escanear-qr">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8V6a2 2 0 012-2h2M16 4h2a2 2 0 012 2v2M20 16v2a2 2 0 01-2 2h-2M8 20H6a2 2 0 01-2-2v-2"/><path d="M8 11h3V8H8zM13 8h3v3h-3zM8 16h3v-3H8zM13 13h1.5M16 16v-1M13 16h.01"/></svg>
-                      <span><b>2 · Verso completo</b><small>Lee el verso, el QR y el CPF</small></span>
-                    </button>
-                  </div>
-                  <input type="file" id="file-frente" accept="image/*" hidden>
                   <input type="file" id="file-qr" accept="image/*" hidden>
                   <p class="sub escaner-estado" id="escaner-estado" aria-live="polite"></p>
-                  <p class="sub escaner-aviso">Al escanear, las fotos del frente y del verso se envían a nuestro servidor para leerlas (RNM, validez y CPF) y se guardan en privado, solo para tu cuenta. Puedes borrarlas cuando quieras. Siempre puedes escribir los datos a mano.</p>
+                  <p class="sub escaner-aviso">Solo se lee el código QR: no guardamos fotos de tu carné. Con el QR consultamos la página oficial para traer tu RNM y su validez. Siempre puedes escribir los datos a mano.</p>
                 </div>
                 <div class="form-field">
                   <label for="rnm">Número de RNM</label>

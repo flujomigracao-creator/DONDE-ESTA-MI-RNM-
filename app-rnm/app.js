@@ -776,7 +776,7 @@ async function abrirCamara(modo) {
         if (video.videoWidth) {
           try {
             var texto = await leerQR(capturarFotograma(video, 900));
-            if (texto && !cam.parar) { if (navigator.vibrate) navigator.vibrate(60); var imv = await fotoVerso(video); cerrarCamara(); validarQR(texto); if (imv) leerVerso(imv, true); return; }
+            if (texto && !cam.parar) { if (navigator.vibrate) navigator.vibrate(60); cerrarCamara(); validarQR(texto); return; }
           } catch (e) { /* se sigue intentando */ }
         }
         if (!aviso && Date.now() - inicio > 12000) { aviso = true; $("camara-texto").textContent = "Acerca un poco el carné y evita reflejos. Mantén el QR centrado."; }
@@ -860,27 +860,17 @@ async function abrirCamara(modo) {
 $("camara-cancelar").addEventListener("click", cerrarCamara);
 document.addEventListener("keydown", function (e) { if (e.key === "Escape" && camaraAbierta) cerrarCamara(); });
 
-$("btn-escanear-auto").addEventListener("click", async function () {
-  if (!(await abrirCamara("auto"))) { estadoEscaner("No pudimos abrir la cámara. Elige una foto del frente de tu carné.", "carga"); $("file-frente").click(); }
-});
-$("btn-escanear-frente").addEventListener("click", async function () {
-  if (!(await abrirCamara("frente"))) { estadoEscaner("No pudimos abrir la cámara. Elige una foto de tu carné.", "carga"); $("file-frente").click(); }
-});
 $("btn-escanear-qr").addEventListener("click", async function () {
   if (!(await abrirCamara("qr"))) { estadoEscaner("No pudimos abrir la cámara. Elige una foto del verso de tu carné.", "carga"); $("file-qr").click(); }
 });
 // Respaldo: foto de la galería
-$("file-frente").addEventListener("change", async function () {
-  var f = this.files && this.files[0]; this.value = ""; if (!f) return;
-  try { leerFrente(await reducirImagen(f, 1600)); } catch (e) { estadoEscaner(textoErrorEscaner(e), "mal"); }
-});
 $("file-qr").addEventListener("change", async function () {
   var f = this.files && this.files[0]; this.value = ""; if (!f) return;
   estadoEscaner("Buscando el QR…", "carga");
   try {
     var im = await reducirImagen(f, 1400), url = await leerQR(im.canvas);
     if (!url) return estadoEscaner("No encontré el QR. Acércalo, sin reflejos y con el QR centrado, e intenta de nuevo.", "mal");
-    validarQR(url); leerVerso(im, true);
+    validarQR(url);
   } catch (e) { estadoEscaner(textoErrorEscaner(e), "mal"); }
 });
 function reiniciarEscaner() { carneEscaneado = { foto: null, fotoVerso: null, qr: null, cpf: null, validezISO: null }; estadoEscaner(""); }
