@@ -202,7 +202,7 @@ function mostrarSeccion(id) {
 
   // Sincronizar contenidos específicos
   if (id === "planes") renderizarPlanes(registrosCargados, planCargado);
-  if (id === "nueva-consulta" && typeof irSubPaso === "function") { irSubPaso(1); escanerAbiertoAlEntrar(); }
+  if (id === "nueva-consulta" && typeof irSubPaso === "function") irSubPaso(1);
   if (id === "historial") {
     cargarHistorialConsultas();
   }
@@ -860,14 +860,6 @@ async function abrirCamara(modo) {
 $("camara-cancelar").addEventListener("click", cerrarCamara);
 document.addEventListener("keydown", function (e) { if (e.key === "Escape" && camaraAbierta) cerrarCamara(); });
 
-// Al entrar a "Agregar RNM" el escáner ya se abre solo (cámara en modo automático). Si no hay cámara o permiso no se fuerza nada:
-// el formulario y los botones de escaneo siguen a la vista. No se reabre si ya hay datos escritos o ya se escaneó.
-async function escanerAbiertoAlEntrar() {
-  if (camaraAbierta || !$("escaner")) return;
-  var rnm = $("rnm"), nac = $("nac");
-  if ((rnm && rnm.value.trim()) || (nac && nac.value.trim()) || carneEscaneado.foto) return;
-  try { if (!(await abrirCamara("auto"))) estadoEscaner("Escanea tu carné con la cámara o escribe tu RNM abajo.", "carga"); } catch (e) { /* sin cámara: se sigue con el formulario */ }
-}
 $("btn-escanear-auto").addEventListener("click", async function () {
   if (!(await abrirCamara("auto"))) { estadoEscaner("No pudimos abrir la cámara. Elige una foto del frente de tu carné.", "carga"); $("file-frente").click(); }
 });
