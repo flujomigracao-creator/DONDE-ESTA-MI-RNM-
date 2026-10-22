@@ -26,6 +26,8 @@ returns uuid language plpgsql security definer set search_path to 'public' as $$
 declare v_url text := btrim(coalesce(p_url, '')); v_cod text; v_id uuid;
 begin
   if auth.uid() is null then raise exception 'sin_sesion'; end if;
+  -- Función premium: solo con un plan vigente.
+  if not exists (select 1 from rnm_planes where user_id = auth.uid() and vence_at > now()) then raise exception 'solo_premium'; end if;
   if v_url !~* '^https://([a-z0-9-]+\.)*gov\.br(:443)?/' then raise exception 'qr_no_oficial'; end if;
   v_cod := lower((regexp_match(v_url, '[?&]codigo=([0-9a-fA-F-]{16,64})'))[1]);
   if v_cod is null then raise exception 'qr_sin_codigo'; end if;

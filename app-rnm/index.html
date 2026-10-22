@@ -141,6 +141,10 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
           Historial de consultas
         </button>
+        <button type="button" class="nav-item" data-seccion="validar" id="nav-validar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V6a2 2 0 012-2h2M16 4h2a2 2 0 012 2v2M20 16v2a2 2 0 01-2 2h-2M8 20H6a2 2 0 01-2-2v-2M8 11h3V8H8zM13 8h3v3h-3zM8 16h3v-3H8zM13 13h1.5M16 16v-1M13 16h.01"/></svg>
+          Validar carné
+        </button>
         <button type="button" class="nav-item" data-seccion="planes" id="nav-planes">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
           Planes y pagos
@@ -269,16 +273,6 @@
               <form id="form-rnm" autocomplete="off" novalidate>
                 <div class="wiz-puntos" id="wiz-puntos" role="progressbar" aria-label="Pasos para registrar tu RNM" aria-valuemin="1" aria-valuemax="3" aria-valuenow="1"><i class="on"></i><i></i><i></i></div>
                 <h2 class="wiz-titulo" id="wiz-titulo">¿Cuál es tu número de RNM?</h2>
-                <div class="escaner" id="escaner">
-                  <p class="escaner-titulo"><b>Más rápido:</b> escanea el QR de tu carné</p>
-                  <button type="button" class="escaner-auto" id="btn-escanear-qr">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8V6a2 2 0 012-2h2M16 4h2a2 2 0 012 2v2M20 16v2a2 2 0 01-2 2h-2M8 20H6a2 2 0 01-2-2v-2"/><path d="M8 11h3V8H8zM13 8h3v3h-3zM8 16h3v-3H8zM13 13h1.5M16 16v-1M13 16h.01"/></svg>
-                    <span><b>Escanear el QR del verso</b><small>Sale tu RNM, tu nacimiento y su validez</small></span>
-                  </button>
-                  <input type="file" id="file-qr" accept="image/*" hidden>
-                  <p class="sub escaner-estado" id="escaner-estado" aria-live="polite"></p>
-                  <p class="sub escaner-aviso">Solo se lee el código QR: no guardamos fotos de tu carné. Con el QR consultamos la página oficial de la Policía Federal para traer tu RNM, tu fecha de nacimiento y la validez. Siempre puedes escribir los datos a mano.</p>
-                </div>
                 <div class="form-field">
                   <label for="rnm">Número de RNM</label>
                   <input type="text" id="rnm" autocapitalize="characters" placeholder="Ej: A123456B" maxlength="12" required>
@@ -354,6 +348,28 @@
             </button>
           </div>
           <div id="lista-historial-consultas"></div>
+        </section>
+
+        <!-- SECCIÓN: VALIDAR CARNÉ (premium) -->
+        <section id="seccion-validar" class="seccion-app oculto">
+          <div class="page-header">
+            <div class="page-header-text">
+              <h1>Validar carné <em class="insignia-premium">Premium</em></h1>
+            </div>
+          </div>
+          <div class="card validar-card">
+        <div class="escaner" id="escaner">
+          <p class="escaner-titulo"><b>Más rápido:</b> escanea el QR de tu carné</p>
+          <button type="button" class="escaner-auto" id="btn-escanear-qr">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8V6a2 2 0 012-2h2M16 4h2a2 2 0 012 2v2M20 16v2a2 2 0 01-2 2h-2M8 20H6a2 2 0 01-2-2v-2"/><path d="M8 11h3V8H8zM13 8h3v3h-3zM8 16h3v-3H8zM13 13h1.5M16 16v-1M13 16h.01"/></svg>
+            <span><b>Escanear el QR del verso</b><small>Sale tu RNM, tu nacimiento y su validez</small></span>
+          </button>
+          <input type="file" id="file-qr" accept="image/*" hidden>
+          <p class="sub escaner-estado" id="escaner-estado" aria-live="polite"></p>
+          <p class="sub escaner-aviso">Solo se lee el código QR: no guardamos fotos de tu carné. Con el QR consultamos la página oficial de la Policía Federal para traer tu RNM, tu fecha de nacimiento y la validez. Siempre puedes escribir los datos a mano.</p>
+        </div>
+            <div id="validar-resultado" class="validar-resultado oculto" role="status"></div>
+          </div>
         </section>
 
         <!-- SECCIÓN 4: PLANES Y PAGOS -->
@@ -470,6 +486,10 @@
       <button type="button" class="bottom-nav-item" data-seccion="historial">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         Historial
+      </button>
+      <button type="button" class="bottom-nav-item" data-seccion="validar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V6a2 2 0 012-2h2M16 4h2a2 2 0 012 2v2M20 16v2a2 2 0 01-2 2h-2M8 20H6a2 2 0 01-2-2v-2M8 11h3V8H8zM13 8h3v3h-3zM8 16h3v-3H8zM13 13h1.5M16 16v-1M13 16h.01"/></svg>
+        Validar
       </button>
       <button type="button" class="bottom-nav-item" data-seccion="planes">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>

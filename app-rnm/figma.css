@@ -1316,3 +1316,11 @@ body.paywall #modal-planes .cerrar, body.paywall #modal-planes .acciones .sec { 
 .aviso-pago button { justify-self: start; min-height: 46px; padding: 0 20px; background: #0E3F8E !important; color: #fff !important; }
 
 .donde-retirar .dr-destino { display: block; margin-top: 4px; font-size: 0.82rem; font-weight: 700; color: #8A5200; line-height: 1.3; }
+
+.insignia-premium { font-style: normal; font-size: 0.62rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; vertical-align: middle; margin-left: 6px; padding: 2px 7px; border-radius: 999px; background: #F5C518; color: #3b2d00; }
+
+.validar-card .escaner { margin-bottom: 0; }
+.validar-resultado { margin-top: 14px; padding: 16px; border-radius: 18px; background: #E8F6EE; border: 1px solid #BFE3CC; color: #14532D; display: grid; gap: 4px; }
+.validar-resultado p { margin: 0; font-size: 0.95rem; }
+.validar-resultado button { justify-self: start; margin-top: 8px; min-height: 46px; padding: 0 20px; }
+.page-header-text h1 .insignia-premium { font-size: 0.6rem; }

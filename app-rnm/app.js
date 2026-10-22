@@ -121,6 +121,7 @@ var SECCIONES_INFO = {
   "detalle-rnm": { titulo: "Detalle del RNM", sub: "Información detallada, ubicación policial e historial" },
   "nueva-consulta": { titulo: "Agregar RNM", sub: "Registra un nuevo documento para monitorear" },
   "historial": { titulo: "Historial de consultas", sub: "Registro de operaciones y consultas realizadas" },
+  "validar": { titulo: "Validar carné", sub: "Tu RNM, nacimiento y validez, leídos del QR del carné" },
   "planes": { titulo: "Planes y pagos", sub: "Cobertura mensual para supervisión continua" },
   "ayuda": { titulo: "Ayuda y soporte", sub: "Orientación sobre tu trámite y canales de contacto" },
   "perfil": { titulo: "Mi cuenta", sub: "Información de tu perfil y preferencias" }
@@ -544,7 +545,6 @@ var subPaso = 1;
 var SUB_TITULOS = { 1: "¿Cuál es tu número de RNM?", 2: "¿Cuál es tu fecha de nacimiento?", 3: "Última cosa: tu autorización" };
 function irSubPaso(n, dir) {
   subPaso = n;
-  var esc = $("escaner"); if (esc) esc.classList.toggle("oculto", n !== 1);
   var campos = document.querySelectorAll("#form-rnm .form-field, #form-rnm label.check");
   campos.forEach(function (c, i) {
     var mostrar = i + 1 === n;
@@ -674,13 +674,24 @@ async function leerFrente(im) {
     return true;
   } catch (e) { estadoEscaner(textoErrorEscaner(e), "mal"); return false; }
 }
+function mostrarResultadoValidacion(d) {
+  var caja = $("validar-resultado"); if (!caja) return;
+  caja.textContent = "";
+  caja.appendChild(el("b", "", "Carné validado en la Policía Federal"));
+  [["RNM", d.rnm], ["Nacimiento", d.nacimiento], ["Válido hasta", d.validez]].forEach(function (p) {
+    if (p[1]) caja.appendChild(el("p", "", p[0] + ": " + p[1]));
+  });
+  var b = el("button", "", "Agregar este RNM"); b.type = "button";
+  b.addEventListener("click", function () { navegarA("nueva-consulta"); });
+  caja.appendChild(b); caja.classList.remove("oculto");
+}
 // El QR lleva a la página oficial de la PF. Un bot nuestro (VPS) la abre, pulsa «Validar» y devuelve RNM, nacimiento y validez.
 async function validarQR(url) {
   carneEscaneado.qr = url;
   estadoEscaner("QR leído ✓ Consultando la Policía Federal… (unos segundos)", "carga");
   try {
     var pedido = await sb.rpc("rnm_pedir_validacion", { p_url: url });
-    if (pedido.error) { var m = pedido.error.message || ""; throw { codigo: /qr_no_oficial|qr_sin_codigo/.test(m) ? "qr_no_oficial" : "pagina_no_disponible" }; }
+    if (pedido.error) { var m = pedido.error.message || ""; if (/solo_premium/.test(m)) { estadoEscaner("El escáner por QR es parte de los planes. Puedes escribir tus datos a mano.", "mal"); return; } throw { codigo: /qr_no_oficial|qr_sin_codigo/.test(m) ? "qr_no_oficial" : "pagina_no_disponible" }; }
     var id = pedido.data, limite = Date.now() + 75000, d = null;
     while (Date.now() < limite) {
       await new Promise(function (ok) { setTimeout(ok, 2500); });
@@ -690,6 +701,7 @@ async function validarQR(url) {
     if (!d || d.estado !== "ok" || !d.rnm) { estadoEscaner("No pudimos confirmarlo ahora. Escribe tu RNM y tu fecha de nacimiento a mano.", "mal"); return; }
     ponerCampo("rnm", d.rnm);
     if (d.nacimiento) ponerCampo("nac", d.nacimiento);
+    mostrarResultadoValidacion(d);
     if (d.validez && fijarValidez(d.validez, "qr")) { carneEscaneado.verificada = true; if (window.toast) toast("Datos confirmados en la página oficial", "ok"); }
     else estadoEscaner("RNM confirmado en la página oficial ✓", "ok");
   } catch (e) { estadoEscaner(textoErrorEscaner(e), e && e.codigo === "pagina_no_disponible" ? "ok" : "mal"); }
@@ -871,6 +883,12 @@ $("camara-cancelar").addEventListener("click", cerrarCamara);
 document.addEventListener("keydown", function (e) { if (e.key === "Escape" && camaraAbierta) cerrarCamara(); });
 
 $("btn-escanear-qr").addEventListener("click", async function () {
+  // Función premium: sin plan vigente se lleva a Planes (la base también lo exige).
+  if (!(planCargado && new Date(planCargado.vence_at) > new Date())) {
+    estadoEscaner("El escáner por QR es parte de los planes: con un plan tu RNM, tu nacimiento y la validez se rellenan solos. Mientras tanto puedes escribirlos a mano.", "carga");
+    ampliando = false; cartelPlanes(registrosCargados || [], planCargado); abrirModalPlanes();
+    return;
+  }
   if (!(await abrirCamara("qr"))) { estadoEscaner("No pudimos abrir la cámara. Elige una foto del verso de tu carné.", "carga"); $("file-qr").click(); }
 });
 // Respaldo: foto de la galería
