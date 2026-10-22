@@ -35,12 +35,35 @@ var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
       localStorage.setItem("rnm_ir_pago", JSON.stringify({ plan: "elegir", metodo: "pix", t: Date.now() }));
       history.replaceState(null, "", location.pathname + location.hash);
     }
+    if (String(q.get("ir") || "").toLowerCase() === "validar") {
+      localStorage.setItem("rnm_ir_seccion", JSON.stringify({ s: "validar", t: Date.now() }));
+      history.replaceState(null, "", location.pathname + location.hash);
+    }
     if (tipoPlan) {
       localStorage.setItem("rnm_ir_pago", JSON.stringify({ plan: tipoPlan, metodo: metodo === "boleto" ? "boleto" : "pix", t: Date.now() }));
       history.replaceState(null, "", location.pathname + location.hash);
     }
   } catch (e) { /* sin almacenamiento: simplemente no se abre el pago solo */ }
 })();
+/* Destino recordado (p. ej. desde una guía: «Validar mi carné gratis»): se usa una sola vez al entrar a la app. */
+function destinoGuardado(porDefecto) {
+  try {
+    var d = JSON.parse(localStorage.getItem("rnm_ir_seccion") || "null");
+    if (d && Date.now() - d.t < 7 * 86400000 && d.s === "validar") { localStorage.removeItem("rnm_ir_seccion"); return d.s; }
+  } catch (e) { /* sin almacenamiento */ }
+  return porDefecto;
+}
+/* Embudo: eventos anónimos (identificador aleatorio del navegador, sin datos personales) para ver en qué paso se pierde la gente. */
+function embudo(paso) {
+  try {
+    var clave = "rnm_emb_" + paso;
+    if (sessionStorage.getItem(clave)) return; sessionStorage.setItem(clave, "1");
+    var anon = localStorage.getItem("rnm_anon");
+    if (!anon) { anon = (window.crypto && crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2)).replace(/[^a-z0-9-]/g, "").slice(0, 40); localStorage.setItem("rnm_anon", anon); }
+    var o = origenGuardado();
+    sb.rpc("rnm_embudo_evento", { p_anon: anon, p_paso: paso, p_via: (o && o.v) || "" }).then(function () {}, function () {});
+  } catch (e) { /* sin almacenamiento: no se mide */ }
+}
 function origenGuardado() {
   try { var o = JSON.parse(localStorage.getItem("rnm_origen") || "null"); if (o && Date.now() - o.t < 30 * 86400000) return o; } catch (e) { /* sin almacenamiento */ }
   return null;
@@ -230,7 +253,7 @@ function mostrarSeccion(id) {
 
   // Sincronizar contenidos específicos
   if (id === "planes") renderizarPlanes(registrosCargados, planCargado);
-  if (id === "validar") actualizarAnuncios();
+  if (id === "validar") { actualizarAnuncios(); embudo("validar_abierto"); }
   if (id === "nueva-consulta" && typeof irSubPaso === "function") irSubPaso(1);
   if (id === "historial") {
     cargarHistorialConsultas();
@@ -240,6 +263,7 @@ function mostrarSeccion(id) {
 }
 
 function vista(nombre) { // "login" | "perfil" | "app"
+  if (nombre === "login") embudo("login_vista"); else if (nombre === "perfil") embudo("perfil_vista");
   ["login", "perfil", "app"].forEach(function (v) {
     $("vista-" + v).classList.toggle("oculto", v !== nombre);
   });
@@ -286,13 +310,14 @@ async function mostrar(session) {
   }
   asignarAliado();
   guardarOrigen();
+  embudo("login_ok");
   if (!cambio) return;
   var r = await sb.from("rnm_perfiles").select("*").eq("user_id", session.user.id).maybeSingle();
   perfilActual = r.data || null;
   actualizarInfoUsuario(session.user, perfilActual);
   if (window.rnmIdentificar) rnmIdentificar(session.user, perfilActual);
   if (!perfilActual) { abrirPerfil(false); }
-  else { vista("app"); navegarA(seccionInicial()); cargarRegistros(); iniciarTiempoReal(); setTimeout(revisarOpinionPendiente, 6000); abrirOpinionDeEnlace(); }
+  else { vista("app"); navegarA(destinoGuardado(seccionInicial())); cargarRegistros(); iniciarTiempoReal(); setTimeout(revisarOpinionPendiente, 6000); abrirOpinionDeEnlace(); }
 }
 
 /* ---------- Onboarding / perfil ---------- */
@@ -316,7 +341,7 @@ function abrirPerfil(editando) {
 /* Asistente de 3 pantallas: nombre -> teléfono -> dirección */
 var pasoActual = 1;
 function irAPaso(n) {
-  pasoActual = n;
+  pasoActual = n; embudo("perfil_paso" + n);
   document.querySelectorAll(".paso-ob").forEach(function (d) {
     d.classList.toggle("oculto", +d.getAttribute("data-paso") !== n);
   });
@@ -572,7 +597,7 @@ function irAPasoConsulta(n) {
 var subPaso = 1;
 var SUB_TITULOS = { 1: "¿Cuál es tu número de RNM?", 2: "¿Cuál es tu fecha de nacimiento?", 3: "Última cosa: tu autorización" };
 function irSubPaso(n, dir) {
-  subPaso = n;
+  subPaso = n; embudo("rnm_paso" + n);
   var campos = document.querySelectorAll("#form-rnm .form-field, #form-rnm label.check");
   campos.forEach(function (c, i) {
     var mostrar = i + 1 === n;
@@ -739,6 +764,14 @@ async function leerFrente(im) {
     return true;
   } catch (e) { estadoEscaner(textoErrorEscaner(e), "mal"); return false; }
 }
+// Con RNM y fecha ya validados no hace falta pasar por los dos primeros pasos: se va directo a la autorización.
+function agregarValidado() {
+  embudo("validar_agregar");
+  navegarA("nueva-consulta");
+  setTimeout(function () {
+    if (validarSubPaso(1) && validarSubPaso(2)) irSubPaso(3, 1);
+  }, 120);
+}
 function mostrarResultadoValidacion(d) {
   var caja = $("validar-resultado"); if (!caja) return;
   caja.textContent = "";
@@ -747,7 +780,7 @@ function mostrarResultadoValidacion(d) {
     if (p[1]) caja.appendChild(el("p", "", p[0] + ": " + p[1]));
   });
   var b = el("button", "", "Agregar este RNM"); b.type = "button";
-  b.addEventListener("click", function () { navegarA("nueva-consulta"); });
+  b.addEventListener("click", agregarValidado);
   caja.appendChild(b); caja.classList.remove("oculto");
   actualizarAnuncios(); // con el resultado a la vista no se muestra publicidad
 }
@@ -774,7 +807,7 @@ function avisoValidando(estado, titulo, sub, extra) {
 }
 // El QR lleva a la página oficial de la PF. Un bot nuestro (VPS) la abre, pulsa «Validar» y devuelve RNM, nacimiento y validez.
 async function validarQR(url) {
-  carneEscaneado.qr = url;
+  carneEscaneado.qr = url; embudo("validar_qr_leido");
   estadoEscaner("QR leído ✓ Consultando la Policía Federal… (unos segundos)", "carga");
   avisoValidando("carga", "¡QR leído!", "Consultando a la Policía Federal…", { paso: 2 });
   try {
@@ -790,8 +823,8 @@ async function validarQR(url) {
     if (!d || d.estado !== "ok" || !d.rnm) { estadoEscaner("No pudimos confirmarlo ahora. Escribe tu RNM y tu fecha de nacimiento a mano.", "mal"); avisoValidando("mal", "No pudimos confirmarlo", "La Policía Federal no respondió a tiempo. Escribe tu RNM y tu fecha de nacimiento a mano o vuelve a escanear.", { boton: "Entendido" }); return; }
     ponerCampo("rnm", d.rnm);
     if (d.nacimiento) ponerCampo("nac", d.nacimiento);
-    mostrarResultadoValidacion(d);
-    avisoValidando("ok", "¡Carné validado!", "Confirmado en la Policía Federal", { nota: "RNM " + d.rnm + (d.validez ? " · válido hasta " + d.validez : ""), boton: "Continuar" });
+    mostrarResultadoValidacion(d); embudo("validar_ok");
+    avisoValidando("ok", "¡Carné validado!", "Confirmado en la Policía Federal", { nota: "RNM " + d.rnm + (d.validez ? " · válido hasta " + d.validez : ""), boton: "Agregar este RNM", alCerrar: agregarValidado });
     if (d.validez && fijarValidez(d.validez, "qr")) { carneEscaneado.verificada = true; if (window.toast) toast("Datos confirmados en la página oficial", "ok"); }
     else estadoEscaner("RNM confirmado en la página oficial ✓", "ok");
   } catch (e) { estadoEscaner(textoErrorEscaner(e), e && e.codigo === "pagina_no_disponible" ? "ok" : "mal"); avisoValidando("mal", "No pudimos validar el QR", textoErrorEscaner(e), { boton: "Entendido" }); }
@@ -1096,6 +1129,7 @@ if (btnConfEnviar) {
     }
 
     if (window.rnmTrack && !localStorage.getItem("rnm_reg_tracked")) { try { localStorage.setItem("rnm_reg_tracked", "1"); } catch (e) { /* sin almacenamiento */ } rnmTrack("CompleteRegistration", { content_name: "registro_rnm" }, "reg-" + usuarioActual.id); }
+    embudo("rnm_registrado");
     $("form-rnm").reset(); reiniciarEscaner();
     await mostrarConsultando(function () { return cargarRegistros(); });
     irAPasoConsulta(1);
@@ -1262,6 +1296,7 @@ var ICONOS_PAGO = {
 };
 
 function mostrarPago(tipo) {
+  embudo("pago_iniciado");
   var cont = $("cartel");
   if (!window.MercadoPago) { // el script de Mercado Pago no cargó (sin internet o bloqueado)
     var av = $("msg-pago"); if (av) av.textContent = "No pudimos cargar el pago seguro. Revisa tu internet e intenta de nuevo.";
@@ -1643,6 +1678,7 @@ function revisarPaywall(plan) {
   }, 3000); // 3 s después de verse el resultado de su primera consulta
 }
 function abrirModalPlanes() {
+  embudo("planes_abierto");
   if ($("modal-planes").classList.contains("oculto")) focoAntesModal = document.activeElement;
   $("modal-planes").classList.remove("oculto");
   document.body.style.overflow = "hidden";
@@ -2706,7 +2742,7 @@ $("ov-cerrar").addEventListener("click", cerrarOpinionesClientes);
 $("ov-continuar").addEventListener("click", function () {
   var eraObligatoria = $("modal-opiniones").classList.contains("ov-obligatoria");
   cerrarOpinionesClientes();
-  if (eraObligatoria) navegarA("nueva-consulta"); // primer ingreso: ahora su RNM y fecha de nacimiento
+  if (eraObligatoria) navegarA(destinoGuardado("nueva-consulta")); // primer ingreso: ahora su RNM y fecha de nacimiento (o el validador, si venía de ahí)
 });
 $("modal-opiniones").addEventListener("keydown", function (ev) { if (ev.key === "Escape" && !$("modal-opiniones").classList.contains("ov-obligatoria")) cerrarOpinionesClientes(); });
 /* Pantalla completa solo en el PRIMER registro (cuando aún no tiene ningún RNM) y una sola vez, si hay al menos 2 opiniones aprobadas; después solo queda el enlace «Ver todas las opiniones». */
