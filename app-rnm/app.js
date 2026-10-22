@@ -681,6 +681,7 @@ function estadoEscaner(t, tipo) { var p = $("escaner-estado"); if (p) { p.textCo
 function textoErrorEscaner(e) {
   var c = e && e.codigo;
   if (c === "lectura_no_configurada") return "El escáner no está disponible por ahora. Escribe tus datos a mano.";
+  if (c === "demasiados_intentos") return "Hiciste muchos intentos seguidos. Espera un rato o escribe tus datos a mano.";
   if (c === "qr_no_oficial") return "Ese QR no es de una página oficial. Revisa que sea el del verso de tu carné.";
   if (c === "pagina_no_disponible") return "La página oficial no respondió ahora. Guardamos el QR; puedes continuar.";
   return "No pudimos leer la foto. Intenta con más luz y sin reflejos, o escribe los datos a mano.";
@@ -749,7 +750,7 @@ async function validarQR(url) {
   avisoValidando("carga", "¡QR leído!", "Consultando a la Policía Federal…", { paso: 2 });
   try {
     var pedido = await sb.rpc("rnm_pedir_validacion", { p_url: url });
-    if (pedido.error) { var m = pedido.error.message || ""; if (/solo_premium/.test(m)) { estadoEscaner("El escáner por QR es parte de los planes. Puedes escribir tus datos a mano.", "mal"); avisoValidando("mal", "Función de los planes", "El escáner por QR es parte de los planes. Puedes escribir tus datos a mano.", { boton: "Ver planes", alCerrar: function () { ampliando = false; cartelPlanes(registrosCargados || [], planCargado); abrirModalPlanes(); } }); return; } throw { codigo: /qr_no_oficial|qr_sin_codigo/.test(m) ? "qr_no_oficial" : "pagina_no_disponible" }; }
+    if (pedido.error) { var m = pedido.error.message || ""; throw { codigo: /qr_no_oficial|qr_sin_codigo/.test(m) ? "qr_no_oficial" : (/demasiados_intentos/.test(m) ? "demasiados_intentos" : "pagina_no_disponible") }; }
     var id = pedido.data, limite = Date.now() + 75000, d = null;
     while (Date.now() < limite) {
       await new Promise(function (ok) { setTimeout(ok, 2500); });
@@ -958,12 +959,6 @@ $("camara-cancelar").addEventListener("click", cerrarCamara);
 document.addEventListener("keydown", function (e) { if (e.key === "Escape" && camaraAbierta) cerrarCamara(); });
 
 $("btn-escanear-qr").addEventListener("click", async function () {
-  // Función premium: sin plan vigente se lleva a Planes (la base también lo exige).
-  if (!(planCargado && new Date(planCargado.vence_at) > new Date())) {
-    estadoEscaner("El escáner por QR es parte de los planes: con un plan tu RNM, tu nacimiento y la validez se rellenan solos. Mientras tanto puedes escribirlos a mano.", "carga");
-    ampliando = false; cartelPlanes(registrosCargados || [], planCargado); abrirModalPlanes();
-    return;
-  }
   if (!(await abrirCamara("qr"))) { estadoEscaner("No pudimos abrir la cámara. Elige una foto del verso de tu carné.", "carga"); $("file-qr").click(); }
 });
 // Respaldo: foto de la galería

@@ -1371,3 +1371,5 @@ body.paywall #modal-planes .cerrar, body.paywall #modal-planes .acciones .sec { 
 .validando-boton { margin-top: 14px; width: 100%; min-height: 52px; font-size: 1.05rem; }
 .validando-boton.oculto { display: none; }
 @media (prefers-reduced-motion: reduce) { .validando-caja, .validando-icono svg { animation: none; } }
+
+.insignia-gratis { font-style: normal; font-size: 0.6rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; vertical-align: middle; margin-left: 6px; padding: 2px 7px; border-radius: 999px; background: #1E9E57; color: #fff; }
