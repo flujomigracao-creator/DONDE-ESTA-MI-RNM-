@@ -806,12 +806,14 @@ async function abrirCamara(modo) {
       while (!cam.parar) {
         if (video.videoWidth) {
           try {
-            var texto = await leerQR(video) || await leerQR(capturarGuia(video, 1100)) || await leerQR(capturarFotograma(video, 1920));
+            var cede = function () { return new Promise(function (ok) { setTimeout(ok, 40); }); }; // da respiro al navegador entre intentos pesados
+            var texto = await leerQR(video); if (!texto) { await cede(); texto = await leerQR(capturarGuia(video, 1100)); }
+            if (!texto) { await cede(); texto = await leerQR(capturarFotograma(video, 1920)); }
             if (texto && !cam.parar) { if (navigator.vibrate) navigator.vibrate(60); var gq = $("camara-guia"); if (gq) gq.classList.add("encontrado"); $("camara-texto").textContent = "¡QR encontrado!"; await new Promise(function (ok) { setTimeout(ok, 450); }); cerrarCamara(); validarQR(texto); return; }
           } catch (e) { /* se sigue intentando */ }
         }
         if (!aviso && Date.now() - inicio > 12000) { aviso = true; $("camara-texto").textContent = "Acerca o aleja un poco el carné hasta que el QR se vea nítido y llene el cuadro."; }
-        await new Promise(function (ok) { setTimeout(ok, 220); });
+        await new Promise(function (ok) { setTimeout(ok, 350); });
       }
     })();
   } else {
