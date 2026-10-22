@@ -627,6 +627,35 @@ function cargarJsQR() {
   });
 }
 var detectorQR = null;
+// Estira el contraste (1 % – 99 %) para que el QR se distinga mejor en carnés brillantes o con poca luz.
+function realzarContraste(cv) {
+  var ctx = cv.getContext("2d"), im = ctx.getImageData(0, 0, cv.width, cv.height), d = im.data, n = d.length / 4, h = new Uint32Array(256), i;
+  for (i = 0; i < n; i++) h[d[i * 4 + 1]]++;
+  var a = 0, lo = 0, hi = 255;
+  for (i = 0; i < 256; i++) { a += h[i]; if (a > n * 0.01) { lo = i; break; } }
+  a = 0; for (i = 255; i >= 0; i--) { a += h[i]; if (a > n * 0.01) { hi = i; break; } }
+  var r = Math.max(20, hi - lo);
+  for (i = 0; i < n; i++) { var v = Math.max(0, Math.min(255, (d[i * 4 + 1] - lo) * 255 / r)); d[i * 4] = d[i * 4 + 1] = d[i * 4 + 2] = v; }
+  ctx.putImageData(im, 0, 0); return cv;
+}
+function ampliarCanvas(cv, k) {
+  var o = document.createElement("canvas"); o.width = Math.round(cv.width * k); o.height = Math.round(cv.height * k);
+  var c = o.getContext("2d"); c.imageSmoothingEnabled = true; c.drawImage(cv, 0, 0, o.width, o.height); return o;
+}
+function recorteCentral(video, fraccion, maxLado) {
+  var vw = video.videoWidth, vh = video.videoHeight, sw = vw * fraccion, sh = vh * fraccion, cv = document.createElement("canvas");
+  var esc = Math.min(1, maxLado / Math.max(sw, sh)); cv.width = Math.round(sw * esc); cv.height = Math.round(sh * esc);
+  cv.getContext("2d").drawImage(video, (vw - sw) / 2, (vh - sh) / 2, sw, sh, 0, 0, cv.width, cv.height); return cv;
+}
+// Variantes que se alternan en cada vuelta: así se prueba de todo sin saturar el celular.
+function variantesQR(video) {
+  return [
+    function () { return capturarFotograma(video, 1920); },
+    function () { return realzarContraste(capturarFotograma(video, 1920)); },
+    function () { return realzarContraste(ampliarCanvas(capturarGuia(video, 900), 1.6)); },
+    function () { return realzarContraste(ampliarCanvas(recorteCentral(video, 0.55, 900), 1.7)); }
+  ];
+}
 async function leerQR(fuente) {
   if ("BarcodeDetector" in window) {
     try { detectorQR = detectorQR || new BarcodeDetector({ formats: ["qr_code"] }); var r = await detectorQR.detect(fuente); if (r.length) return r[0].rawValue; } catch (e) { /* se prueba con jsQR */ }
@@ -787,9 +816,10 @@ async function abrirCamara(modo) {
   var video = $("camara-video"); video.srcObject = stream;
   $("camara").classList.remove("oculto"); $("camara").setAttribute("data-modo", modo); document.body.style.overflow = "hidden";
   $("camara-disparo").classList.toggle("oculto", modo !== "frente");
+  if ($("camara-zoom")) $("camara-zoom").classList.add("oculto");
   $("camara-pasos").classList.toggle("oculto", modo !== "auto");
   $("camara-listo").classList.toggle("oculto", modo !== "auto");
-  $("camara-texto").textContent = modo === "qr" ? "Pon el código QR del verso dentro del cuadro, bien nítido y sin reflejos. Se leerá solo." : (modo === "auto" ? "Paso 1: muestra el FRENTE de tu carné dentro del marco, con buena luz y sin reflejos." : "Pon el frente del carné dentro del marco, con buena luz y sin reflejos.");
+  $("camara-texto").textContent = modo === "qr" ? "Pon el código QR del verso dentro del cuadro, sin reflejos. No hace falta acercarlo mucho: si lo ves pequeño, usa Zoom." : (modo === "auto" ? "Paso 1: muestra el FRENTE de tu carné dentro del marco, con buena luz y sin reflejos." : "Pon el frente del carné dentro del marco, con buena luz y sin reflejos.");
   try { await video.play(); } catch (e) { /* algunos navegadores ya lo reproducen */ }
   $("camara-cancelar").focus();
   if (modo === "frente") {
@@ -801,18 +831,28 @@ async function abrirCamara(modo) {
       if (blob) leerFrente({ blob: blob, canvas: cv });
     };
   } else if (modo === "qr") {
-    var inicio = Date.now(), aviso = false;
+    var inicio = Date.now(), aviso = false, vuelta = 0, variantes = variantesQR(video);
+    // Zoom del celular (si lo tiene): el QR del carné es pequeño y así no hay que pegarlo a la cámara (se desenfoca).
+    try {
+      var pz = stream.getVideoTracks()[0], cz = pz.getCapabilities ? pz.getCapabilities() : {}, bz = $("camara-zoom");
+      if (cz.zoom && cz.zoom.max > 1.2 && bz) {
+        var niveles = [1, 2, 3].filter(function (z) { return z <= cz.zoom.max + 0.01; }), iz = Math.max(0, niveles.indexOf(2));
+        var aplicarZoom = async function () { try { await pz.applyConstraints({ advanced: [{ zoom: niveles[iz] }] }); } catch (e) { /* sin zoom */ } bz.textContent = "Zoom " + niveles[iz] + "×"; };
+        bz.onclick = function () { iz = (iz + 1) % niveles.length; aplicarZoom(); };
+        bz.classList.remove("oculto"); aplicarZoom();
+      }
+    } catch (e) { /* el zoom es opcional */ }
     (async function bucle() {
       while (!cam.parar) {
         if (video.videoWidth) {
           try {
             var cede = function () { return new Promise(function (ok) { setTimeout(ok, 40); }); }; // da respiro al navegador entre intentos pesados
-            var texto = await leerQR(video); if (!texto) { await cede(); texto = await leerQR(capturarGuia(video, 1100)); }
-            if (!texto) { await cede(); texto = await leerQR(capturarFotograma(video, 1920)); }
+            var texto = await leerQR(video);
+            if (!texto) { await cede(); texto = await leerQR(variantes[vuelta++ % variantes.length]()); }
             if (texto && !cam.parar) { if (navigator.vibrate) navigator.vibrate(60); var gq = $("camara-guia"); if (gq) gq.classList.add("encontrado"); $("camara-texto").textContent = "¡QR encontrado!"; await new Promise(function (ok) { setTimeout(ok, 450); }); cerrarCamara(); validarQR(texto); return; }
           } catch (e) { /* se sigue intentando */ }
         }
-        if (!aviso && Date.now() - inicio > 12000) { aviso = true; $("camara-texto").textContent = "Acerca o aleja un poco el carné hasta que el QR se vea nítido y llene el cuadro."; }
+        if (!aviso && Date.now() - inicio > 12000) { aviso = true; $("camara-texto").textContent = "Mantén el carné quieto a unos 15 cm. Si el QR se ve pequeño, toca Zoom; si se ve borroso, aléjalo un poco."; }
         await new Promise(function (ok) { setTimeout(ok, 350); });
       }
     })();
