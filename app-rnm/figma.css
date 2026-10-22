@@ -1337,3 +1337,37 @@ body.paywall #modal-planes .cerrar, body.paywall #modal-planes .acciones .sec { 
 
 .camara-zoom { justify-self: end; grid-column: 3; min-height: 48px; padding: 0 18px; border-radius: 99px; background: rgba(255, 255, 255, 0.16) !important; background-image: none !important; color: #fff !important; box-shadow: none !important; font-weight: 800; border: 1.5px solid rgba(255, 255, 255, 0.5); }
 .camara-zoom.oculto { display: none; }
+
+/* ===== Aviso grande: QR leído, consultando a la Policía Federal ===== */
+.validando { position: fixed; inset: 0; z-index: 800; display: grid; place-items: center; padding: 20px; background: rgba(8, 28, 66, 0.82); backdrop-filter: blur(3px); }
+.validando.oculto { display: none; }
+.validando-caja { width: min(100%, 380px); padding: 28px 22px 24px; border-radius: 26px; background: #fff; text-align: center; box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45); animation: validando-entra .28s ease-out; }
+@keyframes validando-entra { from { opacity: 0; transform: translate3d(0, 18px, 0) scale(.96); } to { opacity: 1; transform: none; } }
+.validando-icono { width: 84px; height: 84px; margin: 0 auto 14px; border-radius: 50%; display: grid; place-items: center; background: var(--brand-soft, #E8F0FF); }
+.validando-giro { width: 52px; height: 52px; border-radius: 50%; border: 5px solid #CFE0FF; border-top-color: #0E3F8E; animation: validando-gira 0.9s linear infinite; }
+@keyframes validando-gira { to { transform: rotate(360deg); } }
+.validando-icono.ok { background: #DDF5E7; }
+.validando-icono.mal { background: #FFF1D6; }
+.validando-icono svg { width: 46px; height: 46px; }
+.validando-icono.ok svg { color: #1E9E57; animation: validando-pop .4s ease-out; }
+.validando-icono.mal svg { color: #C77700; }
+@keyframes validando-pop { from { transform: scale(.3); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.validando-caja h2 { margin: 0 0 6px; font-size: 1.5rem; line-height: 1.15; color: var(--navy, #0A2A5E); }
+.validando-sub { margin: 0 0 16px; font-size: 1.05rem; font-weight: 600; color: #314a75; }
+.validando-barra { height: 6px; border-radius: 6px; background: #E3ECFB; overflow: hidden; margin: 0 0 16px; }
+.validando-barra.oculto { display: none; }
+.validando-barra i { display: block; width: 45%; height: 100%; border-radius: 6px; background: linear-gradient(90deg, #0E3F8E, #FFC83D); animation: validando-barra 1.4s ease-in-out infinite alternate; }
+@keyframes validando-barra { from { transform: translate3d(-5%, 0, 0); } to { transform: translate3d(120%, 0, 0); } }
+.validando-pasos { list-style: none; margin: 0 0 14px; padding: 0; display: grid; gap: 8px; text-align: left; }
+.validando-pasos.oculto { display: none; }
+.validando-pasos li { position: relative; padding: 9px 12px 9px 40px; border-radius: 12px; background: #F2F5FB; color: #7587a6; font-weight: 700; font-size: 0.95rem; }
+.validando-pasos li::before { content: ""; position: absolute; left: 13px; top: 50%; width: 16px; height: 16px; margin-top: -8px; border-radius: 50%; border: 2px solid #B8C6E0; }
+.validando-pasos li.actual { background: #FFF7DD; color: #5B3B00; box-shadow: inset 0 0 0 2px #FFC83D; }
+.validando-pasos li.actual::before { border-color: #FFC83D; border-top-color: transparent; animation: validando-gira 0.9s linear infinite; }
+.validando-pasos li.ok { background: #E4F6EC; color: #14532D; }
+.validando-pasos li.ok::before { border-color: #1E9E57; background: #1E9E57 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='white' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 8.5l3 3 5-6'/%3E%3C/svg%3E") center / 12px no-repeat; }
+.validando-nota { margin: 0; font-size: 0.95rem; font-weight: 700; color: #4a5f85; }
+.validando-nota.oculto { display: none; }
+.validando-boton { margin-top: 14px; width: 100%; min-height: 52px; font-size: 1.05rem; }
+.validando-boton.oculto { display: none; }
+@media (prefers-reduced-motion: reduce) { .validando-caja, .validando-icono svg { animation: none; } }

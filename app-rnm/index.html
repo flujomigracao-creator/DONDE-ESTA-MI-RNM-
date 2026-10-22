@@ -608,6 +608,21 @@
       </div>
     </div>
   </div>
+  <div id="validando" class="validando oculto" role="alertdialog" aria-modal="true" aria-labelledby="validando-titulo" aria-describedby="validando-sub">
+    <div class="validando-caja">
+      <div class="validando-icono" id="validando-icono" aria-hidden="true"><span class="validando-giro"></span></div>
+      <h2 id="validando-titulo">¡QR leído!</h2>
+      <p class="validando-sub" id="validando-sub">Consultando a la Policía Federal…</p>
+      <div class="validando-barra" id="validando-barra" aria-hidden="true"><i></i></div>
+      <ul class="validando-pasos" id="validando-pasos">
+        <li id="vp-1" class="ok">QR leído</li>
+        <li id="vp-2" class="actual">Consultando a la Policía Federal</li>
+        <li id="vp-3">Trayendo tu RNM y tus fechas</li>
+      </ul>
+      <p class="validando-nota" id="validando-nota">Son unos segundos. No cierres la app.</p>
+      <button type="button" class="validando-boton oculto" id="validando-boton">Continuar</button>
+    </div>
+  </div>
   <div id="camara" class="camara oculto" role="dialog" aria-modal="true" aria-label="Cámara para escanear tu carné">
     <video id="camara-video" playsinline muted autoplay></video>
     <div class="camara-guia" id="camara-guia" aria-hidden="true"><i></i><i></i><i></i><i></i></div>

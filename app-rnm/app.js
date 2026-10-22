@@ -721,26 +721,50 @@ function mostrarResultadoValidacion(d) {
   b.addEventListener("click", function () { navegarA("nueva-consulta"); });
   caja.appendChild(b); caja.classList.remove("oculto");
 }
+/* Aviso grande y centrado del proceso de validación: lo ve cualquiera, esté donde esté en la pantalla. */
+var ICONO_OK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+var ICONO_MAL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v5M12 16.5h.01"/><path d="M10.3 3.9L2.4 17.5A2 2 0 004.1 20.5h15.8a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>';
+function avisoValidando(estado, titulo, sub, extra) {
+  var caja = $("validando"); if (!caja) return;
+  extra = extra || {};
+  var ic = $("validando-icono"), cargando = estado === "carga";
+  ic.className = "validando-icono" + (estado === "ok" ? " ok" : (estado === "mal" ? " mal" : ""));
+  ic.innerHTML = cargando ? '<span class="validando-giro"></span>' : (estado === "ok" ? ICONO_OK : ICONO_MAL);
+  $("validando-titulo").textContent = titulo; $("validando-sub").textContent = sub;
+  $("validando-barra").classList.toggle("oculto", !cargando);
+  $("validando-pasos").classList.toggle("oculto", estado === "mal");
+  if (extra.paso) ["vp-1", "vp-2", "vp-3"].forEach(function (id, i) { $(id).className = i + 1 < extra.paso ? "ok" : (i + 1 === extra.paso ? "actual" : ""); });
+  if (estado === "ok") ["vp-1", "vp-2", "vp-3"].forEach(function (id) { $(id).className = "ok"; });
+  $("validando-nota").textContent = cargando ? "Son unos segundos. No cierres la app." : (extra.nota || "");
+  $("validando-nota").classList.toggle("oculto", !cargando && !extra.nota);
+  var b = $("validando-boton"); b.classList.toggle("oculto", cargando);
+  if (!cargando) { b.textContent = extra.boton || "Continuar"; b.onclick = function () { caja.classList.add("oculto"); document.body.style.overflow = ""; if (extra.alCerrar) extra.alCerrar(); }; }
+  caja.classList.remove("oculto"); document.body.style.overflow = "hidden";
+  if (!cargando) b.focus();
+}
 // El QR lleva a la página oficial de la PF. Un bot nuestro (VPS) la abre, pulsa «Validar» y devuelve RNM, nacimiento y validez.
 async function validarQR(url) {
   carneEscaneado.qr = url;
   estadoEscaner("QR leído ✓ Consultando la Policía Federal… (unos segundos)", "carga");
+  avisoValidando("carga", "¡QR leído!", "Consultando a la Policía Federal…", { paso: 2 });
   try {
     var pedido = await sb.rpc("rnm_pedir_validacion", { p_url: url });
-    if (pedido.error) { var m = pedido.error.message || ""; if (/solo_premium/.test(m)) { estadoEscaner("El escáner por QR es parte de los planes. Puedes escribir tus datos a mano.", "mal"); return; } throw { codigo: /qr_no_oficial|qr_sin_codigo/.test(m) ? "qr_no_oficial" : "pagina_no_disponible" }; }
+    if (pedido.error) { var m = pedido.error.message || ""; if (/solo_premium/.test(m)) { estadoEscaner("El escáner por QR es parte de los planes. Puedes escribir tus datos a mano.", "mal"); avisoValidando("mal", "Función de los planes", "El escáner por QR es parte de los planes. Puedes escribir tus datos a mano.", { boton: "Ver planes", alCerrar: function () { ampliando = false; cartelPlanes(registrosCargados || [], planCargado); abrirModalPlanes(); } }); return; } throw { codigo: /qr_no_oficial|qr_sin_codigo/.test(m) ? "qr_no_oficial" : "pagina_no_disponible" }; }
     var id = pedido.data, limite = Date.now() + 75000, d = null;
     while (Date.now() < limite) {
       await new Promise(function (ok) { setTimeout(ok, 2500); });
       var r = await sb.rpc("rnm_mi_validacion", { p_id: id });
       if (r.data && r.data.estado !== "pendiente") { d = r.data; break; }
+      if (Date.now() - (limite - 75000) > 6000) avisoValidando("carga", "Consultando a la Policía Federal…", "Ya casi: trayendo tus datos…", { paso: 3 });
     }
-    if (!d || d.estado !== "ok" || !d.rnm) { estadoEscaner("No pudimos confirmarlo ahora. Escribe tu RNM y tu fecha de nacimiento a mano.", "mal"); return; }
+    if (!d || d.estado !== "ok" || !d.rnm) { estadoEscaner("No pudimos confirmarlo ahora. Escribe tu RNM y tu fecha de nacimiento a mano.", "mal"); avisoValidando("mal", "No pudimos confirmarlo", "La Policía Federal no respondió a tiempo. Escribe tu RNM y tu fecha de nacimiento a mano o vuelve a escanear.", { boton: "Entendido" }); return; }
     ponerCampo("rnm", d.rnm);
     if (d.nacimiento) ponerCampo("nac", d.nacimiento);
     mostrarResultadoValidacion(d);
+    avisoValidando("ok", "¡Carné validado!", "Confirmado en la Policía Federal", { nota: "RNM " + d.rnm + (d.validez ? " · válido hasta " + d.validez : ""), boton: "Continuar" });
     if (d.validez && fijarValidez(d.validez, "qr")) { carneEscaneado.verificada = true; if (window.toast) toast("Datos confirmados en la página oficial", "ok"); }
     else estadoEscaner("RNM confirmado en la página oficial ✓", "ok");
-  } catch (e) { estadoEscaner(textoErrorEscaner(e), e && e.codigo === "pagina_no_disponible" ? "ok" : "mal"); }
+  } catch (e) { estadoEscaner(textoErrorEscaner(e), e && e.codigo === "pagina_no_disponible" ? "ok" : "mal"); avisoValidando("mal", "No pudimos validar el QR", textoErrorEscaner(e), { boton: "Entendido" }); }
 }
 
 /* Verso completo: además del QR, se lee el resto del verso (validez, CPF) y se guarda su foto */
