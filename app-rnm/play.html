@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Descargar la app · ¿Dónde está mi RNM?</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<style>
+  body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:#F5F7FB;color:#16233f;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.6;text-align:center}
+  .caja{max-width:420px}.caja img{width:84px;height:84px;border-radius:20px}
+  h1{font-size:1.5rem;margin:14px 0 6px}p{margin:0 0 18px;color:#4a5f85}
+  a.btn{display:inline-flex;align-items:center;justify-content:center;min-height:52px;padding:0 24px;border-radius:99px;background:#0E3F8E;color:#fff;font-weight:800;text-decoration:none}
+  @media(prefers-color-scheme:dark){body{background:#0e1424;color:#eaf0fc}p{color:#9aa8c2}}
+</style>
+</head>
+<body>
+<div class="caja">
+  <img src="icon-192.png" alt="">
+  <h1>¿Dónde está mi RNM?</h1>
+  <p id="msg">Un momento…</p>
+  <a class="btn" id="btn" href="./">Abrir en el navegador</a>
+</div>
+<script src="play.js"></script>
+<script>
+(function () {
+  var P = window.RNM_PLAY || {}, msg = document.getElementById("msg"), btn = document.getElementById("btn");
+  var test = false; try { test = localStorage.getItem("rnm_play_test") === "1"; } catch (e) { /* sin almacenamiento */ }
+  var activa = P.publicada || test;
+  if (activa && /Android/i.test(navigator.userAgent)) { msg.textContent = "Te llevamos a Google Play…"; btn.textContent = "Ir a Google Play"; btn.href = P.url; if (!test) location.replace(P.url); return; }
+  if (activa) { msg.textContent = "La app para Android ya está en Google Play. Si tienes Android, abre este enlace desde tu celular."; btn.textContent = "Usar en el navegador"; return; }
+  msg.textContent = "La app para Android llega pronto a Google Play. Mientras tanto puedes usarla igual desde el navegador, sin instalar nada.";
+  btn.textContent = "Usar en el navegador";
+})();
+</script>
+</body>
+</html>
