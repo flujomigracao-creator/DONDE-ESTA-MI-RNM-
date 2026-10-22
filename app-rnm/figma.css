@@ -1324,3 +1324,9 @@ body.paywall #modal-planes .cerrar, body.paywall #modal-planes .acciones .sec { 
 .validar-resultado p { margin: 0; font-size: 0.95rem; }
 .validar-resultado button { justify-self: start; margin-top: 8px; min-height: 46px; padding: 0 20px; }
 .page-header-text h1 .insignia-premium { font-size: 0.6rem; }
+
+/* ===== Escáner: línea que sube y baja mientras busca el QR ===== */
+.camara-guia::after { content: ""; position: absolute; left: 6%; right: 6%; top: 0; height: 3px; border-radius: 3px; background: linear-gradient(90deg, rgba(255, 200, 61, 0), #FFC83D 18%, #FFF3C4 50%, #FFC83D 82%, rgba(255, 200, 61, 0)); box-shadow: 0 0 14px 4px rgba(255, 200, 61, 0.65), 0 0 38px 10px rgba(255, 200, 61, 0.25); animation: camara-barrido 2.2s ease-in-out infinite alternate; pointer-events: none; }
+@keyframes camara-barrido { from { top: 4%; } to { top: calc(96% - 3px); } }
+.camara-guia.encontrado::after { animation: none; top: 0; height: 100%; left: 0; right: 0; border-radius: 16px; background: rgba(46, 204, 113, 0.28); box-shadow: inset 0 0 0 3px #2ECC71; }
+@media (prefers-reduced-motion: reduce) { .camara-guia::after { animation-duration: 6s; } }

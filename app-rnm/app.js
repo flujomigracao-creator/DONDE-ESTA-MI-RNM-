@@ -741,6 +741,7 @@ function cerrarCamara() {
   var cam = camaraAbierta; camaraAbierta = null;
   if (cam) { cam.parar = true; if (cam.stream) cam.stream.getTracks().forEach(function (t) { t.stop(); }); }
   var v = $("camara-video"); if (v) v.srcObject = null;
+  var gq = $("camara-guia"); if (gq) gq.classList.remove("encontrado");
   $("camara").classList.add("oculto"); document.body.style.overflow = "";
   if (cam && cam.devolverFoco && document.contains(cam.devolverFoco)) { try { cam.devolverFoco.focus(); } catch (e) { /* sin foco */ } }
 }
@@ -806,7 +807,7 @@ async function abrirCamara(modo) {
         if (video.videoWidth) {
           try {
             var texto = await leerQR(video) || await leerQR(capturarGuia(video, 1100)) || await leerQR(capturarFotograma(video, 1920));
-            if (texto && !cam.parar) { if (navigator.vibrate) navigator.vibrate(60); cerrarCamara(); validarQR(texto); return; }
+            if (texto && !cam.parar) { if (navigator.vibrate) navigator.vibrate(60); var gq = $("camara-guia"); if (gq) gq.classList.add("encontrado"); $("camara-texto").textContent = "¡QR encontrado!"; await new Promise(function (ok) { setTimeout(ok, 450); }); cerrarCamara(); validarQR(texto); return; }
           } catch (e) { /* se sigue intentando */ }
         }
         if (!aviso && Date.now() - inicio > 12000) { aviso = true; $("camara-texto").textContent = "Acerca o aleja un poco el carné hasta que el QR se vea nítido y llene el cuadro."; }
