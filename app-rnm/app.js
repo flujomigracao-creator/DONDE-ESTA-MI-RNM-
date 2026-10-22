@@ -111,6 +111,32 @@ var perfilActual = null;
 var seccionActual = "inicio";
 var registrosCargados = [];
 var planCargado = null;
+/* Anuncios: SOLO para cuentas sin plan vigente. Con plan (o al contratarlo) la zona se oculta y no se carga nada de terceros.
+   Para encender los anuncios de Google hay que rellenar "cliente" (ca-pub-…) y "slot" cuando AdSense apruebe el sitio. */
+var ANUNCIOS = { cliente: "", slot: "" };
+var anuncioPintado = false;
+function tienePlanVigente() { return !!(planCargado && new Date(planCargado.vence_at) > new Date()); }
+function actualizarAnuncios() {
+  var zona = $("zona-anuncios"); if (!zona) return;
+  var mostrar = typeof planCargado !== "undefined" && sesionConPlanConocido && !tienePlanVigente();
+  zona.classList.toggle("oculto", !mostrar);
+  if (!mostrar) { var slot0 = $("anuncio-slot"); if (slot0) slot0.textContent = ""; anuncioPintado = false; return; }
+  if (!ANUNCIOS.cliente || !ANUNCIOS.slot || anuncioPintado) return;
+  anuncioPintado = true;
+  var sc = document.createElement("script");
+  sc.async = true; sc.crossOrigin = "anonymous";
+  sc.src = "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=" + encodeURIComponent(ANUNCIOS.cliente);
+  sc.onload = function () {
+    var ins = document.createElement("ins");
+    ins.className = "adsbygoogle"; ins.style.display = "block";
+    ins.setAttribute("data-ad-client", ANUNCIOS.cliente); ins.setAttribute("data-ad-slot", ANUNCIOS.slot);
+    ins.setAttribute("data-ad-format", "auto"); ins.setAttribute("data-full-width-responsive", "true");
+    $("anuncio-slot").appendChild(ins);
+    try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) { /* sin anuncio */ }
+  };
+  document.head.appendChild(sc);
+}
+var sesionConPlanConocido = false; // hasta saber si hay plan no se muestra nada (así un cliente con plan nunca ve un destello de publicidad)
 var filtroMisRnm = "todos";
 var detalleActual = null;
 var salidaManual = false;
@@ -203,6 +229,7 @@ function mostrarSeccion(id) {
 
   // Sincronizar contenidos específicos
   if (id === "planes") renderizarPlanes(registrosCargados, planCargado);
+  if (id === "validar") actualizarAnuncios();
   if (id === "nueva-consulta" && typeof irSubPaso === "function") irSubPaso(1);
   if (id === "historial") {
     cargarHistorialConsultas();
@@ -958,6 +985,8 @@ async function abrirCamara(modo) {
 $("camara-cancelar").addEventListener("click", cerrarCamara);
 document.addEventListener("keydown", function (e) { if (e.key === "Escape" && camaraAbierta) cerrarCamara(); });
 
+var btnQuitarAnuncios = $("btn-quitar-anuncios");
+if (btnQuitarAnuncios) btnQuitarAnuncios.addEventListener("click", function () { ampliando = false; cartelPlanes(registrosCargados || [], planCargado); abrirModalPlanes(); });
 $("btn-escanear-qr").addEventListener("click", async function () {
   if (!(await abrirCamara("qr"))) { estadoEscaner("No pudimos abrir la cámara. Elige una foto del verso de tu carné.", "carga"); $("file-qr").click(); }
 });
@@ -1703,6 +1732,7 @@ async function cargarRegistros(soloSiCambia) {
   var planAntes = planCargado;
   registrosCargados = r.data;
   planCargado = plan;
+  sesionConPlanConocido = true; actualizarAnuncios();
   if (activo && ultimoTipoPedido && window.rnmTrack && (!planAntes || new Date(plan.vence_at) > new Date(planAntes.vence_at))) {
     var clavePago = "rnm_purchase_" + plan.vence_at;
     if (!localStorage.getItem(clavePago)) { try { localStorage.setItem(clavePago, "1"); } catch (e) { /* sin almacenamiento */ } rnmTrack("Purchase", { value: plan.precio_centavos / 100, currency: "BRL", content_name: plan.tipo }, "compra-" + plan.vence_at); }

@@ -1373,3 +1373,14 @@ body.paywall #modal-planes .cerrar, body.paywall #modal-planes .acciones .sec { 
 @media (prefers-reduced-motion: reduce) { .validando-caja, .validando-icono svg { animation: none; } }
 
 .insignia-gratis { font-style: normal; font-size: 0.6rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; vertical-align: middle; margin-left: 6px; padding: 2px 7px; border-radius: 999px; background: #1E9E57; color: #fff; }
+
+/* ===== Anuncios (solo cuentas sin plan) ===== */
+.zona-anuncios { margin: 16px 0 6px; }
+.zona-anuncios.oculto { display: none; }
+.anuncio-etiqueta { margin: 0 0 6px; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #7587a6; }
+.anuncio-slot { min-height: 0; border-radius: 14px; overflow: hidden; background: #F2F5FB; }
+.anuncio-slot:empty { display: none; }
+.sin-anuncios { display: grid; gap: 4px; margin-top: 10px; padding: 14px; border-radius: 16px; background: #FFF7DD; border: 1px solid #F2D58A; color: #5B3B00; }
+.sin-anuncios b { font-size: 1rem; }
+.sin-anuncios span { font-size: 0.9rem; line-height: 1.35; }
+.sin-anuncios button { justify-self: start; margin-top: 8px; min-height: 46px; padding: 0 20px; }
