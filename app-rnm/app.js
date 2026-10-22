@@ -674,14 +674,24 @@ async function leerFrente(im) {
     return true;
   } catch (e) { estadoEscaner(textoErrorEscaner(e), "mal"); return false; }
 }
+// El QR lleva a la página oficial de la PF. Un bot nuestro (VPS) la abre, pulsa «Validar» y devuelve RNM, nacimiento y validez.
 async function validarQR(url) {
   carneEscaneado.qr = url;
-  estadoEscaner("QR leído. Consultando la página oficial…", "carga");
+  estadoEscaner("QR leído ✓ Consultando la Policía Federal… (unos segundos)", "carga");
   try {
-    var v = await llamarFuncion("rnm-validar-carne", { url: url });
-    if (v.rnm_en_pagina && !$("rnm").value) ponerCampo("rnm", v.rnm_en_pagina);
-    if (v.validez && fijarValidez(v.validez, "qr")) { carneEscaneado.verificada = true; if (window.toast) toast("Validez confirmada en la página oficial", "ok"); }
-    else estadoEscaner("QR guardado ✓ Confirmaremos la validez con la Policía Federal en unos minutos.", "ok");
+    var pedido = await sb.rpc("rnm_pedir_validacion", { p_url: url });
+    if (pedido.error) { var m = pedido.error.message || ""; throw { codigo: /qr_no_oficial|qr_sin_codigo/.test(m) ? "qr_no_oficial" : "pagina_no_disponible" }; }
+    var id = pedido.data, limite = Date.now() + 75000, d = null;
+    while (Date.now() < limite) {
+      await new Promise(function (ok) { setTimeout(ok, 2500); });
+      var r = await sb.rpc("rnm_mi_validacion", { p_id: id });
+      if (r.data && r.data.estado !== "pendiente") { d = r.data; break; }
+    }
+    if (!d || d.estado !== "ok" || !d.rnm) { estadoEscaner("No pudimos confirmarlo ahora. Escribe tu RNM y tu fecha de nacimiento a mano.", "mal"); return; }
+    ponerCampo("rnm", d.rnm);
+    if (d.nacimiento) ponerCampo("nac", d.nacimiento);
+    if (d.validez && fijarValidez(d.validez, "qr")) { carneEscaneado.verificada = true; if (window.toast) toast("Datos confirmados en la página oficial", "ok"); }
+    else estadoEscaner("RNM confirmado en la página oficial ✓", "ok");
   } catch (e) { estadoEscaner(textoErrorEscaner(e), e && e.codigo === "pagina_no_disponible" ? "ok" : "mal"); }
 }
 
