@@ -1,0 +1,4 @@
+# No se publican: SQL de la base de datos, variables de entorno ni archivos de trabajo.
+sql/
+.env*
+.gitignore
