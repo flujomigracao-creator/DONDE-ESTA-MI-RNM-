@@ -9,6 +9,7 @@ const json = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: 
 const TEXTOS: Record<string, (n: string) => { title: string; body: string }> = {
   listo: (n) => ({ title: '¡Tu RNM está listo!', body: `${n}, abre la app para ver dónde retirarlo.` }),
   etapa: (n) => ({ title: 'Tu RNM avanzó', body: `${n}, hay una novedad en tu trámite.` }),
+  impresion: (n) => ({ title: 'Tu carné fue enviado a impresión', body: `${n}, es el paso previo a quedar listo para retirar.` }),
   problema: (n) => ({ title: 'Tu RNM tiene una pendencia', body: `${n}, abre la app para ver qué hacer.` }),
   direccion: (n) => ({ title: 'Cambió la dirección de retiro', body: `${n}, revisa la novedad en la app.` }),
   corregir: (n) => ({ title: 'Corrige tu dato del RNM', body: `${n}, no encontramos tu RNM: revísalo en la app.` }),
