@@ -2276,11 +2276,15 @@ function rastreador(x, opciones) {
   var idx = { "En confección": 0, "En trámite": 0, "En traslado": 1, "Listo": 2, "Entregado": 3 }[e.corto];
   var c = el("div", "rastreador " + e.tono + (e.corto === "Listo" ? " listo" : "") + (opciones.compacto ? " compacto" : ""));
   var top = el("div", "rt-top");
-  top.appendChild(el("span", "rt-rnm", "RNM " + x.rnm));
-  top.appendChild(el("span", "rt-fecha", x.ultima_consulta_at ? "Revisado " + new Date(x.ultima_consulta_at).toLocaleDateString("es", { day: "numeric", month: "short" }).replace(".", "") : "Sin revisión aún"));
+  var doc = el("div", "rt-doc");
+  doc.appendChild(el("span", "rt-rnm", "RNM " + x.rnm));
+  doc.appendChild(el("span", "rt-fecha", x.ultima_consulta_at ? "Revisado " + new Date(x.ultima_consulta_at).toLocaleDateString("es", { day: "numeric", month: "short" }).replace(".", "") : "Sin revisión aún"));
+  top.appendChild(doc);
+  top.appendChild(el("span", "rt-estado", e.corto));
   c.appendChild(top);
   c.appendChild(el("h2", "rt-titular", tt.t));
   var sub = el("p", "rt-sub"); sub.innerHTML = (e.tono === "ok" ? SVG_OK : (e.tono === "mal" || e.corto === "Falta algo" || e.corto === "No encontrado" ? "" : SVG_PIN)); sub.appendChild(document.createTextNode(tt.s)); c.appendChild(sub);
+  if (x.unidad_pf && !opciones.compacto) { var lugar = el("span", "rt-lugar", ""); lugar.innerHTML = SVG_PIN; lugar.appendChild(document.createTextNode("Unidad: " + lugarDeUnidad(x.unidad_pf))); c.appendChild(lugar); }
   var lc = x.cambio_direccion ? lineasCambio(x.cambio_direccion) : [];
   cambiosParaMostrar(lc).forEach(function (l) { c.appendChild(cambioAnimado(l)); });
   var av = avisoValidez(x); if (av) c.appendChild(av);
@@ -2314,7 +2318,7 @@ function planLinea(regs, plan) {
   var activo = !!plan && new Date(plan.vence_at) > new Date();
   var alerta = avisoPlan(regs);
   if (alerta) return alerta;
-  if (activo) { var d = el("div", "plan-linea ok", ""); d.innerHTML = SVG_OK + "<span>Seguimiento " + (plan.tipo === "quincenal" ? "quincenal" : "semanal") + " activo · hasta " + fechaCorta(plan.vence_at) + "</span>"; return d; }
+  if (activo) { var d = el("div", "plan-linea ok", ""); d.innerHTML = SVG_OK + "<span>" + (plan.tipo === "manual" ? "Plan manual activo" : "Seguimiento " + (plan.tipo === "quincenal" ? "quincenal" : "semanal") + " activo") + " · hasta " + fechaCorta(plan.vence_at) + "</span>"; return d; }
   return null;
 }
 
