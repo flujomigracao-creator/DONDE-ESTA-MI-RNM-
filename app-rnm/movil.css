@@ -1,0 +1,226 @@
+/* ==========================================================================
+   ¿DÓNDE ESTÁ MI RNM? — CAPA PREMIUM MÓVIL (se carga después de figma.css)
+   Pensada para la app de Android (TWA) y el celular: pantalla completa, profundidad, movimiento.
+   Solo presentación: no cambia lógica, textos ni pagos. Respeta prefers-reduced-motion.
+   ========================================================================== */
+
+:root {
+  --p-navy-950: #061634;
+  --p-navy-900: #0A1F47;
+  --p-navy-800: #0E2D66;
+  --p-azul-700: #1846B8;
+  --p-azul-500: #2E6BF0;
+  --p-azul-300: #8FB3FF;
+  --p-verde: #18A058;
+  --p-amarillo: #F5C518;
+  --p-degradado: linear-gradient(135deg, #0A1F47 0%, #1846B8 58%, #2E6BF0 100%);
+  --p-degradado-boton: linear-gradient(180deg, #2C64E8 0%, #1A48C4 100%);
+  --p-cristal: rgba(255, 255, 255, 0.78);
+  --p-borde-fino: rgba(10, 31, 71, 0.07);
+  --p-sombra-1: 0 1px 2px rgba(10, 31, 71, 0.05), 0 2px 8px rgba(10, 31, 71, 0.05);
+  --p-sombra-2: 0 2px 6px rgba(10, 31, 71, 0.05), 0 12px 32px rgba(10, 31, 71, 0.09);
+  --p-sombra-3: 0 10px 24px rgba(10, 31, 71, 0.12), 0 30px 60px rgba(10, 31, 71, 0.16);
+  --p-curva: cubic-bezier(.2, .8, .2, 1);
+  --p-rebote: cubic-bezier(.34, 1.56, .64, 1);
+  --canvas: #F3F6FC;
+  --bottom-nav-h: 64px;
+}
+
+/* ---------- Base: tipografía más fina, sin destellos al tocar, pantalla completa ---------- */
+html { -webkit-tap-highlight-color: transparent; text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; }
+body { background: var(--canvas); overscroll-behavior-y: none; font-feature-settings: "cv11", "ss01", "ss03"; }
+h1, h2, h3, .rt-titular { letter-spacing: -0.022em; }
+.rt-rnm, .rt-fecha, .stat b, .pay-precio b { font-variant-numeric: tabular-nums; }
+::selection { background: rgba(46, 107, 240, 0.22); }
+@media (display-mode: standalone) { body { user-select: none; -webkit-user-select: none; } input, textarea, [contenteditable] { user-select: text; -webkit-user-select: text; } }
+
+/* Fondo de la app: luz azul muy suave arriba (da profundidad sin distraer) */
+.app-shell { background:
+  radial-gradient(900px 420px at 50% -180px, rgba(46, 107, 240, 0.10), transparent 70%),
+  var(--canvas); }
+
+/* ---------- Cabecera: cristal esmerilado + cinta Brasil fina con degradado ---------- */
+.app-header {
+  background: rgba(255, 255, 255, 0.72) !important;
+  -webkit-backdrop-filter: saturate(180%) blur(18px); backdrop-filter: saturate(180%) blur(18px);
+  border-bottom: 1px solid rgba(10, 31, 71, 0.06);
+  padding-top: calc(12px + env(safe-area-inset-top, 0px)) !important;
+}
+.app-header::after { height: 2px; background: linear-gradient(90deg, var(--p-verde) 0%, #3CC27A 45%, var(--p-amarillo) 70%, #FFD94D 100%); opacity: .9; }
+.app-header.con-sombra { box-shadow: 0 8px 24px rgba(10, 31, 71, 0.08); }
+#app-header-titulo { font-weight: 800; letter-spacing: -0.02em; transition: opacity .2s ease, transform .3s var(--p-curva); }
+#app-header-titulo.cambia { opacity: 0; transform: translateY(4px); }
+#btn-soporte { border-radius: 999px; background: #fff; border: 1px solid var(--p-borde-fino); box-shadow: var(--p-sombra-1); transition: transform .15s ease, box-shadow .2s ease; }
+#btn-soporte:active { transform: scale(.94); }
+
+/* ---------- Botones: degradado, profundidad y respuesta al tocar ---------- */
+.btn, button:not(.sec):not(.danger):not(.google):not(.plan):not(.metodo):not(.filter-pill):not(.cerrar):not(.nav-item):not(.bottom-nav-item):not(.btn-quitar):not(.btn-texto):not(.fila-aj):not(.stat):not(.plan-card):not(.btn-editar-chico):not(.btn-claro):not(.btn-sm):not(.aviso-mensaje):not(.rt-cta):not(.btn-mas) {
+  background-image: var(--p-degradado-boton);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.25) inset, 0 6px 16px rgba(26, 72, 196, 0.28);
+}
+button, .btn, .btn-enlace { transition: transform .14s ease, box-shadow .2s ease, background-color .2s ease, filter .2s ease; }
+button:active:not(:disabled), .btn:active, .btn-enlace:active { transform: scale(.97); }
+button:disabled { filter: saturate(.6); }
+:focus-visible { outline: 3px solid rgba(46, 107, 240, 0.45); outline-offset: 2px; }
+.btn-mas { border-radius: 999px !important; background: #fff !important; color: var(--p-azul-700) !important; border: 1px solid rgba(24, 70, 184, 0.14) !important; box-shadow: var(--p-sombra-1) !important; font-weight: 700; }
+
+/* ---------- Saludo ---------- */
+.saludo-fig h2 { font-size: 1.7rem; font-weight: 800; background: linear-gradient(90deg, var(--p-navy-900), var(--p-azul-700)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+/* ---------- Aviso de mensaje del equipo (antes se cortaba y casi no se leía) ---------- */
+#aviso-mensaje.aviso-mensaje {
+  display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; margin: 0 0 14px; padding: 12px 16px 12px 14px;
+  border-radius: 18px; border: 0; white-space: normal; text-align: left; overflow: hidden; position: relative;
+  background: var(--p-degradado) !important; color: #fff !important; font-weight: 700; font-size: 0.95rem; line-height: 1.3;
+  box-shadow: 0 10px 26px rgba(24, 70, 184, 0.30);
+}
+#aviso-mensaje.aviso-mensaje.oculto { display: none; }
+#aviso-mensaje.aviso-mensaje::before {
+  content: ""; flex: none; width: 34px; height: 34px; border-radius: 12px; background: rgba(255, 255, 255, 0.16) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 12a8 8 0 01-11.6 7.1L4 20l1-4.6A8 8 0 1121 12z'/%3E%3C/svg%3E") center / 18px no-repeat;
+}
+#aviso-mensaje.aviso-mensaje::after { content: "›"; margin-left: auto; font-size: 1.6rem; line-height: 1; opacity: .8; }
+
+/* ---------- Línea del plan ---------- */
+.plan-linea { border-radius: 14px; border: 1px solid rgba(24, 160, 88, 0.16); background: linear-gradient(180deg, #F1FBF5, #E8F7EE); box-shadow: var(--p-sombra-1); }
+.resumen-rnm { font-weight: 700; color: var(--p-azul-700); letter-spacing: .01em; }
+
+/* ---------- Tarjeta principal del RNM: "documento" con degradado, brillo y profundidad ---------- */
+.rastreador {
+  border: 1px solid var(--p-borde-fino); box-shadow: var(--p-sombra-2); border-radius: 26px;
+  background: linear-gradient(180deg, #FFFFFF 0%, #FBFCFF 100%);
+  transition: transform .25s var(--p-curva), box-shadow .25s ease;
+}
+.rastreador.clic:active { transform: scale(.985); box-shadow: var(--p-sombra-1); }
+.rastreador::before { height: 0; }
+.rastreador:not(.compacto) .rt-top {
+  margin: -22px -20px 16px; padding: 18px 20px 16px; color: rgba(255, 255, 255, 0.78);
+  background: var(--p-degradado); position: relative; overflow: hidden;
+}
+.rastreador.ok:not(.compacto) .rt-top { background: linear-gradient(135deg, #0B3D2A 0%, #13804D 60%, #22B067 100%); }
+.rastreador.aviso:not(.compacto) .rt-top { background: linear-gradient(135deg, #4A2A00 0%, #A86400 60%, #E09A1A 100%); }
+.rastreador.mal:not(.compacto) .rt-top { background: linear-gradient(135deg, #4A0E0A 0%, #9E2A22 60%, #D2483E 100%); }
+.rastreador:not(.compacto) .rt-top::after { /* brillo que pasa por la tarjeta */
+  content: ""; position: absolute; inset: 0; background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.22) 50%, transparent 65%);
+  transform: translateX(-100%); animation: p-brillo 5.5s ease-in-out 1.2s infinite;
+}
+.rastreador:not(.compacto) .rt-rnm { color: #fff; font-size: 1.02rem; letter-spacing: .08em; font-family: ui-monospace, "SF Mono", "Roboto Mono", Menlo, monospace; font-weight: 700; }
+.rastreador:not(.compacto) .rt-rnm::before { content: "Documento migratorio"; display: block; font-family: var(--font-family); font-size: .62rem; letter-spacing: .14em; font-weight: 700; opacity: .7; margin-bottom: 4px; }
+.rastreador:not(.compacto) .rt-fecha { align-self: flex-start; padding: 4px 10px; border-radius: 99px; background: rgba(255, 255, 255, 0.16); color: #fff; font-size: .74rem; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+.rastreador .rt-titular { color: var(--p-navy-900); }
+.rt-linea { height: 6px; background: #E8EDF7; }
+.rt-relleno { background: linear-gradient(90deg, color-mix(in srgb, var(--tono) 70%, #fff), var(--tono)); box-shadow: 0 0 12px color-mix(in srgb, var(--tono) 45%, transparent); }
+.rt-marcador { box-shadow: 0 8px 18px color-mix(in srgb, var(--tono) 40%, transparent); }
+.rt-cta { border-radius: 16px !important; background-image: linear-gradient(180deg, color-mix(in srgb, var(--tono) 82%, #fff), var(--tono)) !important; box-shadow: 0 1px 0 rgba(255, 255, 255, 0.25) inset, 0 8px 20px color-mix(in srgb, var(--tono) 35%, transparent) !important; }
+.rastreador.listo { box-shadow: 0 0 0 1px rgba(24, 160, 88, 0.22), 0 22px 50px rgba(24, 160, 88, 0.22); }
+.rastreador.compacto { border-radius: 22px; }
+
+/* ---------- Tarjetas y filas en general ---------- */
+.tarjeta, .fila-rnm, .history-card, .plan-card, .lista-ajustes, .perfil-head, .perfil-stats .stat, .bienvenida-card, .como-funciona {
+  border: 1px solid var(--p-borde-fino) !important; box-shadow: var(--p-sombra-1) !important; border-radius: 22px !important;
+}
+.fila-rnm, .history-card, .fila-aj { transition: transform .15s ease, background-color .2s ease; }
+.fila-rnm:active, .fila-aj:active, .history-card:active { transform: scale(.985); }
+.titulo-otros, .seccion-app h3.titulo-seccion { font-size: .78rem; text-transform: uppercase; letter-spacing: .12em; color: var(--text-muted); font-weight: 800; }
+
+/* Perfil: cabecera con degradado */
+.perfil-head { background: var(--p-degradado) !important; color: #fff; position: relative; overflow: hidden; }
+.perfil-head::after { content: ""; position: absolute; width: 220px; height: 220px; right: -70px; top: -90px; border-radius: 50%; background: radial-gradient(circle, rgba(255, 255, 255, 0.18), transparent 70%); pointer-events: none; }
+.perfil-head h2, .perfil-head h3, .perfil-head b, .perfil-head strong { color: #fff !important; }
+.perfil-head p, .perfil-head span, .perfil-head small { color: rgba(255, 255, 255, 0.78) !important; }
+.perfil-head button, .perfil-head .btn { background: rgba(255, 255, 255, 0.16) !important; color: #fff !important; border: 1px solid rgba(255, 255, 255, 0.22) !important; box-shadow: none !important; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+
+/* Planes: el plan actual y el recomendado brillan */
+.plan-card.actual { background: linear-gradient(180deg, #fff, #F5F8FF) !important; box-shadow: 0 0 0 1.5px rgba(46, 107, 240, 0.35), var(--p-sombra-2) !important; }
+
+/* ---------- Barra inferior: píldora de cristal flotante con indicador que se desliza ---------- */
+.app-bottom-nav {
+  --nav-i: 0;
+  left: 50% !important; bottom: calc(10px + env(safe-area-inset-bottom, 0px)) !important; width: calc(100% - 24px) !important; max-width: 520px;
+  height: var(--bottom-nav-h) !important; padding: 6px !important; border-radius: 24px !important;
+  background: rgba(255, 255, 255, 0.82) !important; -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
+  border: 1px solid rgba(10, 31, 71, 0.08) !important; box-shadow: 0 12px 36px rgba(10, 31, 71, 0.16), 0 2px 6px rgba(10, 31, 71, 0.06) !important;
+  overflow: visible;
+}
+.app-bottom-nav::before { /* indicador */
+  content: ""; position: absolute; top: 6px; bottom: 6px; left: 6px; width: calc((100% - 12px) / 5); border-radius: 18px;
+  background: linear-gradient(180deg, #EEF3FF, #E2EAFF); box-shadow: inset 0 0 0 1px rgba(46, 107, 240, 0.12);
+  transform: translateX(calc(var(--nav-i) * 100%)); transition: transform .42s var(--p-rebote);
+}
+.bottom-nav-item { position: relative; z-index: 1; flex: 1; font-size: .68rem !important; font-weight: 700; color: #7A879C; letter-spacing: .01em; transition: color .2s ease; }
+.bottom-nav-item svg { padding: 2px 0 !important; background: none !important; width: 23px !important; height: 23px !important; transition: transform .35s var(--p-rebote); }
+.bottom-nav-item.active { color: var(--p-azul-700) !important; }
+.bottom-nav-item.active svg { transform: translateY(-1px) scale(1.08); animation: none !important; fill: rgba(46, 107, 240, 0.12); }
+.bottom-nav-item:active svg { transform: scale(.88); }
+.bottom-nav-item .onda { display: none; }
+/* espacio para que la barra flotante no tape el final del contenido */
+.app-content { padding-bottom: calc(var(--bottom-nav-h) + 34px + env(safe-area-inset-bottom, 0px)) !important; }
+
+/* ---------- Transición entre secciones ---------- */
+.seccion-app.p-entra { animation: p-entra .38s var(--p-curva) both; }
+@keyframes p-entra { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+/* Aparición de tarjetas más rápida y nítida (antes tardaba casi 2 s en verse completa) */
+.rev { transform: translateY(8px) scale(.995); transition: opacity .32s ease var(--rev-d, 0ms), transform .38s var(--p-curva) var(--rev-d, 0ms) !important; }
+
+/* ---------- Esqueleto de carga con brillo ---------- */
+.esqueleto .esq-linea, .esqueleto .esq-titulo, .esqueleto .esq-card {
+  background: linear-gradient(90deg, #E8EDF6 0%, #F4F7FC 40%, #E8EDF6 80%) !important; background-size: 220% 100% !important; animation: p-esq 1.3s ease-in-out infinite !important;
+}
+@keyframes p-esq { from { background-position: 120% 0; } to { background-position: -120% 0; } }
+
+/* ---------- Avisos emergentes (toast): cristal oscuro ---------- */
+.toast-zona { bottom: calc(var(--bottom-nav-h) + 26px + env(safe-area-inset-bottom, 0px)) !important; }
+.toast-flujo { background: rgba(10, 31, 71, 0.88) !important; -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 18px !important; }
+
+/* ---------- Pantalla de entrada ---------- */
+#vista-login {
+  background:
+    radial-gradient(600px 360px at 85% -40px, rgba(46, 107, 240, 0.55), transparent 70%),
+    radial-gradient(520px 320px at -10% 30%, rgba(24, 160, 88, 0.22), transparent 70%),
+    radial-gradient(500px 300px at 110% 75%, rgba(245, 197, 24, 0.18), transparent 70%),
+    linear-gradient(180deg, #071A3E 0%, #0C2B66 520px, #F3F6FC 520px) !important;
+  background-color: #071A3E !important;
+}
+#vista-login .fig-barra { background: transparent !important; color: #fff; padding-top: env(safe-area-inset-top, 0px); }
+#vista-login .fig-barra span, #vista-login .fig-barra b { color: #fff !important; }
+#vista-login .fig-hero-marca {
+  background: rgba(255, 255, 255, 0.10) !important; border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); box-shadow: 0 30px 60px rgba(3, 12, 32, 0.35) !important;
+}
+#vista-login .fig-hero-marca::before { /* halo detrás del logo */
+  content: ""; position: absolute; width: 70%; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle, rgba(143, 179, 255, 0.45), transparent 65%); filter: blur(10px); animation: p-halo 6s ease-in-out infinite;
+}
+#vista-login .fig-hero-marca img { position: relative; filter: drop-shadow(0 18px 30px rgba(0, 0, 0, 0.35)); }
+#vista-login .eyebrow-fig { color: var(--p-azul-300); }
+#vista-login .fig-login > .sub { color: rgba(255, 255, 255, 0.78); }
+#vista-login .fig-bene, #vista-login .fig-confianza { text-shadow: none !important; }
+#vista-login .fig-login { position: relative; }
+#vista-login .fig-login > .eyebrow-fig, #vista-login .fig-login > h1, #vista-login .fig-login > .sub, #vista-login .fig-bene {
+  position: relative;
+}
+#vista-login .fig-login > h1 { font-size: 2.1rem; color: #fff; }
+#vista-login .fig-bene { background: #fff; border-radius: 22px; padding: 6px 16px; border: 1px solid var(--p-borde-fino); box-shadow: var(--p-sombra-2); }
+#vista-login .fig-bene li + li { border-top: 1px solid #EEF2F8; }
+#vista-login .btn-fig { border-radius: 18px !important; min-height: 58px !important; font-weight: 800 !important; background: #fff !important; background-image: none !important; color: var(--p-navy-900) !important; border: 1px solid rgba(10, 31, 71, 0.12) !important; box-shadow: 0 10px 26px rgba(10, 31, 71, 0.14) !important; }
+#vista-login .fig-confianza { background: rgba(255, 255, 255, 0.7); border-radius: 18px; }
+
+/* Aviso de medición de anuncios: hoja compacta en vez de tapar media pantalla */
+.consent-pixel { border-radius: 22px !important; box-shadow: var(--p-sombra-3) !important; border: 1px solid var(--p-borde-fino) !important; font-size: .86rem !important; line-height: 1.4 !important; bottom: calc(12px + env(safe-area-inset-bottom, 0px)) !important; }
+
+/* ---------- Confeti cuando el RNM está listo ---------- */
+.p-confeti { position: fixed; inset: 0; pointer-events: none; z-index: 400; overflow: hidden; }
+.p-confeti i { position: absolute; top: -12px; width: 8px; height: 12px; border-radius: 2px; opacity: .95; animation: p-cae var(--dur, 1.8s) cubic-bezier(.25, .6, .4, 1) var(--ret, 0s) forwards; }
+@keyframes p-cae { to { transform: translate3d(var(--dx, 0), 105vh, 0) rotate(var(--rot, 540deg)); opacity: .9; } }
+
+/* ---------- Animaciones ---------- */
+@keyframes p-brillo { 0%, 70% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+@keyframes p-halo { 0%, 100% { transform: scale(1); opacity: .9; } 50% { transform: scale(1.12); opacity: 1; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .seccion-app.p-entra, .rastreador:not(.compacto) .rt-top::after, #vista-login .fig-hero-marca::before, .esqueleto * { animation: none !important; }
+  .app-bottom-nav::before { transition: none; }
+  .p-confeti { display: none; }
+}
+
+/* Escritorio: la barra inferior no se usa */
+@media (min-width: 1024px) { .app-content { padding-bottom: 40px !important; } }

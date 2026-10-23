@@ -3,6 +3,6 @@
       "target": {
         "namespace": "android_app",
         "package_name": "br.com.flujomigracao.rnm",
-        "sha256_cert_fingerprints": ["2E:42:E0:B5:A3:83:A9:DA:D5:39:57:AE:F0:C4:CB:60:F7:FF:9F:0D:75:AF:F9:8E:F1:3A:4D:85:59:B8:05:4A"]
+        "sha256_cert_fingerprints": ["7A:C8:1A:F0:9F:5D:48:F4:75:94:D6:CF:D3:0D:3D:1C:E8:80:9B:23:28:FD:1A:35:13:8F:B8:66:C2:A5:FC:88"]
       }
     }]

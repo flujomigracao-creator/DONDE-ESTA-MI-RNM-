@@ -2,20 +2,28 @@
   "id": "/",
   "name": "¿Dónde está mi RNM?",
   "short_name": "Mi RNM",
-  "description": "Consulta el estado de tu RNM en la Policía Federal de Brasil.",
+  "description": "Seguimiento del estado de tu RNM en la Policía Federal de Brasil. Servicio independiente, no oficial.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
+  "display_override": ["standalone"],
   "orientation": "portrait",
-  "background_color": "#F5F7FB",
-  "theme_color": "#0A2A5E",
+  "background_color": "#071A3E",
+  "theme_color": "#0A1F47",
   "lang": "es",
+  "dir": "ltr",
   "categories": ["utilities", "productivity"],
+  "prefer_related_applications": false,
   "icons": [
     { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
     { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ],
+  "shortcuts": [
+    { "name": "Validar mi carné", "short_name": "Validar", "url": "./index.html#validar", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] },
+    { "name": "Historial de consultas", "short_name": "Historial", "url": "./index.html#historial", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] },
+    { "name": "Planes", "short_name": "Planes", "url": "./index.html#planes", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] }
   ]
 }

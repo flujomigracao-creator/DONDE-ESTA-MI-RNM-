@@ -1,5 +1,5 @@
-var CACHE = "rnm-v142";
-var ARCHIVOS = ["./", "index.html", "app.js", "push-web.js", "manifest.json", "icon.svg", "premium.css", "figma.css", "logo-rnm-grande.png", "logo-rnm.png", "efectos.js", "fondo-brasil.jpg"];
+var CACHE = "rnm-v143";
+var ARCHIVOS = ["./", "index.html", "offline.html", "app.js", "push-web.js", "meta-pixel.js", "play.js", "manifest.json", "icon.svg", "icon-192.png", "premium.css", "figma.css", "movil.css", "logo-rnm-grande.png", "logo-rnm.png", "efectos.js"];
 
 self.addEventListener("install", function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(ARCHIVOS); }));
@@ -14,8 +14,13 @@ self.addEventListener("activate", function (e) {
 self.addEventListener("fetch", function (e) {
   var u = new URL(e.request.url);
   if (u.origin !== location.origin) return;
+  // Sin conexión, una página (con o sin ?parámetros) muestra la pantalla "Sin conexión": la app necesita red para sus datos.
+  if (e.request.mode === "navigate") {
+    e.respondWith(fetch(e.request).catch(function () { return caches.match("offline.html"); }));
+    return;
+  }
   e.respondWith(
-    fetch(e.request).catch(function () { return caches.match(e.request); })
+    fetch(e.request).catch(function () { return caches.match(e.request, { ignoreSearch: true }); })
   );
 });
 

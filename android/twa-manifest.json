@@ -1,0 +1,72 @@
+{
+  "packageId": "br.com.flujomigracao.rnm",
+  "host": "mirnm.com.br",
+  "name": "¿Dónde está mi RNM?",
+  "launcherName": "Mi RNM",
+  "display": "standalone",
+  "themeColor": "#0A1F47",
+  "themeColorDark": "#0A1F47",
+  "navigationColor": "#FFFFFF",
+  "navigationColorDark": "#000000",
+  "navigationDividerColor": "#E3E8F1",
+  "navigationDividerColorDark": "#000000",
+  "backgroundColor": "#071A3E",
+  "enableNotifications": true,
+  "startUrl": "/index.html",
+  "iconUrl": "https://mirnm.com.br/icon-512.png",
+  "maskableIconUrl": "https://mirnm.com.br/icon-maskable-512.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "./rnm-upload.keystore",
+    "alias": "rnm-upload"
+  },
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
+  "shortcuts": [
+    {
+      "name": "Validar mi carné",
+      "shortName": "Validar",
+      "url": "https://mirnm.com.br/index.html#validar",
+      "chosenIconUrl": "https://mirnm.com.br/icon-192.png"
+    },
+    {
+      "name": "Historial de consultas",
+      "shortName": "Historial",
+      "url": "https://mirnm.com.br/index.html#historial",
+      "chosenIconUrl": "https://mirnm.com.br/icon-192.png"
+    },
+    {
+      "name": "Planes",
+      "shortName": "Planes",
+      "url": "https://mirnm.com.br/index.html#planes",
+      "chosenIconUrl": "https://mirnm.com.br/icon-192.png"
+    }
+  ],
+  "generatorApp": "bubblewrap-core 1.27.0",
+  "webManifestUrl": "https://mirnm.com.br/manifest.json",
+  "fallbackType": "customtabs",
+  "features": {
+    "playBilling": {
+      "enabled": true
+    }
+  },
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://mirnm.com.br/",
+  "minSdkVersion": 24,
+  "orientation": "portrait",
+  "fingerprints": [],
+  "additionalTrustedOrigins": [],
+  "retainedBundles": [],
+  "protocolHandlers": [],
+  "fileHandlers": [],
+  "launchHandlerClientMode": "",
+  "displayOverride": [
+    "standalone"
+  ],
+  "appVersion": "1.0.0"
+}

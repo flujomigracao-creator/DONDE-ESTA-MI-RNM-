@@ -131,4 +131,70 @@
   document.addEventListener("focusout", function () {
     setTimeout(function () { if (!esCampo(document.activeElement)) document.body.classList.remove("escribiendo"); }, 120);
   });
+
+  /* ---------- Barra inferior: el indicador se desliza a la pestaña activa ---------- */
+  var barra = document.querySelector(".app-bottom-nav");
+  function moverIndicador() {
+    if (!barra) return;
+    var items = $$(".bottom-nav-item", barra), i = items.findIndex(function (b) { return b.classList.contains("active"); });
+    barra.style.setProperty("--nav-i", String(Math.max(0, i)));
+  }
+  if (barra) {
+    moverIndicador();
+    new MutationObserver(moverIndicador).observe(barra, { attributes: true, subtree: true, attributeFilter: ["class"] });
+  }
+
+  /* ---------- Transición al cambiar de sección + título de la cabecera ---------- */
+  $$(".seccion-app").forEach(function (s) {
+    var oculta = s.classList.contains("oculto");
+    new MutationObserver(function () {
+      var ahora = s.classList.contains("oculto");
+      if (oculta && !ahora && !reducir) { s.classList.remove("p-entra"); void s.offsetWidth; s.classList.add("p-entra"); }
+      oculta = ahora;
+    }).observe(s, { attributes: true, attributeFilter: ["class"] });
+  });
+  var titulo = document.getElementById("app-header-titulo");
+  if (titulo && !reducir) {
+    var previo = titulo.textContent;
+    new MutationObserver(function () {
+      if (titulo.textContent === previo) return;
+      previo = titulo.textContent;
+      titulo.classList.add("cambia"); requestAnimationFrame(function () { requestAnimationFrame(function () { titulo.classList.remove("cambia"); }); });
+    }).observe(titulo, { childList: true, characterData: true, subtree: true });
+  }
+
+  /* ---------- Confeti la primera vez que se ve un RNM listo para retirar ---------- */
+  var COLORES = ["#18A058", "#F5C518", "#2E6BF0", "#FFFFFF", "#8FB3FF"];
+  window.lanzarConfeti = function () {
+    if (reducir) return;
+    var c = document.createElement("div"); c.className = "p-confeti"; c.setAttribute("aria-hidden", "true");
+    for (var i = 0; i < 70; i++) {
+      var p = document.createElement("i");
+      p.style.left = Math.random() * 100 + "vw";
+      p.style.background = COLORES[i % COLORES.length];
+      p.style.setProperty("--dx", (Math.random() * 160 - 80) + "px");
+      p.style.setProperty("--rot", (Math.random() * 900 + 180) + "deg");
+      p.style.setProperty("--dur", (1.4 + Math.random() * 1.2) + "s");
+      p.style.setProperty("--ret", (Math.random() * 0.35) + "s");
+      if (i % 3 === 0) { p.style.width = "6px"; p.style.height = "6px"; p.style.borderRadius = "50%"; }
+      c.appendChild(p);
+    }
+    document.body.appendChild(c);
+    vibrar([12, 40, 18]);
+    setTimeout(function () { c.remove(); }, 3200);
+  };
+  function celebrarListos() {
+    $$(".rastreador.listo:not(.compacto)").forEach(function (t) {
+      var r = (t.querySelector(".rt-rnm") || {}).textContent || "";
+      var clave = "rnm_celebrado_" + r.replace(/\W/g, "");
+      var visto = false; try { visto = localStorage.getItem(clave) === "1"; } catch (e) { visto = true; }
+      if (!r || visto || t.getBoundingClientRect().top > window.innerHeight) return;
+      try { localStorage.setItem(clave, "1"); } catch (e) { /* sin almacenamiento */ }
+      setTimeout(window.lanzarConfeti, 450);
+    });
+  }
+  var programarCelebracion = function () { clearTimeout(celebrarListos.t); celebrarListos.t = setTimeout(celebrarListos, 300); };
+  if (contenido) new MutationObserver(programarCelebracion).observe(contenido, { childList: true, subtree: true });
+  programarCelebracion(); // por si la tarjeta ya se pintó antes de cargar este archivo
+  window.addEventListener("hashchange", programarCelebracion);
 })();
