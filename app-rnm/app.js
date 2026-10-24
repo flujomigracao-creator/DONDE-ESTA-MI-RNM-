@@ -2344,10 +2344,17 @@ function rastreador(x, opciones) {
   return c;
 }
 function planLinea(regs, plan) {
-  var activo = !!plan && new Date(plan.vence_at) > new Date();
+  // Solo aparece cuando hay algo que hacer (plan por vencer, RNM sin cobertura…). Con todo en orden no ocupa espacio:
+  // el plan y su fecha se ven en Planes y en el detalle de cada RNM.
   var alerta = avisoPlan(regs);
   if (alerta) return alerta;
-  if (activo) { var d = el("div", "plan-linea ok", ""); d.innerHTML = SVG_OK + "<span>" + (plan.tipo === "manual" ? "Plan manual activo" : "Seguimiento " + (plan.tipo === "quincenal" ? "quincenal" : "semanal") + " activo") + " · hasta " + fechaCorta(plan.vence_at) + "</span>"; return d; }
+  var dias = plan && Math.ceil((new Date(plan.vence_at) - new Date()) / 86400000);
+  if (plan && dias > 0 && dias <= 5) {
+    var d = el("button", "plan-linea aviso", ""); d.type = "button";
+    d.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8v5M12 16.5v.01"/><circle cx="12" cy="12" r="9"/></svg><span>Tu plan vence ' + (dias === 1 ? "mañana" : "en " + dias + " días") + ' · <b>Renovar</b></span>';
+    d.addEventListener("click", function () { navegarA("planes"); });
+    return d;
+  }
   return null;
 }
 
