@@ -302,6 +302,30 @@ button:disabled { filter: saturate(.6); }
 @media (prefers-reduced-motion: reduce) { .verif-top.cargando .verif-top-ico svg { animation: none; } }
 .verif-ahora { border: 1.5px solid rgba(24, 70, 184, 0.22) !important; background: linear-gradient(180deg, #fff, #F7FAFF); }
 
+/* ==========================================================================
+   PLANES: pantalla y ventana — elegir, ver qué incluye y continuar sin dar vueltas
+   ========================================================================== */
+.planes-incluyen { margin: 0 0 12px; padding: 10px 12px; border-radius: 12px; background: var(--brand-soft); color: var(--p-navy-800); font-size: .82rem; font-weight: 600; line-height: 1.4; }
+.planes-tarjeta .planes-op { display: grid; gap: 12px; }
+/* Pantalla sin plan: el encabezado es la tarjeta de arriba, compacta, sin botón repetido */
+.plan-estado.sin-plan { background: var(--p-degradado) !important; border: 0 !important; color: #fff; box-shadow: 0 12px 30px rgba(24, 70, 184, 0.28) !important; }
+.plan-estado.sin-plan h3 { color: #fff !important; font-size: 1.35rem; margin: 0 0 6px; }
+.plan-estado.sin-plan .sub { color: rgba(255, 255, 255, 0.85) !important; margin: 0; }
+/* Tarjetas de plan: lo elegido se ve claro y la marca de «elegido» ya no tapa el texto */
+.plan-op { cursor: pointer; transition: transform .15s ease, box-shadow .2s ease, border-color .2s ease; padding-top: 20px; }
+.plan-op:active:not(:disabled) { transform: scale(.985); }
+.plan-op.sel::after { top: -11px !important; right: 16px !important; bottom: auto !important; width: 26px !important; height: 26px !important; box-shadow: 0 4px 10px rgba(10, 31, 71, 0.25); }
+#cartel .plan-op.sel::after { right: auto !important; left: 16px !important; }
+.plan-op-puntos { gap: 6px; }
+.plan-op:not(.sel):not(.actual):not(:disabled) { opacity: .92; }
+/* Botón de continuar: queda a la vista al desplazar la pantalla */
+.plan-cta-barra { position: sticky; bottom: calc(var(--bottom-nav-h) + 22px + env(safe-area-inset-bottom, 0px)); z-index: 5; margin: 14px -6px 4px; padding: 10px 6px 6px; background: linear-gradient(180deg, rgba(255, 255, 255, 0), #fff 28%); }
+.plan-cta { width: 100%; min-height: 58px; border-radius: 16px; font-size: 1rem; font-weight: 800; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; line-height: 1.2; padding: 8px 14px; box-shadow: 0 10px 26px rgba(24, 70, 184, 0.35); }
+.plan-cta-p { font-size: .8rem; font-weight: 600; opacity: .9; }
+/* Ventana de planes: el botón de continuar siempre visible al final de la hoja */
+#cartel .acciones { position: sticky; bottom: 0; z-index: 3; margin: 12px -4px 0; padding: 12px 4px calc(6px + env(safe-area-inset-bottom, 0px)); background: linear-gradient(180deg, rgba(255, 255, 255, 0), #fff 24%); }
+#cartel .pay-titulo { font-size: 1.3rem; line-height: 1.2; }
+
 /* --- «Qué significa» --- */
 .significa-card { padding: 16px 18px; }
 .significa-card .hero-eyebrow { margin-bottom: 8px; }

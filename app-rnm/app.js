@@ -290,7 +290,11 @@ function mostrarSeccion(id) {
   var t = $("app-header-titulo"); if (t) t.textContent = SECCIONES_INFO[id].titulo;
 
   // Sincronizar contenidos específicos
-  if (id === "planes") renderizarPlanes(registrosCargados, planCargado);
+  if (id === "planes") {
+    // Ya está mirando los planes: la ventana que le ofrece suscribirse sobraría encima de la pantalla.
+    var ofertaAbierta = $("modal-seguir"); if (ofertaAbierta && !ofertaAbierta.classList.contains("oculto")) cerrarOfertaSeguimiento(0);
+    renderizarPlanes(registrosCargados, planCargado);
+  }
   if (id === "validar") { actualizarAnuncios(); embudo("validar_abierto"); }
   if (id === "nueva-consulta" && typeof irSubPaso === "function") irSubPaso(1);
   if (id === "historial") {
@@ -1228,13 +1232,15 @@ var PRECIOS = { quincenal: 499, semanal: 999, manual: 1999 }; // centavos al mes
 var ORDEN_PLAN = { quincenal: 1, semanal: 2, manual: 3 };
 function planSuperior(tipo) { return tipo === "quincenal" ? "semanal" : (tipo === "semanal" ? "manual" : null); }
 function reales(c) { return "R$ " + (c / 100).toFixed(2).replace(".", ","); }
+/* En cada plan solo se escribe lo que lo distingue; lo que comparten los tres va una sola vez en INCLUYEN_TODOS. */
+var INCLUYEN_TODOS = "Todos incluyen: primera verificación gratis en cada RNM, ver dónde está tu RNM y qué hacer, y avisos cuando cambie.";
 var PLANES = {
-  quincenal: { nombre: "Quincenal", etiqueta: "Plan quincenal", insignia: "Más económico", lema: "Actualización automática cada 15 días",
-    puntos: ["Hasta 2 RNM en una sola cuenta", "Revisión automática cada 15 días", "Ves dónde está tu RNM y qué hacer", "Primera verificación gratis en cada RNM"] },
+  quincenal: { nombre: "Quincenal", etiqueta: "Plan quincenal", insignia: "Más económico", lema: "Lo revisamos cada 15 días",
+    puntos: ["Hasta 2 RNM en tu cuenta", "Revisión automática cada 15 días"] },
   semanal: { nombre: "Semanal", etiqueta: "Plan semanal", insignia: "Más elegido", lema: "Lo revisamos por ti, cada semana",
-    puntos: ["Hasta 4 RNM en una sola cuenta", "Revisión automática cada 7 días", "Ves dónde está tu RNM y qué hacer", "Primera verificación gratis en cada RNM"] },
-  manual: { nombre: "Manual", etiqueta: "Plan manual", insignia: "Control total", lema: "Verifica tú, el día que quieras",
-    puntos: ["Hasta 6 RNM en una sola cuenta", "Revisión automática cada 7 días", "Botón «Verificar ahora» en cada RNM", "1 verificación por día y por RNM"] }
+    puntos: ["Hasta 4 RNM en tu cuenta", "Revisión automática cada 7 días"] },
+  manual: { nombre: "Manual", etiqueta: "Plan manual", insignia: "Control total", lema: "Además, verificas tú cuando quieras",
+    puntos: ["Hasta 6 RNM en tu cuenta", "Revisión automática cada 7 días", "Botón «Verificar ahora»: 1 por día y por RNM"] }
 };
 function nombrePlan(tipo) { return (PLANES[tipo] || PLANES.semanal).etiqueta; }
 function frecuenciaPlan(tipo) { return tipo === "quincenal" ? "cada 15 días" : "cada semana"; }
@@ -1773,6 +1779,7 @@ function cartelPlanes(regs, plan) {
     ? "Pagas el nuevo plan completo y reemplaza al actual durante 1 mes desde hoy."
     : (regs.length ? "Cada RNM ya tuvo su primera verificación gratis. Con un plan, lo seguimos por ti." : "Activa tu plan, registra tu RNM y lo vigilamos por ti desde el primer día. Si no te convence, cancelas en la primera hora y te devolvemos tu dinero.")));
   var socialPlanes = el("div", "opiniones-publicas oculto"); c.appendChild(socialPlanes); pintarPruebaSocial(socialPlanes);
+  c.appendChild(el("p", "planes-incluyen", INCLUYEN_TODOS));
   var grid = el("div", "planes-op");
   ["quincenal", "semanal", "manual"].forEach(function (tipo) {
     var esActual = activo && plan.tipo === tipo;
@@ -2055,8 +2062,8 @@ function renderizarPlanes(regs, plan) {
   var abiertos = regs.filter(function (x) { return !x.cerrado; }).length;
   var tipoActual = activo ? (PLANES[plan.tipo] ? plan.tipo : "semanal") : null;
 
-  var estado = el("div", "tarjeta plan-estado");
-  estado.appendChild(el("p", "hero-eyebrow", "Tu plan actual"));
+  var estado = el("div", "tarjeta plan-estado" + (activo ? "" : " sin-plan"));
+  if (activo) estado.appendChild(el("p", "hero-eyebrow", "Tu plan actual"));
   if (activo) {
     estado.appendChild(el("h3", "", nombrePlan(tipoActual) + (plan.cancelado_at ? " · cancelado" : " activo")));
     if (plan.cancelado_at) estado.appendChild(el("p", "sub", "No se renovará ni se volverá a cobrar. Sigues con todo activo hasta el " + fechaCorta(plan.vence_at) + "; después tus RNM dejan de revisarse " + frecuenciaPlan(tipoActual) + "."));
@@ -2066,7 +2073,7 @@ function renderizarPlanes(regs, plan) {
      ["RNM incluidos", "hasta " + (plan.cupos || CUPOS[tipoActual] || 4)],
      ["Revisión automática", tipoActual === "quincenal" ? "1 vez cada 15 días" : "1 vez por semana"],
      ["Verificar ahora", tipoActual === "manual" ? "Incluido (1 por día y por RNM)" : "Solo en el plan manual"],
-     ["RNM en seguimiento", String(abiertos) + " de 4"]
+     ["RNM en seguimiento", String(abiertos) + " de " + (plan.cupos || CUPOS[tipoActual] || 4)]
     ].forEach(function (par) {
       var f = el("div", "review-row");
       f.appendChild(el("span", "", par[0] + ":"));
@@ -2075,20 +2082,12 @@ function renderizarPlanes(regs, plan) {
     });
     estado.appendChild(filas);
   } else {
-    estado.appendChild(el("h3", "", plan ? "Tu plan venció" : "Todavía no tienes un plan"));
+    estado.appendChild(el("h3", "", plan ? "Tu plan venció" : "Elige tu plan"));
     estado.appendChild(el("p", "sub", plan
-      ? "La vigilancia de tus RNM se detuvo el " + fechaCorta(plan.vence_at) + ". Puedes renovarlo cuando quieras."
-      : "Cada RNM tiene su primera verificación gratis. Para seguir vigilándolos después necesitas un plan mensual."));
+      ? "La vigilancia de tus RNM se detuvo el " + fechaCorta(plan.vence_at) + ". Elige un plan para retomarla."
+      : "Cada RNM tiene su primera verificación gratis. Con un plan lo seguimos por ti y te avisamos cuando cambie."));
   }
   var acc = el("div", "acciones");
-  var ver = el("button", "btn", activo ? (planSuperior(tipoActual) ? "Pasar al " + PLANES[planSuperior(tipoActual)].etiqueta.toLowerCase() : "Ver detalles del plan") : "Elegir un plan");
-  ver.type = "button";
-  if (!abiertos) {
-    ver.disabled = true;
-    estado.appendChild(el("p", "sub", "Cuando tengas un RNM en seguimiento podrás elegir un plan."));
-  }
-  ver.addEventListener("click", function () { ampliando = !!(activo && planSuperior(tipoActual)); planElegido = ampliando ? planSuperior(tipoActual) : planElegido; cartelPlanes(regs, plan); abrirModalPlanes(); });
-  if (!(activo && plan.cancelado_at && tipoActual === "manual")) acc.appendChild(ver);
   if (activo && !plan.cancelado_at) {
     var canc = el("button", "btn sec btn-cancelar-plan", "Cancelar plan");
     canc.type = "button";
@@ -2099,21 +2098,45 @@ function renderizarPlanes(regs, plan) {
   cont.appendChild(estado);
   cont.appendChild(notaSemanal());
 
-  var precios = el("div", "tarjeta");
-  precios.appendChild(el("h3", "", "Elige tu plan"));
-  precios.appendChild(el("p", "sub", "Quincenal hasta 2 RNM, semanal hasta 4 y manual hasta 6. Cada RNM tiene su primera verificación gratis."));
+  // Tarjetas de plan: se toca una para elegirla y el botón de abajo continúa al pago (antes tocar una tarjeta abría directamente otra ventana).
+  var puedeComprar = !tipoActual || !!planSuperior(tipoActual); // con el plan más alto activo no hay nada que comprar
+  if (tipoActual && !ORDEN_PLAN[planElegido] ) planElegido = "semanal";
+  if (tipoActual && ORDEN_PLAN[planElegido] <= ORDEN_PLAN[tipoActual]) planElegido = planSuperior(tipoActual) || planElegido;
+  var precios = el("div", "tarjeta planes-tarjeta");
+  if (activo) {
+    precios.appendChild(el("h3", "", puedeComprar ? "Cambiar a un plan superior" : "Planes"));
+    if (puedeComprar) precios.appendChild(el("p", "sub", "Pagas el plan nuevo completo y reemplaza al actual durante 1 mes desde hoy."));
+  }
+  precios.appendChild(el("p", "planes-incluyen", INCLUYEN_TODOS));
   var grid = el("div", "planes-op");
+  var cta = el("button", "plan-cta", ""); cta.type = "button";
+  var textoCta = function () {
+    cta.textContent = "";
+    if (!abiertos) { cta.textContent = "Registrar mi RNM"; return; }
+    cta.appendChild(el("span", "plan-cta-t", (activo ? "Pasar al " : "Continuar con el ") + PLANES[planElegido].etiqueta.toLowerCase()));
+    cta.appendChild(el("span", "plan-cta-p", reales(PRECIOS[planElegido]) + "/mes"));
+  };
   ["quincenal", "semanal", "manual"].forEach(function (tipo) {
     var esActual = tipoActual === tipo;
     var inferior = !!tipoActual && ORDEN_PLAN[tipo] < ORDEN_PLAN[tipoActual];
     grid.appendChild(tarjetaPlan(tipo, { sel: !esActual && !inferior && planElegido === tipo, actual: esActual, off: esActual || inferior,
       onClick: function () {
-        if (!abiertos) return navegarA("nueva-consulta");
-        planElegido = tipo; ampliando = !!tipoActual && ORDEN_PLAN[tipo] > ORDEN_PLAN[tipoActual];
-        cartelPlanes(regs, plan); abrirModalPlanes();
+        planElegido = tipo;
+        [].forEach.call(grid.children, function (b) { b.classList.toggle("sel", !b.disabled && b.classList.contains(tipo)); });
+        textoCta();
       } }));
   });
   precios.appendChild(grid);
+  if (puedeComprar) {
+    textoCta();
+    cta.addEventListener("click", function () {
+      if (!abiertos) return navegarA("nueva-consulta");
+      ampliando = !!tipoActual; // con un plan activo, elegir uno superior es un cambio de plan
+      cartelPlanes(regs, plan); abrirModalPlanes(); mostrarPago(planElegido);
+    });
+    var barra = el("div", "plan-cta-barra"); barra.appendChild(cta); precios.appendChild(barra);
+    if (!abiertos) precios.appendChild(el("p", "sub", "Para elegir un plan primero registra un RNM: así lo seguimos desde el primer día."));
+  }
   var como = el("div", "como-pagar");
   como.innerHTML =
     '<div><b>Tarjeta</b><span>Se renueva sola cada mes. Puedes cancelar cuando quieras.</span></div>' +
