@@ -915,7 +915,9 @@
     sb.auth.getSession().then(function (s) {
       if (!s.data.session) {
         return pantalla("Panel general", "Solo para el dueño. Entra con tu cuenta de Google.", [btn("Entrar con Google", function () {
-          sb.auth.signInWithOAuth({ provider: "google", options: { redirectTo: location.origin + location.pathname } });
+          // Se vuelve a la raíz del sitio (siempre permitida como «Site URL» en Supabase) y la app, al ver esta marca, te trae de vuelta al panel.
+          try { localStorage.setItem("rnm_volver_admin", "1"); } catch (e) { /* sin almacenamiento */ }
+          sb.auth.signInWithOAuth({ provider: "google", options: { redirectTo: location.origin + "/" } });
         })]);
       }
       cargar();
@@ -929,7 +931,9 @@
       }, 120000);
     });
   }
-  iniciar();
+  // El panel vive siempre en el dominio principal: en otro dominio (vercel.app) el inicio de sesión de Google volvía a la app de clientes.
+  if (/\.vercel\.app$/.test(location.hostname)) location.replace("https://mirnm.com.br/admin.html");
+  else iniciar();
 })();
 </script>
 </body>

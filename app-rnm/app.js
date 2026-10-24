@@ -386,6 +386,8 @@ async function mostrar(session) {
   var habiaSesion = !!usuarioActual;
   var cambio = (session && session.user && session.user.id) !== (usuarioActual && usuarioActual.id);
   usuarioActual = session ? session.user : null;
+  // Venía de «Entrar con Google» en el panel del dueño: se le devuelve al panel (no a la app de clientes).
+  try { if (session && localStorage.getItem("rnm_volver_admin") === "1") { localStorage.removeItem("rnm_volver_admin"); location.replace("admin.html"); return; } } catch (e) { /* sin almacenamiento */ }
   if (!session) {
     perfilActual = null;
     if (habiaSesion && !salidaManual) msg("msg-login", "Tu sesión necesita actualizarse. Inicia sesión de nuevo.");
