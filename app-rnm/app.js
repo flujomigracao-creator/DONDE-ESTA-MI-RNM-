@@ -438,6 +438,7 @@ function telefonoBR(texto) {
   if (/^\+/.test(crudo) && !/^\+\s*55/.test(crudo)) return ""; // un número con + de otro país no es de Brasil
   var d = crudo.replace(/\D/g, "").replace(/^0+/, "");
   if ((d.length === 12 || d.length === 13) && d.indexOf("55") === 0) d = d.slice(2);
+  if (d.length > 11) return ""; // de más: no se recorta en silencio
   if (!/^[1-9][1-9](9\d{8}|[2-5]\d{7})$/.test(d)) return "";
   return "55" + d;
 }
@@ -452,7 +453,7 @@ function errorPaso(n) {
   function fallo(id, txt) { campoConError = id; return txt; }
   if (n === 1) {
     if ($("p-nombre").value.trim().length < 3) return fallo("p-nombre", "Escribe tu nombre completo (mínimo 3 letras).");
-    if (!telefonoBR($("p-tel").value)) return fallo("p-tel", "Revisa tu WhatsApp: escribe el código de ciudad (DDD) y el número, por ejemplo 41 99999-1234.");
+    if (!telefonoBR($("p-tel").value)) return fallo("p-tel", problemaTelefono(digitosTelefono($("p-tel").value)) || "Revisa tu WhatsApp: código de ciudad (DDD) y número, por ejemplo 41 99999-1234.");
     if (!$("p-consiento").checked) return fallo("p-consiento", "Debes aceptar la autorización para continuar.");
   } else {
     // La dirección es opcional: si no escribe nada se omite; si escribe algo, tiene que estar completa.
@@ -500,12 +501,40 @@ $("btn-perfil-omitir").addEventListener("click", function () {
   ["p-cep", "p-dir", "p-ciudad", "p-uf"].forEach(function (id) { $(id).value = ""; });
   $("form-perfil").requestSubmit();
 });
-/* Formato mientras se escribe: WhatsApp «41 99999-1234» y estado en mayúsculas */
+/* WhatsApp de Brasil: solo números, máximo 11 (DDD de 2 + celular de 9) y aviso en vivo de cuántos faltan.
+   Se aceptan números pegados con «+55» o «55» delante: se quitan solos porque el +55 ya está en el campo. */
+function digitosTelefonoCrudos(texto) {
+  var d = String(texto || "").replace(/\D/g, "");
+  if (d.length > 11 && d.indexOf("55") === 0) d = d.slice(2); // pegado como +55 41 99999-1234
+  return d.replace(/^0+/, "");
+}
+function digitosTelefono(texto) { return digitosTelefonoCrudos(texto).slice(0, 11); }
+/* Qué le falta o qué está mal en lo escrito: "" si está completo y bien */
+function problemaTelefono(d) {
+  if (!d.length) return "Escribe tu WhatsApp.";
+  if (d.length < 2) return "Escribe el código de ciudad (DDD) y después el número.";
+  if (!/^[1-9][1-9]/.test(d)) return "El código de ciudad (DDD) no es válido: son 2 números, por ejemplo 11 o 41.";
+  if (d.length >= 3 && d.charAt(2) !== "9" && d.length > 10) return "El celular empieza con 9 después del código de ciudad.";
+  if (d.length < 11 && !(d.length === 10 && /^[2-5]/.test(d.slice(2)))) {
+    var f = 11 - d.length;
+    return "Te " + (f === 1 ? "falta 1 número" : "faltan " + f + " números") + ": son 11 en total (DDD + 9 dígitos).";
+  }
+  return "";
+}
 function formatearTelefonoCampo(e) {
-  var v = e.target.value; if (/^\s*\+/.test(v)) return; // si escribe +55… se respeta tal cual
-  var d = v.replace(/\D/g, "").slice(0, 11), f = d;
+  var antes = e.target.value, crudos = digitosTelefonoCrudos(antes), d = crudos.slice(0, 11), f = d, sobran = crudos.length - d.length;
   if (d.length > 2) { var resto = d.slice(2); f = d.slice(0, 2) + " " + (resto.length > 4 ? resto.slice(0, resto.length - 4) + "-" + resto.slice(-4) : resto); }
   e.target.value = f;
+  var ayuda = e.target.closest(".form-field").querySelector(".ayuda-campo");
+  if (!ayuda) return;
+  if (ayuda.dataset.base === undefined) ayuda.dataset.base = ayuda.textContent;
+  var letras = /[^\d\s()+\-.]/.test(antes);
+  var prob = d.length ? problemaTelefono(d) : "";
+  if (sobran > 0) { ayuda.textContent = (sobran === 1 ? "Sobra 1 número" : "Sobran " + sobran + " números") + ": son 11 en total. Revisa tu número."; ayuda.className = "sub ayuda-campo cep-fallo"; }
+  else if (letras) { ayuda.textContent = "Solo números, por favor."; ayuda.className = "sub ayuda-campo cep-fallo"; }
+  else if (!d.length) { ayuda.textContent = ayuda.dataset.base; ayuda.className = "sub ayuda-campo"; }
+  else if (!prob) { ayuda.textContent = "Número completo ✓"; ayuda.className = "sub ayuda-campo cep-ok"; }
+  else { ayuda.textContent = prob; ayuda.className = "sub ayuda-campo" + (d.length >= 2 && !/^[1-9][1-9]/.test(d) ? " cep-fallo" : ""); }
 }
 function formatearUfCampo(e) { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 2); }
 ["p-tel", "ed-tel"].forEach(function (id) { $(id).addEventListener("input", formatearTelefonoCampo); });
@@ -565,7 +594,7 @@ function cargarEditarDatos() {
 function errorEditar() {
   var v = valoresEditar();
   if (v.nombre.length < 3) return ["ed-nombre", "Escribe tu nombre completo (mínimo 3 letras)."];
-  if (!telefonoBR($("ed-tel").value)) return ["ed-tel", "Revisa tu WhatsApp: escribe el código de ciudad (DDD) y el número, por ejemplo 41 99999-1234."];
+  if (!telefonoBR($("ed-tel").value)) return ["ed-tel", problemaTelefono(digitosTelefono($("ed-tel").value)) || "Revisa tu WhatsApp: código de ciudad (DDD) y número, por ejemplo 41 99999-1234."];
   // La dirección es opcional: si escribe algo, tiene que estar completa.
   if (!(v.cep || v.uf || v.dir || v.ciudad)) return null;
   if (v.cep && !/^\d{8}$/.test(v.cep)) return ["ed-cep", "El CEP tiene 8 números."];
