@@ -2494,7 +2494,7 @@ function renderVerificarInicio(regs, plan) {
   var tx = el("span", "verif-top-txt", ""), t = el("b", "", "Verificar ahora"), s = el("small", "", "");
   tx.appendChild(t); tx.appendChild(s); b.appendChild(ico); b.appendChild(tx);
   if (!conPlan) {
-    s.textContent = "Pídele a la Policía Federal que revise tu RNM ya, sin esperar. Solo con el plan manual (" + reales(PRECIOS.manual) + "/mes).";
+    s.textContent = "Revisa tu RNM ya, sin esperar";
     b.appendChild(el("span", "verif-top-pill", "Plan manual"));
     b.addEventListener("click", function () { planElegido = "manual"; ampliando = vigente; cartelPlanes(registrosCargados, planCargado); abrirModalPlanes(); });
   } else {
@@ -2502,15 +2502,15 @@ function renderVerificarInicio(regs, plan) {
     var libres = estados.filter(function (e) { return e.ev && e.ev.modo === "disponible"; }).map(function (e) { return e.x; });
     var enCurso = estados.some(function (e) { return e.ev && e.ev.modo === "enCurso"; });
     if (libres.length) {
-      s.textContent = (libres.length === 1 ? "Consulta tu RNM en la Policía Federal ahora mismo" : "Consulta tus " + libres.length + " RNM en la Policía Federal ahora mismo") + " · 1 vez por día y por RNM";
+      s.textContent = (libres.length === 1 ? "Consulta tu RNM ahora" : "Consulta tus " + libres.length + " RNM ahora") + " · 1 vez al día";
       b.addEventListener("click", function () { verificarTodosAhora(libres, b, s); });
     } else if (enCurso) {
-      t.textContent = "Verificando…"; s.textContent = "Tarda unos minutos. Puedes cerrar la app: el resultado aparece aquí."; b.disabled = true; b.classList.add("cargando");
+      t.textContent = "Verificando…"; s.textContent = "Tarda unos minutos · puedes cerrar la app"; b.disabled = true; b.classList.add("cargando");
     } else {
       var ult = abiertos.map(function (x) { return x.ultima_manual_at; }).filter(Boolean).sort().pop();
       var hora = ult ? new Date(ult).toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" }) : "";
       t.textContent = "Verificado hoy"; b.disabled = true; b.classList.add("hecho");
-      s.textContent = (hora ? "A las " + hora + " · " : "") + "mañana podrás verificar otra vez";
+      s.textContent = (hora ? "A las " + hora + " · " : "") + "mañana otra vez";
     }
   }
   cont.appendChild(b);
@@ -2525,7 +2525,7 @@ async function verificarTodosAhora(lista, boton, sub) {
   }
   if (!pedidos.length) {
     boton.disabled = !fallo; // si falló se puede reintentar; si ya estaba todo verificado, queda cerrado por hoy
-    sub.textContent = fallo ? "No pudimos pedir la verificación. Intenta de nuevo." : "Ya verificaste todo hoy. Mañana podrás hacerlo otra vez.";
+    sub.textContent = fallo ? "No se pudo. Intenta de nuevo." : "Ya verificaste todo hoy";
     await cargarRegistros();
     return;
   }
