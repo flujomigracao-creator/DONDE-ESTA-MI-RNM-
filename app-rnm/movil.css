@@ -161,6 +161,41 @@ input.sw:focus-visible { outline: 3px solid rgba(21, 94, 239, 0.45); outline-off
 .fila-aj.peligro .txt-aj { color: #B3261E; }
 @media (prefers-reduced-motion: reduce) { input.sw, input.sw::after { transition: none; } }
 
+/* ---------- Onboarding (clientes nuevos): marca, intro, pasos con número ---------- */
+.ob-barra { display: flex; align-items: center; max-width: 560px; margin: 0 auto; padding: calc(14px + env(safe-area-inset-top, 0px)) 20px 0; }
+.ob-marca { display: flex; align-items: center; gap: 10px; font-weight: 600; color: var(--p-navy-900); font-size: .95rem; }
+.ob-marca img { width: 38px; height: auto; }
+.ob-marca b { color: var(--p-azul-700); }
+.ob-intro { margin: 0 0 14px; }
+.ob-eyebrow { margin: 0 0 4px; font-size: .74rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--p-azul-700); }
+#vista-perfil .ob-intro h2 { margin: 0 0 6px !important; font-size: 1.9rem !important; }
+#vista-perfil .ob-intro .sub { margin: 0; }
+.ob-seccion { display: flex; align-items: center; gap: 10px; margin: 6px 0 12px; font-size: 1.1rem; font-weight: 800; color: var(--p-navy-900); }
+.ob-num { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: var(--p-degradado); color: #fff; font-size: .8rem; font-weight: 800; flex: none; }
+.ob-seccion .opcional { margin-left: auto; font-size: .68rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--text-muted); background: var(--surface-alt); padding: 3px 9px; border-radius: 99px; }
+#vista-perfil .paso-etiqueta { display: none; }
+.ob-sub2 { margin: -4px 0 12px; }
+.campo-prefijo { display: flex; align-items: stretch; border: 1.5px solid var(--line-strong); border-radius: 14px; background: #fff; overflow: hidden; transition: border-color .15s ease, box-shadow .15s ease; }
+.campo-prefijo:focus-within { border-color: var(--p-azul-700); box-shadow: 0 0 0 3px rgba(24, 70, 184, 0.14); }
+.campo-prefijo > span { display: flex; align-items: center; padding: 0 12px; background: var(--brand-soft); color: var(--p-navy-900); font-weight: 800; font-size: .92rem; white-space: nowrap; }
+.campo-prefijo > input { border: 0 !important; box-shadow: none !important; border-radius: 0 !important; background: transparent !important; min-width: 0; flex: 1; }
+.campo-prefijo:has([aria-invalid="true"]) { border-color: var(--danger); box-shadow: 0 0 0 3px rgba(179, 38, 30, 0.12); }
+.check-ob { padding: 12px 14px; border-radius: 14px; gap: 12px; font-size: .84rem; line-height: 1.4; }
+.check-ob b { display: block; margin-bottom: 2px; font-size: .9rem; }
+.ob-acciones { gap: 8px; margin-top: 14px; }
+.ob-acciones button[type="submit"] { min-height: 54px; font-weight: 800; font-size: 1.02rem; box-shadow: 0 10px 24px rgba(24, 70, 184, 0.28); }
+
+/* ---------- «Mis datos»: edición dentro de la app, sin pasos ni bienvenida ---------- */
+.ed-volver { display: inline-flex; align-items: center; gap: 4px; margin: 0 0 4px -6px; padding: 8px 12px 8px 6px; border: 0 !important; background: transparent !important; box-shadow: none !important; color: var(--p-azul-700) !important; font-weight: 800; font-size: .95rem; cursor: pointer; }
+.ed-volver svg { width: 20px; height: 20px; }
+.ed-card { padding: 16px 16px 4px; border-radius: 20px; }
+#form-editar .ajustes-titulo { margin-top: 14px; }
+#form-editar .ajustes-titulo .opcional { margin-left: 6px; font-size: .64rem; letter-spacing: .05em; color: var(--text-muted); background: var(--surface-alt); padding: 2px 8px; border-radius: 99px; text-transform: uppercase; }
+#form-editar .nota-cuenta-chica { margin: 12px 4px 0; }
+.ed-barra { position: sticky; bottom: calc(var(--bottom-nav-h, 0px) + 18px + env(safe-area-inset-bottom, 0px)); z-index: 5; margin: 14px -6px 0; padding: 12px 6px 4px; background: linear-gradient(180deg, rgba(247, 249, 255, 0), #F7F9FF 32%); }
+.ed-barra button { width: 100%; min-height: 54px; font-weight: 800; font-size: 1.02rem; box-shadow: 0 10px 24px rgba(24, 70, 184, 0.28); }
+.ed-barra button:disabled { background: #C9D3E8 !important; color: #fff !important; box-shadow: none !important; cursor: default; }
+
 /* ---------- Línea del plan ---------- */
 .plan-linea { border-radius: 14px; border: 1px solid rgba(24, 160, 88, 0.16); background: linear-gradient(180deg, #F1FBF5, #E8F7EE); box-shadow: var(--p-sombra-1); }
 .resumen-rnm { font-weight: 700; color: var(--p-azul-700); letter-spacing: .01em; }

@@ -212,7 +212,8 @@ var SECCIONES_INFO = {
   "validar": { titulo: "Validar carné", sub: "Tu RNM, nacimiento y validez, leídos del QR del carné" },
   "planes": { titulo: "Planes y pagos", sub: "Cobertura mensual para supervisión continua" },
   "ayuda": { titulo: "Ayuda y soporte", sub: "Orientación sobre tu trámite y canales de contacto" },
-  "perfil": { titulo: "Mi cuenta", sub: "Información de tu perfil y preferencias" }
+  "perfil": { titulo: "Mi cuenta", sub: "Información de tu perfil y preferencias" },
+  "editar-datos": { titulo: "Mis datos", sub: "Actualiza tu nombre, WhatsApp y dirección" }
 };
 
 /* Diálogo de Confirmación Accesible (ConfirmDialog) */
@@ -286,8 +287,12 @@ function mostrarSeccion(id) {
     sec.classList.toggle("oculto", sec.id !== "seccion-" + id);
   });
 
+  // «Mis datos» cuelga de Mi cuenta: en la barra de navegación sigue marcado «Perfil»
+  if (id === "editar-datos") document.querySelectorAll('[data-seccion="perfil"]').forEach(function (b) { b.classList.add("active"); });
+
   // Título de la cabecera
   var t = $("app-header-titulo"); if (t) t.textContent = SECCIONES_INFO[id].titulo;
+  if (id === "editar-datos") cargarEditarDatos();
 
   // Sincronizar contenidos específicos
   if (id === "planes") {
@@ -403,7 +408,6 @@ function abrirPerfil(editando) {
   $("p-cep").value = p && p.cep ? p.cep.slice(0, 5) + "-" + p.cep.slice(5) : "";
   $("p-consiento").checked = !!p;
   $("p-avisos").checked = !!(p && p.avisos_whatsapp);
-  $("btn-perfil-cancelar").classList.toggle("oculto", !editando);
   msg("msg-perfil", "");
   irAPaso(1);
   vista("perfil");
@@ -474,7 +478,7 @@ function marcarCampoEn(sel, id, texto, msgId) {
   if (!c || !texto) return msg(msgId, texto);
   var p = el("p", "error-campo", texto);
   p.id = "err-" + id; p.setAttribute("role", "alert");
-  var ancla = c.type === "checkbox" ? c.closest("label") : c;
+  var ancla = c.type === "checkbox" ? c.closest("label") : (c.parentElement.classList.contains("campo-prefijo") ? c.parentElement : c);
   var apoyo = ancla.nextElementSibling;
   (apoyo && apoyo.classList.contains("ayuda-campo") ? apoyo : ancla).insertAdjacentElement("afterend", p);
   c.setAttribute("aria-invalid", "true"); c.setAttribute("aria-describedby", p.id);
@@ -496,34 +500,112 @@ $("btn-perfil-omitir").addEventListener("click", function () {
   ["p-cep", "p-dir", "p-ciudad", "p-uf"].forEach(function (id) { $(id).value = ""; });
   $("form-perfil").requestSubmit();
 });
-/* Autocompletar con el CEP (ViaCEP, servicio público de Brasil: solo recibe el CEP) */
-var ultimoCep = "";
-$("p-cep").addEventListener("input", async function (e) {
-  var d = e.target.value.replace(/\D/g, "").slice(0, 8);
-  e.target.value = d.length > 5 ? d.slice(0, 5) + "-" + d.slice(5) : d;
-  var estado = $("cep-estado");
-  function cepEstado(t, tipo) { estado.textContent = t; estado.className = "sub ayuda-campo cep-" + (tipo || "info"); }
-  if (d.length < 8) { ultimoCep = ""; cepEstado("Escribe tu CEP y completamos calle, ciudad y estado."); return; }
-  if (d === ultimoCep) return;
-  ultimoCep = d;
-  cepEstado("Buscando tu dirección…", "busca");
-  try {
-    var r = await fetch("https://viacep.com.br/ws/" + d + "/json/");
-    var j = await r.json();
-    if (d !== ultimoCep) return; // el usuario ya cambió el CEP
-    if (!r.ok || j.erro) { cepEstado("No encontramos ese CEP. Completa tu dirección a mano.", "fallo"); return; }
-    var calle = [j.logradouro, j.bairro].filter(Boolean).join(", ");
-    if (calle) $("p-dir").value = calle + (j.logradouro ? ", " : "");
-    if (j.localidade) $("p-ciudad").value = j.localidade;
-    if (j.uf) $("p-uf").value = j.uf;
-    cepEstado("Listo: completamos calle, ciudad y estado. Agrega el número de tu casa o apartamento.", "ok");
-    var dir = $("p-dir"); dir.focus(); dir.setSelectionRange(dir.value.length, dir.value.length);
-  } catch (_) {
-    cepEstado("No pudimos buscar el CEP. Completa tu dirección a mano.", "fallo");
-  }
-});
+/* Formato mientras se escribe: WhatsApp «41 99999-1234» y estado en mayúsculas */
+function formatearTelefonoCampo(e) {
+  var v = e.target.value; if (/^\s*\+/.test(v)) return; // si escribe +55… se respeta tal cual
+  var d = v.replace(/\D/g, "").slice(0, 11), f = d;
+  if (d.length > 2) { var resto = d.slice(2); f = d.slice(0, 2) + " " + (resto.length > 4 ? resto.slice(0, resto.length - 4) + "-" + resto.slice(-4) : resto); }
+  e.target.value = f;
+}
+function formatearUfCampo(e) { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 2); }
+["p-tel", "ed-tel"].forEach(function (id) { $(id).addEventListener("input", formatearTelefonoCampo); });
+["p-uf", "ed-uf"].forEach(function (id) { $(id).addEventListener("input", formatearUfCampo); });
 
-$("btn-perfil-cancelar").addEventListener("click", function () { vista("app"); });
+/* Autocompletar con el CEP (ViaCEP, servicio público de Brasil: solo recibe el CEP) */
+function enlazarCep(ids) {
+  var ultimoCep = "";
+  $(ids.cep).addEventListener("input", async function (e) {
+    var d = e.target.value.replace(/\D/g, "").slice(0, 8);
+    e.target.value = d.length > 5 ? d.slice(0, 5) + "-" + d.slice(5) : d;
+    var estado = $(ids.estado);
+    function cepEstado(t, tipo) { estado.textContent = t; estado.className = "sub ayuda-campo cep-" + (tipo || "info"); }
+    if (d.length < 8) { ultimoCep = ""; cepEstado("Escribe tu CEP y completamos calle, ciudad y estado."); return; }
+    if (d === ultimoCep) return;
+    ultimoCep = d;
+    cepEstado("Buscando tu dirección…", "busca");
+    try {
+      var r = await fetch("https://viacep.com.br/ws/" + d + "/json/");
+      var j = await r.json();
+      if (d !== ultimoCep) return; // el usuario ya cambió el CEP
+      if (!r.ok || j.erro) { cepEstado("No encontramos ese CEP. Completa tu dirección a mano.", "fallo"); return; }
+      var calle = [j.logradouro, j.bairro].filter(Boolean).join(", ");
+      if (calle) $(ids.dir).value = calle + (j.logradouro ? ", " : "");
+      if (j.localidade) $(ids.ciudad).value = j.localidade;
+      if (j.uf) $(ids.uf).value = j.uf;
+      cepEstado("Listo: completamos calle, ciudad y estado. Agrega el número de tu casa o apartamento.", "ok");
+      var dir = $(ids.dir); dir.focus(); dir.setSelectionRange(dir.value.length, dir.value.length);
+      if (ids.alCambiar) ids.alCambiar();
+    } catch (_) {
+      cepEstado("No pudimos buscar el CEP. Completa tu dirección a mano.", "fallo");
+    }
+  });
+}
+enlazarCep({ cep: "p-cep", dir: "p-dir", ciudad: "p-ciudad", uf: "p-uf", estado: "cep-estado" });
+enlazarCep({ cep: "ed-cep", dir: "ed-dir", ciudad: "ed-ciudad", uf: "ed-uf", estado: "ed-cep-estado", alCambiar: function () { actualizarBotonEditar(); } });
+
+/* ---------- «Mis datos»: pantalla propia para editar (el onboarding es solo para clientes nuevos) ---------- */
+var datosEditar = null; // valores al abrir: sirven para saber si hubo cambios
+function valoresEditar() {
+  return { nombre: $("ed-nombre").value.trim().replace(/\s+/g, " "), tel: $("ed-tel").value.replace(/\D/g, ""), cep: $("ed-cep").value.replace(/\D/g, ""), dir: $("ed-dir").value.trim(), ciudad: $("ed-ciudad").value.trim(), uf: $("ed-uf").value.trim().toUpperCase() };
+}
+function hayCambiosEditar() { return !!datosEditar && JSON.stringify(valoresEditar()) !== JSON.stringify(datosEditar); }
+function actualizarBotonEditar() { var b = $("btn-editar-guardar"); if (b) b.disabled = !hayCambiosEditar(); }
+function cargarEditarDatos() {
+  var p = perfilActual || {};
+  $("ed-nombre").value = p.nombre || "";
+  $("ed-tel").value = p.telefono ? telefonoParaEditar(p.telefono) : "";
+  $("ed-cep").value = p.cep ? p.cep.slice(0, 5) + "-" + p.cep.slice(5) : "";
+  $("ed-dir").value = p.direccion || "";
+  $("ed-ciudad").value = p.ciudad || "";
+  $("ed-uf").value = p.estado || "";
+  var est = $("ed-cep-estado"); est.textContent = "Escribe tu CEP y completamos calle, ciudad y estado."; est.className = "sub ayuda-campo";
+  limpiarErroresEn("#seccion-editar-datos"); msg("msg-editar", "");
+  datosEditar = valoresEditar(); actualizarBotonEditar();
+}
+function errorEditar() {
+  var v = valoresEditar();
+  if (v.nombre.length < 3) return ["ed-nombre", "Escribe tu nombre completo (mínimo 3 letras)."];
+  if (!telefonoBR($("ed-tel").value)) return ["ed-tel", "Revisa tu WhatsApp: escribe el código de ciudad (DDD) y el número, por ejemplo 41 99999-1234."];
+  // La dirección es opcional: si escribe algo, tiene que estar completa.
+  if (!(v.cep || v.uf || v.dir || v.ciudad)) return null;
+  if (v.cep && !/^\d{8}$/.test(v.cep)) return ["ed-cep", "El CEP tiene 8 números."];
+  if (v.dir.length < 5) return ["ed-dir", "Escribe tu dirección actual o borra los datos de dirección."];
+  if (v.ciudad.length < 2) return ["ed-ciudad", "Escribe tu ciudad."];
+  if (v.uf && !/^[A-Z]{2}$/.test(v.uf)) return ["ed-uf", "El estado son 2 letras, por ejemplo SP."];
+  return null;
+}
+document.querySelectorAll("#form-editar input").forEach(function (c) {
+  c.addEventListener("input", function () {
+    var pe = $("err-" + c.id); if (pe) pe.remove();
+    c.removeAttribute("aria-invalid"); c.removeAttribute("aria-describedby");
+    actualizarBotonEditar();
+  });
+});
+$("ed-volver").addEventListener("click", async function () {
+  if (hayCambiosEditar()) {
+    var ok = await mostrarConfirmacion({ titulo: "¿Salir sin guardar?", desc: "Perderás los cambios que hiciste en tus datos.", accionTexto: "Salir sin guardar", esPeligroso: true });
+    if (!ok) return;
+  }
+  navegarA("perfil");
+});
+$("form-editar").addEventListener("submit", async function (e) {
+  e.preventDefault();
+  msg("msg-editar", ""); limpiarErroresEn("#seccion-editar-datos");
+  var err = errorEditar();
+  if (err) return marcarCampoEn("#seccion-editar-datos", err[0], err[1], "msg-editar");
+  var v = valoresEditar();
+  var datos = { nombre: v.nombre, telefono: telefonoBR($("ed-tel").value), direccion: v.dir || null, ciudad: v.ciudad || null, estado: v.uf || null, cep: v.cep || null };
+  var btn = $("btn-editar-guardar"); btn.disabled = true; btn.textContent = "Guardando…";
+  var r = await sb.from("rnm_perfiles").update(datos).eq("user_id", usuarioActual.id).select().single();
+  btn.textContent = "Guardar cambios";
+  if (r.error) { actualizarBotonEditar(); return msg("msg-editar", "No pudimos guardar tus datos. Intenta de nuevo."); }
+  perfilActual = r.data;
+  actualizarInfoUsuario(usuarioActual, perfilActual);
+  if (window.rnmIdentificar && usuarioActual) rnmIdentificar(usuarioActual, perfilActual);
+  cargarRegistros(); // la ciudad cambia lo que se le dice sobre «tu documento está en tu ciudad»
+  if (window.toast) toast("Datos guardados", "ok");
+  navegarA("perfil");
+});
 
 $("form-perfil").addEventListener("submit", async function (e) {
   e.preventDefault();
@@ -3802,11 +3884,11 @@ if (btnActualizarHist) {
   });
 }
 
-document.querySelectorAll("[data-editar-perfil]").forEach(function (b) { b.addEventListener("click", function () { abrirPerfil(true); }); });
+document.querySelectorAll("[data-editar-perfil]").forEach(function (b) { b.addEventListener("click", function () { navegarA("editar-datos"); }); });
 var swWa = $("sw-wa");
 if (swWa) swWa.addEventListener("change", async function () {
   var quiere = swWa.checked;
-  if (quiere && !(perfilActual && perfilActual.telefono)) { swWa.checked = false; if (window.toast) toast("Primero agrega tu WhatsApp", "ok"); return abrirPerfil(true); }
+  if (quiere && !(perfilActual && perfilActual.telefono)) { swWa.checked = false; if (window.toast) toast("Primero agrega tu WhatsApp", "ok"); return navegarA("editar-datos"); }
   if (!usuarioActual || !perfilActual) { swWa.checked = !quiere; return; }
   swWa.disabled = true;
   var cambios = { avisos_whatsapp: quiere }; if (quiere) cambios.avisos_whatsapp_at = new Date().toISOString();
@@ -3826,7 +3908,7 @@ if (swPush) swPush.addEventListener("change", async function () {
 
 var btnEditarDirecto = $("btn-editar-perfil-directo");
 if (btnEditarDirecto) {
-  btnEditarDirecto.addEventListener("click", function () { abrirPerfil(true); });
+  btnEditarDirecto.addEventListener("click", function () { navegarA("editar-datos"); });
 }
 
 (function () { // el botón de WhatsApp de Ayuda usa el número configurado; sin número no se muestra

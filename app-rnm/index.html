@@ -59,7 +59,15 @@
 
   <!-- ==================== ONBOARDING / PERFIL ==================== -->
   <section id="vista-perfil" class="oculto">
+    <div class="ob-barra">
+      <div class="ob-marca" id="ob-marca"><img src="logo-rnm.png" alt="" width="44" height="29"><span>¿Dónde está <b>mi RNM?</b></span></div>
+    </div>
     <div class="tarjeta onboarding-card">
+      <div class="ob-intro">
+        <p class="ob-eyebrow" id="ob-eyebrow">Bienvenido/a</p>
+        <h2 id="perfil-titulo" class="paso-titulo">Crea tu perfil</h2>
+        <p class="sub" id="ob-sub">Dos datos y listo: tu nombre como figura en tu documento y tu WhatsApp.</p>
+      </div>
       <div class="progreso" role="progressbar" aria-label="Progreso del perfil" aria-valuemin="1" aria-valuemax="2" aria-valuenow="1">
         <i class="on"></i>
         <i></i>
@@ -68,31 +76,30 @@
 
       <form id="form-perfil" autocomplete="on" novalidate>
         <div class="paso-ob" data-paso="1">
-          <h2 id="perfil-titulo" class="paso-titulo">Crea tu perfil</h2>
-          <p class="sub">Dos datos y listo: tu nombre como figura en tu documento y tu WhatsApp.</p>
+          <h3 class="ob-seccion"><span class="ob-num">1</span>Tus datos</h3>
           <div class="form-field">
             <label for="p-nombre">Nombre completo</label>
             <input type="text" id="p-nombre" autocomplete="name" maxlength="120" placeholder="Nombre y apellidos" required>
-            <p class="sub ayuda-campo">Incluye todos tus nombres y apellidos.</p>
+            <p class="sub ayuda-campo">Como figura en tu documento, con todos tus nombres y apellidos.</p>
           </div>
           <div class="form-field">
-            <label for="p-tel">WhatsApp (Brasil)</label>
-            <input type="text" id="p-tel" inputmode="tel" autocomplete="tel-national" maxlength="20" placeholder="41 99999-1234">
-            <p class="sub ayuda-campo">Solo el código de ciudad (DDD) y el número, sin +55. Ejemplo: 41 99999-1234.</p>
+            <label for="p-tel">WhatsApp</label>
+            <div class="campo-prefijo"><span aria-hidden="true">🇧🇷 +55</span><input type="text" id="p-tel" inputmode="tel" autocomplete="tel-national" maxlength="20" placeholder="41 99999-1234"></div>
+            <p class="sub ayuda-campo">Código de ciudad (DDD) y número. Ejemplo: 41 99999-1234.</p>
           </div>
-          <label class="check">
+          <label class="check check-ob">
             <input type="checkbox" id="p-avisos">
             <span><b>Quiero avisos por WhatsApp (opcional).</b> FLUJO me escribirá al número que indiqué cuando cambie el estado de mi RNM (documento listo, pendencia o cambio de dirección) y para ayudarme a activar el seguimiento de mi RNM. Puedo desactivarlo cuando quiera.</span>
           </label>
-          <label class="check">
+          <label class="check check-ob">
             <input type="checkbox" id="p-consiento">
             <span><b>Autorización necesaria para usar el servicio.</b> Autorizo a FLUJO a resguardar estos datos exclusivamente para informarme sobre mi trámite. Puedo solicitar su eliminación en cualquier momento.</span>
           </label>
         </div>
 
         <div class="paso-ob oculto" data-paso="2">
-          <h2 class="paso-titulo">¿Dónde vives? <span class="opcional">Opcional</span></h2>
-          <p class="sub">Escribe tu CEP y completamos la dirección. Sirve para decirte si tu RNM está en tu ciudad. Puedes omitirlo y completarlo después en Mi cuenta.</p>
+          <h3 class="ob-seccion"><span class="ob-num">2</span>¿Dónde vives? <span class="opcional">Opcional</span></h3>
+          <p class="sub ob-sub2" id="ob-sub2">Escribe tu CEP y completamos la dirección. Así te avisamos si tu RNM está en tu ciudad.</p>
           <div class="form-field">
             <label for="p-cep">CEP</label>
             <input type="text" id="p-cep" inputmode="numeric" autocomplete="postal-code" maxlength="9" placeholder="00000-000">
@@ -114,13 +121,12 @@
           </div>
         </div>
 
-        <div class="acciones acciones-form">
+        <p class="msg" id="msg-perfil" role="alert"></p>
+        <div class="acciones acciones-form ob-acciones">
           <button type="submit" id="btn-perfil">Siguiente</button>
           <button type="button" class="sec oculto" id="btn-perfil-omitir">Omitir por ahora</button>
           <button type="button" class="sec oculto" id="btn-perfil-atras">Atrás</button>
-          <button type="button" class="sec oculto" id="btn-perfil-cancelar">Cancelar</button>
         </div>
-        <p class="msg" id="msg-perfil" role="alert"></p>
       </form>
     </div>
   </section>
@@ -500,6 +506,52 @@
 
           <button type="button" class="btn sec btn-cerrar-sesion" id="btn-salir-perfil"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4H6a2 2 0 00-2 2v12a2 2 0 002 2h4M15 8l4 4-4 4M19 12H9"/></svg> Cerrar sesión</button>
           <p class="nota-cuenta-chica centrado">Entras con Google: no guardamos contraseña. <a id="perfil-eliminar" href="#" target="_blank" rel="noopener" class="enlace-peligro">Pedir que eliminemos mi cuenta y mis datos</a></p>
+        </section>
+
+        <section id="seccion-editar-datos" class="seccion-app oculto">
+          <button type="button" class="ed-volver" id="ed-volver"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Mi cuenta</button>
+          <form id="form-editar" novalidate autocomplete="on">
+            <h3 class="ajustes-titulo">Datos personales</h3>
+            <div class="tarjeta ed-card">
+              <div class="form-field">
+                <label for="ed-nombre">Nombre completo</label>
+                <input type="text" id="ed-nombre" autocomplete="name" maxlength="120" placeholder="Nombre y apellidos">
+                <p class="sub ayuda-campo">Como figura en tu documento.</p>
+              </div>
+              <div class="form-field">
+                <label for="ed-tel">WhatsApp</label>
+                <div class="campo-prefijo"><span aria-hidden="true">🇧🇷 +55</span><input type="text" id="ed-tel" inputmode="tel" autocomplete="tel-national" maxlength="20" placeholder="41 99999-1234"></div>
+                <p class="sub ayuda-campo">Código de ciudad (DDD) y número.</p>
+              </div>
+            </div>
+
+            <h3 class="ajustes-titulo">Dirección <span class="opcional">Opcional</span></h3>
+            <div class="tarjeta ed-card">
+              <div class="form-field">
+                <label for="ed-cep">CEP</label>
+                <input type="text" id="ed-cep" inputmode="numeric" autocomplete="postal-code" maxlength="9" placeholder="00000-000">
+                <p class="sub ayuda-campo" id="ed-cep-estado" aria-live="polite">Escribe tu CEP y completamos calle, ciudad y estado.</p>
+              </div>
+              <div class="form-field">
+                <label for="ed-dir">Dirección actual</label>
+                <input type="text" id="ed-dir" autocomplete="street-address" maxlength="200" placeholder="Calle, número y barrio">
+              </div>
+              <div class="fila fila-campos">
+                <div class="form-field campo-ancho">
+                  <label for="ed-ciudad">Ciudad</label>
+                  <input type="text" id="ed-ciudad" autocomplete="address-level2" maxlength="80">
+                </div>
+                <div class="form-field campo-corto">
+                  <label for="ed-uf">Estado (UF)</label>
+                  <input type="text" id="ed-uf" maxlength="2" autocapitalize="characters" placeholder="SP">
+                </div>
+              </div>
+            </div>
+            <p class="nota-cuenta-chica">Usamos estos datos solo para informarte sobre tu trámite. Para quitar tu cuenta y tus datos, escríbenos desde Mi cuenta.</p>
+
+            <p class="msg" id="msg-editar" role="alert"></p>
+            <div class="ed-barra"><button type="submit" id="btn-editar-guardar" disabled>Guardar cambios</button></div>
+          </form>
         </section>
 
         <p class="pie">
