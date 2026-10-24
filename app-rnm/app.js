@@ -204,7 +204,7 @@ var detalleActual = null;
 var salidaManual = false;
 
 var SECCIONES_INFO = {
-  "inicio": { titulo: "Inicio", sub: "Resumen de tus trámites y estado disponible" },
+  "inicio": { titulo: "¿Dónde está mi RNM?", sub: "Resumen de tus trámites y estado disponible" },
   "mis-rnm": { titulo: "Mis RNM", sub: "Todos tus documentos y su estado" },
   "detalle-rnm": { titulo: "Detalle del RNM", sub: "Información detallada, ubicación policial e historial" },
   "nueva-consulta": { titulo: "Agregar RNM", sub: "Registra un nuevo documento para monitorear" },
@@ -2846,7 +2846,9 @@ function pintarAvisoMensajes() {
       var ic = el("span", "aviso-cab-ico", "");
       ic.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 01-11.6 7.1L4 20l1-4.6A8 8 0 1121 12z"/></svg>';
       a.appendChild(ic);
-      a.appendChild(el("span", "aviso-cab-txt", mensajesSinLeer === 1 ? "1 mensaje" : mensajesSinLeer + " mensajes"));
+      var tx = el("span", "aviso-cab-txt", String(mensajesSinLeer));
+      tx.appendChild(el("span", "aviso-cab-pal", mensajesSinLeer === 1 ? " mensaje" : " mensajes")); // en pantallas angostas solo queda el número
+      a.appendChild(tx);
       a.setAttribute("aria-label", mensajesSinLeer === 1 ? "Leer el mensaje nuevo del equipo" : "Leer los " + mensajesSinLeer + " mensajes nuevos del equipo");
     }
   }
@@ -3675,15 +3677,19 @@ function tarjeta(x) {
       ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v5M12 16.5v.01"/><circle cx="12" cy="12" r="9"/></svg>'
       : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 2"/></svg>');
   fila.appendChild(icono);
+  // Fila de dos líneas: «RNM + estado» y «ciudad · revisión · seguimiento». El estado es el de la Policía Federal
+  // (En trámite, Falta algo, Listo…); si el plan lo vigila o no se dice en la segunda línea.
   var izq = el("div", "fila-rnm-info");
-  izq.appendChild(el("b", "", x.rnm));
-  var resumen = e.t;
-  if (x.unidad_pf) resumen += " · " + (ciudadDeUnidad(x.unidad_pf) || x.unidad_pf);
-  if (x.ultima_consulta_at) resumen += " · revisado " + new Date(x.ultima_consulta_at).toLocaleDateString("es", { day: "2-digit", month: "2-digit" });
-  izq.appendChild(el("span", "", resumen));
+  var l1 = el("div", "fila-l1");
+  l1.appendChild(el("b", "", x.rnm));
+  l1.appendChild(el("span", "insignia" + (e.tono === "ok" ? " ok" : (e.tono === "mal" ? " danger" : " vigila")), e.corto));
+  izq.appendChild(l1);
+  var partes = [];
+  if (x.unidad_pf) partes.push(ciudadDeUnidad(x.unidad_pf) || x.unidad_pf);
+  if (x.ultima_consulta_at) partes.push("revisado " + new Date(x.ultima_consulta_at).toLocaleDateString("es", { day: "2-digit", month: "2-digit" }));
+  if (!x.cerrado) partes.push(x.cubierto ? "vigilado" : (x.ultimo_resultado ? "sin seguimiento" : ""));
+  izq.appendChild(el("span", "fila-l2", partes.filter(Boolean).join(" · ")));
   fila.appendChild(izq);
-  var et = etiquetaRnm(x);
-  fila.appendChild(el("span", "insignia" + et[1], et[0]));
   fila.appendChild(el("span", "fila-rnm-flecha", "›"));
   var abrir = function () { abrirDetalleRnm(x.id); };
   fila.addEventListener("click", abrir);

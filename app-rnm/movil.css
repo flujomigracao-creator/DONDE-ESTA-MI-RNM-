@@ -473,3 +473,48 @@ input.sw:focus-visible { outline: 3px solid rgba(21, 94, 239, 0.45); outline-off
 
 /* Escritorio: la barra inferior no se usa */
 @media (min-width: 1024px) { .app-content { padding-bottom: 40px !important; } }
+
+/* ========== Tarjetas más rectangulares y compactas · Mis RNM · cabecera con el nombre de la app ========== */
+.header-title-box { min-width: 0; flex: 1; }
+#app-header-titulo { font-size: .98rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Tarjeta principal del RNM (Inicio): más ancha que alta */
+.rastreador:not(.compacto) { padding: 14px 14px 12px; border-radius: 20px; margin-bottom: 10px; }
+.rastreador:not(.compacto) .rt-top { margin: -14px -14px 10px; padding: 9px 12px; gap: 10px; }
+.rastreador:not(.compacto) .rt-top::before { width: 34px; height: 34px; border-radius: 11px; }
+.rastreador:not(.compacto) .rt-estado { padding: 5px 11px; font-size: .74rem; }
+.rastreador:not(.compacto) .rt-titular { margin: 0 0 3px; font-size: 1.3rem; line-height: 1.15; }
+.rastreador:not(.compacto) .rt-sub { margin: 0 0 10px; font-size: .9rem; }
+.rastreador:not(.compacto) .rt-lugar { margin: 0 0 10px; padding: 4px 10px; font-size: .78rem; }
+.rastreador:not(.compacto) .rt-pista { margin-top: 0; }
+.rastreador .rt-estaciones li { gap: 6px; }
+.rastreador .rt-estaciones b { font-size: .62rem; }
+.rastreador:not(.compacto) .rt-cta { min-height: 42px; margin-top: 10px; font-size: .95rem; border-radius: 13px; }
+.rastreador:not(.compacto) .cambio-tr { margin: 0 0 10px; padding: 10px 12px; }
+
+/* Filas de RNM (Mis RNM y «Otros RNM»): rectangulares, dos líneas */
+.fila-rnm { padding: 9px 12px; gap: 10px; margin-bottom: 8px; border-radius: 16px; align-items: center; }
+.fila-icono { width: 34px; height: 34px; border-radius: 10px; flex: none; }
+.fila-icono svg { width: 18px; height: 18px; }
+.fila-rnm-info { min-width: 0; flex: 1; display: grid; gap: 2px; }
+.fila-l1 { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
+.fila-l1 b { font-size: .98rem; letter-spacing: .02em; white-space: nowrap; }
+.fila-l1 .insignia { flex: none; font-size: .66rem; padding: 2px 9px; }
+.fila-l2 { font-size: .78rem; color: var(--text-muted); white-space: nowrap !important; overflow: hidden; text-overflow: ellipsis; display: block; min-width: 0; }
+.fila-rnm-info > * { min-width: 0; }
+.fila-rnm-flecha { flex: none; font-size: 1.2rem; line-height: 1; }
+
+/* Mis RNM: cabecera y filtros en una sola línea */
+#seccion-mis-rnm .page-header { margin: 0 0 10px; align-items: center; gap: 10px; }
+#seccion-mis-rnm .page-header-text h2 { font-size: 1.2rem; margin: 0; }
+#seccion-mis-rnm .page-header .btn-sm { min-height: 38px; padding: 0 14px; font-size: .85rem; white-space: nowrap; }
+#seccion-mis-rnm .filter-pills { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; overflow: visible; margin-bottom: 12px; }
+#seccion-mis-rnm .filter-pill { min-height: 38px; padding: 0 8px; justify-content: center; font-size: .82rem; white-space: nowrap; }
+#seccion-mis-rnm .pill-count { margin-left: 4px; }
+
+/* Cabecera en pantallas angostas: el chip de mensajes lleva solo el número para que quepa el nombre de la app */
+@media (max-width: 430px) {
+  .aviso-cab-pal { display: none; }
+  #aviso-cab.aviso-cab { padding: 0 12px 0 7px; gap: 5px; }
+  #app-header-titulo { font-size: .92rem; }
+}
