@@ -340,9 +340,17 @@ function actualizarResumenPerfil() {
 function sincronizarAvisosPerfil() {
   var wa = $("sw-wa");
   if (wa) {
+    // Los avisos de WhatsApp sobre cambios del RNM son para quien tiene un plan activo y los activa.
+    var conPlan = !!planCargado && new Date(planCargado.vence_at) > new Date();
+    var fila = wa.closest(".fila-sw");
     wa.checked = !!(perfilActual && perfilActual.avisos_whatsapp);
+    wa.disabled = !conPlan;
+    if (fila) fila.classList.toggle("sw-bloq", !conPlan);
     var sub = $("sw-wa-sub");
-    if (sub) sub.textContent = wa.checked ? "Activados · te escribimos cuando tu RNM cambie" : (perfilActual && perfilActual.telefono ? "Desactivados · no te escribiremos" : "Agrega tu WhatsApp para activarlos");
+    if (sub) {
+      if (!conPlan) sub.textContent = "Disponible con un plan activo · toca para ver los planes";
+      else sub.textContent = wa.checked ? "Activados · te escribimos cuando tu RNM cambie" : (perfilActual && perfilActual.telefono ? "Desactivados · no te escribiremos" : "Agrega tu WhatsApp para activarlos");
+    }
   }
   var fp = $("fila-sw-push");
   if (fp && window.rnmPush) {
@@ -1373,7 +1381,7 @@ var ORDEN_PLAN = { quincenal: 1, semanal: 2, manual: 3 };
 function planSuperior(tipo) { return tipo === "quincenal" ? "semanal" : (tipo === "semanal" ? "manual" : null); }
 function reales(c) { return "R$ " + (c / 100).toFixed(2).replace(".", ","); }
 /* En cada plan solo se escribe lo que lo distingue; lo que comparten los tres va una sola vez en INCLUYEN_TODOS. */
-var INCLUYEN_TODOS = "Todos incluyen: primera verificación gratis en cada RNM, ver dónde está tu RNM y qué hacer, y avisos cuando cambie.";
+var INCLUYEN_TODOS = "Todos incluyen: primera verificación gratis en cada RNM, ver dónde está tu RNM y qué hacer, y avisos por WhatsApp cuando cambie.";
 var PLANES = {
   quincenal: { nombre: "Quincenal", etiqueta: "Plan quincenal", insignia: "Más económico", lema: "Lo revisamos cada 15 días",
     puntos: ["Hasta 2 RNM en tu cuenta", "Revisión automática cada 15 días"] },
@@ -3915,8 +3923,12 @@ if (btnActualizarHist) {
 
 document.querySelectorAll("[data-editar-perfil]").forEach(function (b) { b.addEventListener("click", function () { navegarA("editar-datos"); }); });
 var swWa = $("sw-wa");
+// Sin plan el interruptor está bloqueado: tocar la fila lleva a los planes
+var filaSwWa = swWa && swWa.closest(".fila-sw");
+if (filaSwWa) filaSwWa.addEventListener("click", function (e) { if (filaSwWa.classList.contains("sw-bloq")) { e.preventDefault(); navegarA("planes"); } });
 if (swWa) swWa.addEventListener("change", async function () {
   var quiere = swWa.checked;
+  if (!(planCargado && new Date(planCargado.vence_at) > new Date())) { swWa.checked = !quiere; return navegarA("planes"); }
   if (quiere && !(perfilActual && perfilActual.telefono)) { swWa.checked = false; if (window.toast) toast("Primero agrega tu WhatsApp", "ok"); return navegarA("editar-datos"); }
   if (!usuarioActual || !perfilActual) { swWa.checked = !quiere; return; }
   swWa.disabled = true;

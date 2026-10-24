@@ -155,6 +155,9 @@ input.sw:checked { background: var(--p-degradado); }
 input.sw:checked::after { transform: translateX(20px); }
 input.sw:disabled { opacity: .5; cursor: default; }
 input.sw:focus-visible { outline: 3px solid rgba(21, 94, 239, 0.45); outline-offset: 2px; }
+.fila-sw.sw-bloq { cursor: pointer; }
+.fila-sw.sw-bloq .ico-aj { background: #EEF1F8; color: #8A97B0; }
+.fila-sw.sw-bloq small { color: var(--p-azul-700); font-weight: 700; }
 .fila-aj.falta b { color: var(--p-azul-700); font-weight: 700; }
 .fila-aj.falta .ico-aj { background: #FFF1D6; color: #8A4B00; }
 .fila-aj.peligro .ico-aj { background: #FDEAE7; color: #B3261E; }

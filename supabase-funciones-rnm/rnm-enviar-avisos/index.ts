@@ -3,6 +3,8 @@
 // - Clientes de un aliado (rnm_cuentas_aliado): si el aliado tiene número PROPIO activo (tabla rnm_aliado_envio), sale de ese número;
 //   si no lo tiene, sale del número de FLUJO igual (decisión del dueño: nadie se queda sin aviso por ser de un aliado).
 // Solo para uso interno (clave de servicio). Solo existen avisos para quien marcó "Quiero avisos por WhatsApp".
+// Los avisos de CAMBIOS del RNM (listo, etapa, impresion, problema, direccion) son además solo para quien tiene un plan activo:
+// el trigger private.rnm_encolar_aviso ya no los crea sin plan y aquí se vuelve a comprobar justo antes de enviar.
 // Plantillas aprobadas por Meta (necesarias fuera de las 24 h, idioma es; el aliado debe crearlas con los mismos nombres en su cuenta):
 //   rnm_listo, rnm_etapa, rnm_problema, rnm_direccion  (cambios de estado)
 //   rnm_listo_v2, rnm_etapa_v2, rnm_problema_v2  (mismos avisos con texto más claro): se prueba primero la v2 y, si Meta aún no la aprobó
@@ -146,6 +148,15 @@ Deno.serve(async (req) => {
       await admin.from('rnm_avisos').update({ estado: 'cancelado', error: 'sin permiso' }).eq('id', a.id);
       resultados.push({ id: a.id, estado: 'cancelado' });
       continue;
+    }
+    // Los avisos de cambios del RNM son solo para quien tiene plan activo: si el plan venció mientras el aviso esperaba, no sale.
+    if (['listo', 'etapa', 'impresion', 'problema', 'direccion'].includes(a.tipo)) {
+      const { data: planV } = await admin.from('rnm_planes').select('vence_at').eq('user_id', a.user_id).maybeSingle();
+      if (!(planV?.vence_at && new Date(planV.vence_at) > new Date())) {
+        await admin.from('rnm_avisos').update({ estado: 'cancelado', error: 'sin plan activo' }).eq('id', a.id);
+        resultados.push({ id: a.id, estado: 'cancelado' });
+        continue;
+      }
     }
     // La invitación a registrar el RNM no tiene sentido si ya registró alguno mientras esperaba.
     if (a.tipo === 'registrar') {
