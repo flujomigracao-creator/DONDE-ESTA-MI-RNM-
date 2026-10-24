@@ -512,3 +512,9 @@ input.sw:focus-visible { outline: 3px solid rgba(21, 94, 239, 0.45); outline-off
 @media (max-width: 430px) {
   #app-header-titulo { font-size: .92rem; }
 }
+
+/* «Cancelar plan»: siempre lo último de la pantalla, discreto y en rojo suave */
+.cancelar-plan-pie { margin: 16px 0 6px; text-align: center; }
+.btn-cancelar-plan, .btn-cancelar-fin { min-height: 44px; padding: 0 22px; border-radius: 14px; background: transparent !important; color: #B3261E !important; border: 1px solid rgba(179, 38, 30, 0.30) !important; box-shadow: none !important; font-weight: 700; font-size: .9rem; }
+.btn-cancelar-fin { width: 100%; margin-top: 14px; }
+.btn-cancelar-fin.oculto { display: none; }

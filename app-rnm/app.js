@@ -2238,14 +2238,6 @@ function renderizarPlanes(regs, plan) {
       ? "La vigilancia de tus RNM se detuvo el " + fechaCorta(plan.vence_at) + ". Elige un plan para retomarla."
       : "Cada RNM tiene su primera verificación gratis. Con un plan lo seguimos por ti y te avisamos cuando cambie."));
   }
-  var acc = el("div", "acciones");
-  if (activo && !plan.cancelado_at) {
-    var canc = el("button", "btn sec btn-cancelar-plan", "Cancelar plan");
-    canc.type = "button";
-    canc.addEventListener("click", function () { cancelarPlan(canc); });
-    acc.appendChild(canc);
-  }
-  estado.appendChild(acc);
   cont.appendChild(estado);
   cont.appendChild(notaSemanal());
 
@@ -2295,6 +2287,15 @@ function renderizarPlanes(regs, plan) {
   precios.appendChild(como);
   precios.appendChild(el("p", "sub", "¿Dudas sobre un cobro o necesitas un comprobante? Escríbenos " + VIA_CONTACTO + "."));
   cont.appendChild(precios);
+  // «Cancelar plan» siempre va al final de la pantalla, lejos de los botones de compra.
+  if (activo && !plan.cancelado_at) {
+    var pie = el("div", "cancelar-plan-pie");
+    var canc = el("button", "btn sec btn-cancelar-plan", "Cancelar plan");
+    canc.type = "button";
+    canc.addEventListener("click", function () { cancelarPlan(canc); });
+    pie.appendChild(canc);
+    cont.appendChild(pie);
+  }
 }
 
 /* ---------- Historial de Consultas (Pantalla 12) ---------- */
