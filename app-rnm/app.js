@@ -2557,7 +2557,9 @@ function actualizarDashboard(regs, plan) {
         '<div><span class="num-paso">3</span><b>Ves dónde está</b></div>';
       heroCont.appendChild(como);
     } else {
-      var rango = function (x) { return esListoReal(x) ? 0 : (!x.cerrado || trasladoPendiente(x) ? 1 : 2); };
+      // Orden en Inicio: primero lo que sigue en trámite (o necesita algo: traslado, otra ciudad, pendencia), después lo listo para retirar
+      // y al final lo entregado. La tarjeta grande es la del primero; el resto va en filas de vista rápida.
+      var rango = function (x) { return (!esListoReal(x) && (!x.cerrado || trasladoPendiente(x) || documentoEnOtraCiudad(x))) ? 0 : (esListoReal(x) ? 1 : 2); };
       var orden = regs.slice().sort(function (a, b) { return rango(a) - rango(b); });
       var pl = planLinea(regs, plan);
       if (pl) heroCont.appendChild(pl);
@@ -2573,11 +2575,10 @@ function actualizarDashboard(regs, plan) {
         if (nE) partes.push(nE + (nE === 1 ? " entregado" : " entregados"));
         if (partes.length) heroCont.appendChild(el("p", "resumen-rnm", partes.join(" · ")));
       }
-      // Tarjeta completa para cada RNM listo (lo más importante) y para el primero en proceso; el resto, en filas compactas.
-      var completos = 0, compactos = [];
+      // Solo el primero va en tarjeta grande; el resto, en filas de vista rápida.
+      var compactos = [];
       orden.forEach(function (x, i) {
-        var completo = esListoReal(x) || !!trasladoPendiente(x) || (i === 0) || (!x.cerrado && completos === 0);
-        if (completo && completos < 3) { heroCont.appendChild(rastreador(x, { cta: true, compacto: completos > 0 })); completos++; }
+        if (i === 0) heroCont.appendChild(rastreador(x, { cta: true }));
         else compactos.push(x);
       });
       if (compactos.length) {
