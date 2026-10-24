@@ -2018,7 +2018,7 @@ function abrirOfertaSeguimiento(x) {
   else quiereWa.classList.add("oculto");
   msg("msg-seguir", "");
   var pl = planPreferido(), cad = pl === "quincenal" ? "cada 15 días" : (pl === "manual" ? "cada semana + Verificar ahora" : "cada semana");
-  $("sg-suscribir").textContent = "Activar seguimiento · " + reales(PRECIOS[pl]) + "/mes";
+  $("sg-precio-n").textContent = reales(PRECIOS[pl]);
   document.querySelector("#modal-seguir .sg-nota").textContent = "Revisión " + cad + " · Pix, tarjeta o boleto";
   pintarPruebaSocial($("sg-opiniones"));
   m.classList.remove("oculto"); document.body.style.overflow = "hidden";
