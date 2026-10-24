@@ -570,3 +570,6 @@ input.sw:focus-visible { outline: 3px solid rgba(21, 94, 239, 0.45); outline-off
 .escaner-rnm .escaner-auto { width: 100%; }
 .escaner-o { display: flex; align-items: center; gap: 10px; margin: 12px 0 0; font-size: .78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; }
 .escaner-o::before, .escaner-o::after { content: ""; flex: 1; height: 1px; background: var(--line-strong); }
+
+/* Etiqueta «Opcional» pequeña junto a un campo */
+.opcional-mini { margin-left: 6px; font-size: .62rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--text-muted); background: var(--surface-alt); padding: 2px 8px; border-radius: 99px; vertical-align: middle; }

@@ -376,6 +376,7 @@ function actualizarInfoUsuario(user, perfil) {
   function dato(id, valor, falta) { var d = $(id); if (!d) return; d.textContent = valor || falta; var fila = d.closest(".fila-aj"); if (fila) fila.classList.toggle("falta", !valor); }
   dato("perfil-tel-display", (perfil && perfil.telefono) ? "+" + perfil.telefono : "", "Agregar mi WhatsApp");
   actualizarResumenPerfil();
+  dato("perfil-cpf-display", perfil && perfil.cpf ? cpfEnmascarado(perfil.cpf) : "", "Agregar mi CPF");
   dato("perfil-dir-display", (perfil && perfil.direccion) ? perfil.direccion + (perfil.cep ? " · CEP " + perfil.cep.slice(0, 5) + "-" + perfil.cep.slice(5) : "") : "", "Agregar mi dirección");
   dato("perfil-ciudad-display", perfil && perfil.ciudad ? perfil.ciudad + (perfil.estado ? " / " + perfil.estado : "") : "", "Agregar mi ciudad");
   sincronizarAvisosPerfil();
@@ -414,6 +415,7 @@ function abrirPerfil(editando) {
   $("p-ciudad").value = p && p.ciudad ? p.ciudad : "";
   $("p-uf").value = p && p.estado ? p.estado : "";
   $("p-cep").value = p && p.cep ? p.cep.slice(0, 5) + "-" + p.cep.slice(5) : "";
+  $("p-cpf").value = p && p.cpf ? formatearCpf(p.cpf) : "";
   $("p-consiento").checked = !!p;
   $("p-avisos").checked = !!(p && p.avisos_whatsapp);
   msg("msg-perfil", "");
@@ -465,6 +467,8 @@ function errorPaso(n) {
     if (!$("p-consiento").checked) return fallo("p-consiento", "Debes aceptar la autorización para continuar.");
   } else {
     // La dirección es opcional: si no escribe nada se omite; si escribe algo, tiene que estar completa.
+    var cpfD = digitosCpf($("p-cpf").value);
+    if (cpfD && !cpfValido(cpfD)) return fallo("p-cpf", problemaCpf(cpfD));
     var uf = $("p-uf").value.trim().toUpperCase(), cep = $("p-cep").value.replace(/\D/g, "");
     var algo = !!(cep || uf || $("p-dir").value.trim() || $("p-ciudad").value.trim());
     if (!algo) return "";
@@ -506,9 +510,48 @@ document.querySelectorAll("#form-perfil input, #form-rnm input").forEach(functio
 
 $("btn-perfil-atras").addEventListener("click", function () { irAPaso(pasoActual - 1); });
 $("btn-perfil-omitir").addEventListener("click", function () {
-  ["p-cep", "p-dir", "p-ciudad", "p-uf"].forEach(function (id) { $(id).value = ""; });
+  ["p-cpf", "p-cep", "p-dir", "p-ciudad", "p-uf"].forEach(function (id) { $(id).value = ""; });
   $("form-perfil").requestSubmit();
 });
+/* CPF: solo números (11), con el formato 000.000.000-00, dígito verificador y aviso en vivo de cuántos faltan */
+function digitosCpf(texto) { return String(texto || "").replace(/\D/g, "").slice(0, 11); }
+function formatearCpf(d) {
+  d = digitosCpf(d);
+  if (d.length > 9) return d.slice(0, 3) + "." + d.slice(3, 6) + "." + d.slice(6, 9) + "-" + d.slice(9);
+  if (d.length > 6) return d.slice(0, 3) + "." + d.slice(3, 6) + "." + d.slice(6);
+  if (d.length > 3) return d.slice(0, 3) + "." + d.slice(3);
+  return d;
+}
+function cpfEnmascarado(d) { d = digitosCpf(d); return d.length === 11 ? "•••.•••.•••-" + d.slice(9) : ""; }
+function cpfValido(d) {
+  if (!/^\d{11}$/.test(d) || /^(\d)\1{10}$/.test(d)) return false;
+  for (var t = 9; t < 11; t++) {
+    var suma = 0;
+    for (var i = 0; i < t; i++) suma += Number(d.charAt(i)) * (t + 1 - i);
+    if (((suma * 10) % 11) % 10 !== Number(d.charAt(t))) return false;
+  }
+  return true;
+}
+function problemaCpf(d) {
+  if (!d.length) return "";
+  if (d.length < 11) { var f = 11 - d.length; return "Te " + (f === 1 ? "falta 1 número" : "faltan " + f + " números") + ": son 11 en total."; }
+  return cpfValido(d) ? "" : "Ese CPF no es válido. Revisa los números.";
+}
+function formatearCpfCampo(e) {
+  var antes = e.target.value, todos = String(antes).replace(/\D/g, ""), d = todos.slice(0, 11), sobran = todos.length - d.length;
+  e.target.value = formatearCpf(d);
+  var ayuda = e.target.closest(".form-field").querySelector(".ayuda-campo");
+  if (!ayuda) return;
+  if (ayuda.dataset.base === undefined) ayuda.dataset.base = ayuda.textContent;
+  var letras = /[^\d\s.\-]/.test(antes), prob = problemaCpf(d);
+  if (sobran > 0) { ayuda.textContent = (sobran === 1 ? "Sobra 1 número" : "Sobran " + sobran + " números") + ": son 11 en total."; ayuda.className = "sub ayuda-campo cep-fallo"; }
+  else if (letras) { ayuda.textContent = "Solo números, por favor."; ayuda.className = "sub ayuda-campo cep-fallo"; }
+  else if (!d.length) { ayuda.textContent = ayuda.dataset.base; ayuda.className = "sub ayuda-campo"; }
+  else if (!prob) { ayuda.textContent = "CPF válido ✓"; ayuda.className = "sub ayuda-campo cep-ok"; }
+  else { ayuda.textContent = prob; ayuda.className = "sub ayuda-campo" + (d.length === 11 ? " cep-fallo" : ""); }
+}
+["p-cpf", "ed-cpf"].forEach(function (id) { var c = $(id); if (c) c.addEventListener("input", formatearCpfCampo); });
+
 /* WhatsApp de Brasil: solo números, máximo 11 (DDD de 2 + celular de 9) y aviso en vivo de cuántos faltan.
    Se aceptan números pegados con «+55» o «55» delante: se quitan solos porque el +55 ya está en el campo. */
 function digitosTelefonoCrudos(texto) {
@@ -583,7 +626,7 @@ enlazarCep({ cep: "ed-cep", dir: "ed-dir", ciudad: "ed-ciudad", uf: "ed-uf", est
 /* ---------- «Mis datos»: pantalla propia para editar (el onboarding es solo para clientes nuevos) ---------- */
 var datosEditar = null; // valores al abrir: sirven para saber si hubo cambios
 function valoresEditar() {
-  return { nombre: $("ed-nombre").value.trim().replace(/\s+/g, " "), tel: $("ed-tel").value.replace(/\D/g, ""), cep: $("ed-cep").value.replace(/\D/g, ""), dir: $("ed-dir").value.trim(), ciudad: $("ed-ciudad").value.trim(), uf: $("ed-uf").value.trim().toUpperCase() };
+  return { nombre: $("ed-nombre").value.trim().replace(/\s+/g, " "), tel: $("ed-tel").value.replace(/\D/g, ""), cpf: digitosCpf($("ed-cpf").value), cep: $("ed-cep").value.replace(/\D/g, ""), dir: $("ed-dir").value.trim(), ciudad: $("ed-ciudad").value.trim(), uf: $("ed-uf").value.trim().toUpperCase() };
 }
 function hayCambiosEditar() { return !!datosEditar && JSON.stringify(valoresEditar()) !== JSON.stringify(datosEditar); }
 function actualizarBotonEditar() { var b = $("btn-editar-guardar"); if (b) b.disabled = !hayCambiosEditar(); }
@@ -591,6 +634,7 @@ function cargarEditarDatos() {
   var p = perfilActual || {};
   $("ed-nombre").value = p.nombre || "";
   $("ed-tel").value = p.telefono ? telefonoParaEditar(p.telefono) : "";
+  $("ed-cpf").value = p.cpf ? formatearCpf(p.cpf) : "";
   $("ed-cep").value = p.cep ? p.cep.slice(0, 5) + "-" + p.cep.slice(5) : "";
   $("ed-dir").value = p.direccion || "";
   $("ed-ciudad").value = p.ciudad || "";
@@ -603,6 +647,7 @@ function errorEditar() {
   var v = valoresEditar();
   if (v.nombre.length < 3) return ["ed-nombre", "Escribe tu nombre completo (mínimo 3 letras)."];
   if (!telefonoBR($("ed-tel").value)) return ["ed-tel", problemaTelefono(digitosTelefono($("ed-tel").value)) || "Revisa tu WhatsApp: código de ciudad (DDD) y número, por ejemplo 41 99999-1234."];
+  if (v.cpf && !cpfValido(v.cpf)) return ["ed-cpf", problemaCpf(v.cpf)];
   // La dirección es opcional: si escribe algo, tiene que estar completa.
   if (!(v.cep || v.uf || v.dir || v.ciudad)) return null;
   if (v.cep && !/^\d{8}$/.test(v.cep)) return ["ed-cep", "El CEP tiene 8 números."];
@@ -631,7 +676,7 @@ $("form-editar").addEventListener("submit", async function (e) {
   var err = errorEditar();
   if (err) return marcarCampoEn("#seccion-editar-datos", err[0], err[1], "msg-editar");
   var v = valoresEditar();
-  var datos = { nombre: v.nombre, telefono: telefonoBR($("ed-tel").value), direccion: v.dir || null, ciudad: v.ciudad || null, estado: v.uf || null, cep: v.cep || null };
+  var datos = { nombre: v.nombre, telefono: telefonoBR($("ed-tel").value), direccion: v.dir || null, ciudad: v.ciudad || null, estado: v.uf || null, cep: v.cep || null, cpf: v.cpf || null };
   var btn = $("btn-editar-guardar"); btn.disabled = true; btn.textContent = "Guardando…";
   var r = await sb.from("rnm_perfiles").update(datos).eq("user_id", usuarioActual.id).select().single();
   btn.textContent = "Guardar cambios";
@@ -661,7 +706,7 @@ $("form-perfil").addEventListener("submit", async function (e) {
   var ciudad = $("p-ciudad").value.trim();
   var uf = $("p-uf").value.trim().toUpperCase();
   var cep = $("p-cep").value.replace(/\D/g, "");
-  var datos = { nombre: nombre, telefono: tel, direccion: dir || null, ciudad: ciudad || null, estado: uf || null, cep: cep || null };
+  var datos = { nombre: nombre, telefono: tel, direccion: dir || null, ciudad: ciudad || null, estado: uf || null, cep: cep || null, cpf: digitosCpf($("p-cpf").value) || null };
   var quiereAvisos = $("p-avisos").checked;
   datos.avisos_whatsapp = quiereAvisos;
   if (quiereAvisos && !(perfilActual && perfilActual.avisos_whatsapp)) datos.avisos_whatsapp_at = new Date().toISOString();
@@ -673,6 +718,7 @@ $("form-perfil").addEventListener("submit", async function (e) {
   btn.disabled = false;
   if (r.error) return msg("msg-perfil", "No pudimos guardar tus datos. Intenta de nuevo.");
   perfilActual = r.data;
+  actualizarInfoUsuario(usuarioActual, perfilActual); // Perfil y «Mis datos» muestran lo recién guardado
   if (window.rnmIdentificar && usuarioActual) rnmIdentificar(usuarioActual, perfilActual);
   vista("app");
   cargarRegistros();
@@ -1703,7 +1749,10 @@ function mostrarPago(tipo) {
     e.target.value = s;
   });
   var conCpf = (registrosCargados || []).filter(function (g) { return g.carne_cpf; })[0];
-  if (conCpf) {
+  if (perfilActual && perfilActual.cpf) {
+    $("px-cpf").value = perfilActual.cpf; $("px-cpf").dispatchEvent(new Event("input"));
+    $("px-cpf").insertAdjacentHTML("afterend", '<p class="sub ayuda-campo">Rellenado con el CPF de tu perfil. Cámbialo si paga otra persona.</p>');
+  } else if (conCpf) {
     $("px-cpf").value = conCpf.carne_cpf; $("px-cpf").dispatchEvent(new Event("input"));
     $("px-cpf").insertAdjacentHTML("afterend", '<p class="sub ayuda-campo">Rellenado con el CPF de tu carné. Cámbialo si paga otra persona.</p>');
   }
