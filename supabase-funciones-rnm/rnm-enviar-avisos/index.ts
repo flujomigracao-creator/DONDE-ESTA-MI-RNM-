@@ -5,7 +5,9 @@
 // Solo para uso interno (clave de servicio). Solo existen avisos para quien marcó "Quiero avisos por WhatsApp".
 // Plantillas aprobadas por Meta (necesarias fuera de las 24 h, idioma es; el aliado debe crearlas con los mismos nombres en su cuenta):
 //   rnm_listo, rnm_etapa, rnm_problema, rnm_direccion  (cambios de estado)
-//   rnm_impresion  (el carné pasó a impresión). Mientras Meta no la apruebe (o si el aliado no la tiene) sale rnm_etapa.
+//   rnm_listo_v2, rnm_etapa_v2, rnm_problema_v2  (mismos avisos con texto más claro): se prueba primero la v2 y, si Meta aún no la aprobó
+//                    (o el aliado no la tiene), sale la anterior. En rnm_direccion la variable {{3}} lleva una frase en español simple (resumenCambio).
+//   rnm_impresion  (el carné pasó a impresión). Mientras Meta no la apruebe (o si el aliado no la tiene) sale rnm_etapa_v2 y, si tampoco, rnm_etapa.
 //   rnm_corregir_dato  (el RNM no se encontró: corregirlo en la app; botón "Abrir la app")
 //   rnm_pedir_opinion  (RNM listo: pide una opinión; botón "Dejar mi opinión" -> /?opinar=1). Se envía 24 h después del aviso de listo.
 //   rnm_registrar_rnm  (cuenta creada con avisos aceptados pero sin ningún RNM: invita a registrarlo y hacer la primera consulta; botón "Registrar mi RNM"). Solo número de FLUJO.
@@ -51,6 +53,28 @@ function ufDeUnidad(unidad: string): string | null {
 function lugarDeUnidad(codigo: string): string {
   const c = ciudadDeUnidad(codigo), uf = ufDeUnidad(codigo);
   return c ? c + (uf ? '/' + uf : '') : (uf ? ESTADOS_BR[uf] : codigo);
+}
+
+// Cambio de dirección MÁS RECIENTE en palabras simples. Texto de la base: "fecha · situación de la PF · → unidad | fecha · …".
+function resumenCambio(texto: string): string {
+  if (!(texto || '').trim()) return '';
+  let mejor: { n: number; sit: string; cod: string } | null = null;
+  for (const fila of (texto || '').split(' | ')) {
+    const p = fila.split(' · ');
+    const f = /(\d{2})\/(\d{2})\/(\d{4})/.exec(p[0] || '');
+    const n = f ? Number(f[3] + f[2] + f[1]) : 0;
+    const sit = p.find((x, i) => i > 0 && !x.startsWith('→ ')) || '';
+    const dest = p.find((x) => x.startsWith('→ '));
+    if (!mejor || n >= mejor.n) mejor = { n, sit, cod: dest ? dest.slice(2).trim() : '' };
+  }
+  if (!mejor) return '';
+  const pedido = `tu pedido para recibir el carné en ${mejor.cod ? lugarDeUnidad(mejor.cod) : 'otra unidad'}`;
+  if (/indeferid|negad|rejeitad/i.test(mejor.sit)) return `${pedido} no fue aprobado`;
+  if (/cancelad/i.test(mejor.sit)) return `${pedido} fue cancelado`;
+  if (/ainda n[aã]o foi iniciado/i.test(mejor.sit)) return `${pedido} fue recibido, pero la Policía Federal aún no empezó a revisarlo`;
+  if (/conclu[ií]d|deferid|aprovad|finalizad|atendid/i.test(mejor.sit)) return `${pedido} fue aprobado; espera nuestro aviso antes de ir a retirarlo`;
+  if (/an[aá]lise|andamento|agendad|aguard/i.test(mejor.sit)) return `la Policía Federal está revisando ${pedido}`;
+  return `${pedido} tuvo una novedad`;
 }
 
 Deno.serve(async (req) => {
@@ -182,7 +206,7 @@ Deno.serve(async (req) => {
     // Intentos: (plantilla, parámetros). Para la invitación al plan, primero la versión nueva (desde R$ 4,99) y, si Meta aún no la aprobó, la anterior.
     let intentos: { plantilla: string; params: string[] }[] = [];
     if (a.tipo === 'listo') params.push(limpio(p.unidad ? lugarDeUnidad(String(p.unidad)) : '', 80) || 'la Policía Federal');
-    if (a.tipo === 'direccion') params.push(limpio(p.cambio, 200) || 'actualizado');
+    if (a.tipo === 'direccion') params.push(limpio(resumenCambio(String(p.cambio ?? '')), 200) || 'tu pedido tuvo una novedad');
     const precioSem = reales(Number.isInteger(precioSemanal) ? (precioSemanal as number) : 999);
     const precioDesde = reales(Number.isInteger(precioQuincenal) ? (precioQuincenal as number) : 499);
     if (a.tipo === 'plan' || a.tipo === 'plan_semana') {
@@ -196,8 +220,16 @@ Deno.serve(async (req) => {
         intentos = [{ plantilla: 'rnm_plan', params: [...params, precioSem, `${APP_URL}/?plan=semanal&pago=pix`] }];
       }
     } else if (a.tipo === 'impresion') {
-      // Si Meta aún no aprobó rnm_impresion (o el aliado no la tiene), sale el aviso genérico de novedades.
-      intentos = [{ plantilla: 'rnm_impresion', params }, { plantilla: 'rnm_etapa', params }];
+      // Si Meta aún no aprobó rnm_impresion (o el aliado no la tiene), sale el aviso genérico de avance.
+      intentos = emisor.aliado
+        ? [{ plantilla: 'rnm_etapa', params }]
+        : [{ plantilla: 'rnm_impresion', params }, { plantilla: 'rnm_etapa_v2', params }, { plantilla: 'rnm_etapa', params }];
+    } else if (a.tipo === 'listo' && !emisor.aliado) {
+      // v2: «puede retirarse en {{3}}» con {{3}} = «la unidad de Curitiba/PR» (o «la unidad que indica la app»). Respaldo: la anterior.
+      const lugar = p.unidad ? 'la unidad de ' + lugarDeUnidad(String(p.unidad)) : 'la unidad que indica la app';
+      intentos = [{ plantilla: 'rnm_listo_v2', params: [nombre, rnmFinal, limpio(lugar, 80)] }, { plantilla, params }];
+    } else if ((a.tipo === 'etapa' || a.tipo === 'problema') && !emisor.aliado) {
+      intentos = [{ plantilla: plantilla + '_v2', params }, { plantilla, params }];
     } else intentos = [{ plantilla, params }];
     try {
       let ultimoError = '';

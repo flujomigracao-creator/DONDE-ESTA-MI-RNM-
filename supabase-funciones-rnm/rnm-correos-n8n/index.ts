@@ -27,6 +27,28 @@ function ciudadDeUnidad(unidad: string): string | null {
 function ufDeUnidad(unidad: string): string | null { const m = /\/([A-Z]{2})\s*$/.exec(unidad || ''); return m && ESTADOS_BR[m[1]] ? m[1] : null; }
 function lugarDeUnidad(codigo: string): string { const c = ciudadDeUnidad(codigo), uf = ufDeUnidad(codigo); return c ? c + (uf ? '/' + uf : '') : (uf ? ESTADOS_BR[uf] : codigo); }
 
+// Cambio de dirección MÁS RECIENTE en palabras simples. Texto de la base: "fecha · situación de la PF · → unidad | fecha · …".
+function resumenCambio(texto: string): string {
+  if (!(texto || '').trim()) return '';
+  let mejor: { n: number; sit: string; cod: string } | null = null;
+  for (const fila of (texto || '').split(' | ')) {
+    const p = fila.split(' · ');
+    const f = /(\d{2})\/(\d{2})\/(\d{4})/.exec(p[0] || '');
+    const n = f ? Number(f[3] + f[2] + f[1]) : 0;
+    const sit = p.find((x, i) => i > 0 && !x.startsWith('→ ')) || '';
+    const dest = p.find((x) => x.startsWith('→ '));
+    if (!mejor || n >= mejor.n) mejor = { n, sit, cod: dest ? dest.slice(2).trim() : '' };
+  }
+  if (!mejor) return '';
+  const pedido = `tu pedido para recibir el carné en ${mejor.cod ? lugarDeUnidad(mejor.cod) : 'otra unidad'}`;
+  if (/indeferid|negad|rejeitad/i.test(mejor.sit)) return `${pedido} no fue aprobado`;
+  if (/cancelad/i.test(mejor.sit)) return `${pedido} fue cancelado`;
+  if (/ainda n[aã]o foi iniciado/i.test(mejor.sit)) return `${pedido} fue recibido, pero la Policía Federal aún no empezó a revisarlo`;
+  if (/conclu[ií]d|deferid|aprovad|finalizad|atendid/i.test(mejor.sit)) return `${pedido} fue aprobado; espera nuestro aviso antes de ir a retirarlo`;
+  if (/an[aá]lise|andamento|agendad|aguard/i.test(mejor.sit)) return `la Policía Federal está revisando ${pedido}`;
+  return `${pedido} tuvo una novedad`;
+}
+
 async function firmaBaja(userId: string, clave: string): Promise<string> {
   const k = await crypto.subtle.importKey('raw', new TextEncoder().encode(clave), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
   const s = await crypto.subtle.sign('HMAC', k, new TextEncoder().encode('baja-correo:' + userId));
@@ -40,24 +62,28 @@ function armar(a: any, precioDesde: number) {
   let asunto = '', parrafos: string[] = [], boton = 'Abrir la app', enlace = APP_URL;
   switch (a.tipo) {
     case 'listo':
-      asunto = '¡Tu RNM ya está listo para retirar!';
-      parrafos = [`Hola ${nombre}, ¡buenas noticias! Tu RNM terminado en ${rnm} ya está listo para retirar en la unidad ${limpio(p.unidad ? lugarDeUnidad(String(p.unidad)) : '', 80) || 'la Policía Federal'} de la Policía Federal.`, 'Entra a la app para ver cómo retirarlo.'];
+      asunto = '¡Tu carné ya está listo para retirar!';
+      parrafos = [`Hola ${nombre}, ¡tu carné ya está listo! Tu RNM terminado en ${rnm} puede retirarse en ${p.unidad ? 'la unidad de ' + limpio(lugarDeUnidad(String(p.unidad)), 80) : 'la unidad que indica la app'} de la Policía Federal.`, 'Antes de ir, abre la app: ahí ves si tienes que pedir cita y qué llevar (tu protocolo y un documento con foto).'];
+      boton = 'Ver cómo retirarlo';
       break;
     case 'etapa':
-      asunto = 'Novedades de tu RNM';
-      parrafos = [`Hola ${nombre}, hay novedades de tu RNM terminado en ${rnm}: sigue en trámite en la Policía Federal.`, 'Te avisaremos apenas vuelva a cambiar.'];
+      asunto = 'Tu RNM sigue avanzando';
+      parrafos = [`Hola ${nombre}, tu RNM terminado en ${rnm} sigue avanzando en la Policía Federal y todavía no está listo para retirar.`, 'No tienes que hacer nada: te avisaremos apenas vuelva a cambiar.'];
+      boton = 'Ver mi RNM';
       break;
     case 'impresion':
       asunto = 'Tu carné fue enviado a impresión';
-      parrafos = [`Hola ${nombre}, ¡buenas noticias! Tu RNM terminado en ${rnm} fue enviado a impresión en la Policía Federal.`, 'Es el paso previo a quedar listo para retirar: te avisaremos apenas esté disponible.'];
+      parrafos = [`Hola ${nombre}, ¡buenas noticias! Tu RNM terminado en ${rnm} fue enviado a impresión en la Policía Federal: tu solicitud ya fue aprobada y el carné se está fabricando.`, 'Es de las últimas etapas: suele tardar de unos días a un par de semanas. No tienes que hacer nada, te avisaremos apenas esté listo para retirar.'];
+      boton = 'Ver mi RNM';
       break;
     case 'problema':
-      asunto = 'Tu RNM tiene una pendencia';
-      parrafos = [`Hola ${nombre}, la Policía Federal registró una pendencia o un problema en tu RNM terminado en ${rnm}.`, 'Revisa los detalles en la app: si necesitas ayuda, allí puedes escribirle al equipo.'];
+      asunto = 'Novedad importante en tu RNM';
+      parrafos = [`Hola ${nombre}, hay una novedad importante en tu RNM terminado en ${rnm}: la Policía Federal pidió algo más para continuar o no aprobó la solicitud.`, 'Abre la app para ver cuál de las dos cosas es y qué puedes hacer. Si necesitas ayuda, allí puedes escribirle al equipo.'];
+      boton = 'Ver qué pasó';
       break;
     case 'direccion':
       asunto = 'Novedades de tu cambio de dirección';
-      parrafos = [`Hola ${nombre}, hay novedades del cambio de dirección de tu RNM terminado en ${rnm}: ${limpio(p.cambio, 200) || 'actualizado'}.`, 'Mira el detalle en la app.'];
+      parrafos = [`Hola ${nombre}, hay novedades de tu RNM terminado en ${rnm}: ${limpio(resumenCambio(String(p.cambio ?? '')), 200) || 'tu pedido de cambio de dirección tuvo una novedad'}.`, 'Mira el detalle en la app.'];
       break;
     case 'corregir':
       asunto = 'No encontramos tu RNM: corrígelo en la app';

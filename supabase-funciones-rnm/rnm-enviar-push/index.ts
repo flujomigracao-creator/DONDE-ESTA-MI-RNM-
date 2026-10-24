@@ -7,11 +7,11 @@ import webpush from 'npm:web-push@3.6.7';
 
 const json = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { 'Content-Type': 'application/json' } });
 const TEXTOS: Record<string, (n: string) => { title: string; body: string }> = {
-  listo: (n) => ({ title: '¡Tu RNM está listo!', body: `${n}, abre la app para ver dónde retirarlo.` }),
-  etapa: (n) => ({ title: 'Tu RNM avanzó', body: `${n}, hay una novedad en tu trámite.` }),
+  listo: (n) => ({ title: '¡Tu carné está listo!', body: `${n}, abre la app para ver dónde y cómo retirarlo.` }),
+  etapa: (n) => ({ title: 'Tu RNM sigue avanzando', body: `${n}, todavía no está listo, pero va avanzando.` }),
   impresion: (n) => ({ title: 'Tu carné fue enviado a impresión', body: `${n}, es el paso previo a quedar listo para retirar.` }),
-  problema: (n) => ({ title: 'Tu RNM tiene una pendencia', body: `${n}, abre la app para ver qué hacer.` }),
-  direccion: (n) => ({ title: 'Cambió la dirección de retiro', body: `${n}, revisa la novedad en la app.` }),
+  problema: (n) => ({ title: 'Novedad importante en tu RNM', body: `${n}, la Policía Federal pidió algo más o no aprobó la solicitud. Abre la app.` }),
+  direccion: (n) => ({ title: 'Novedades de tu cambio de dirección', body: `${n}, mira en la app en qué va tu pedido.` }),
   corregir: (n) => ({ title: 'Corrige tu dato del RNM', body: `${n}, no encontramos tu RNM: revísalo en la app.` }),
 };
 
