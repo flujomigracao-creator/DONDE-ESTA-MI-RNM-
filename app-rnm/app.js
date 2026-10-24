@@ -2836,21 +2836,14 @@ var FAQ_RAPIDAS = [
 function pintarAvisoMensajes() {
   var b = $("chat-badge"); if (b) { b.textContent = String(mensajesSinLeer); b.classList.toggle("oculto", !mensajesSinLeer); }
   var nav = document.querySelector('.bottom-nav-item[data-seccion="perfil"]'); if (nav) nav.classList.toggle("con-aviso", mensajesSinLeer > 0);
-  var sp = $("btn-soporte"); if (sp) sp.classList.toggle("con-aviso", mensajesSinLeer > 0);
-  // Aviso en la barra superior (visible en todas las pantallas): ícono de chat + «1 mensaje»
-  var a = $("aviso-cab");
-  if (a) {
-    a.classList.toggle("oculto", !mensajesSinLeer);
-    a.textContent = "";
-    if (mensajesSinLeer) {
-      var ic = el("span", "aviso-cab-ico", "");
-      ic.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 01-11.6 7.1L4 20l1-4.6A8 8 0 1121 12z"/></svg>';
-      a.appendChild(ic);
-      var tx = el("span", "aviso-cab-txt", String(mensajesSinLeer));
-      tx.appendChild(el("span", "aviso-cab-pal", mensajesSinLeer === 1 ? " mensaje" : " mensajes")); // en pantallas angostas solo queda el número
-      a.appendChild(tx);
-      a.setAttribute("aria-label", mensajesSinLeer === 1 ? "Leer el mensaje nuevo del equipo" : "Leer los " + mensajesSinLeer + " mensajes nuevos del equipo");
-    }
+  // Un solo botón en la barra superior: «Ayuda»; con mensajes nuevos del equipo se vuelve píldora azul con el número.
+  var sp = $("btn-soporte");
+  if (sp) {
+    sp.classList.toggle("con-aviso", mensajesSinLeer > 0);
+    var sn = sp.querySelector(".sop-n");
+    if (sn) { sn.textContent = mensajesSinLeer > 0 ? String(mensajesSinLeer) : ""; sn.classList.toggle("oculto", !(mensajesSinLeer > 0)); }
+    var rotulo = mensajesSinLeer === 0 ? "Atención al cliente" : (mensajesSinLeer === 1 ? "Atención al cliente: 1 mensaje nuevo del equipo" : "Atención al cliente: " + mensajesSinLeer + " mensajes nuevos del equipo");
+    sp.setAttribute("aria-label", rotulo); sp.title = rotulo;
   }
 }
 async function cargarMensajes() {
@@ -2972,7 +2965,6 @@ async function enviarChat() {
 }
 (function () {
   var a = $("btn-chat-perfil"); if (a) a.addEventListener("click", abrirChat);
-  var b = $("aviso-cab"); if (b) b.addEventListener("click", abrirChat);
   var sp = $("btn-soporte"); if (sp) sp.addEventListener("click", abrirChat);
   var c = $("chat-cerrar"); if (c) c.addEventListener("click", cerrarChat);
   var m = $("modal-chat"); if (m) m.addEventListener("click", function (e) { if (e.target === m) cerrarChat(); });

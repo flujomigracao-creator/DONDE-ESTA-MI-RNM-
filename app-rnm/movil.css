@@ -69,18 +69,14 @@ button:disabled { filter: saturate(.6); }
 
 /* ---------- Aviso de mensaje del equipo: en la barra superior, junto a «Ayuda» ---------- */
 .header-actions { display: flex; align-items: center; gap: 8px; }
-#aviso-cab.aviso-cab {
-  display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 12px 0 8px; border-radius: 999px; border: 0; cursor: pointer;
-  background: var(--p-degradado) !important; color: #fff !important; font-weight: 800; font-size: .82rem; white-space: nowrap;
-  box-shadow: 0 4px 12px rgba(24, 70, 184, 0.30); animation: p-aviso-cab 2.6s ease-in-out infinite;
-}
-#aviso-cab.aviso-cab.oculto { display: none; }
-#btn-soporte.con-aviso::after { display: none; } /* el chip de al lado ya avisa */
-#aviso-cab:active { transform: scale(.95); }
-.aviso-cab-ico { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: rgba(255, 255, 255, 0.2); }
-.aviso-cab-ico svg { width: 15px; height: 15px; }
+/* Botón único de ayuda: círculo blanco con el audífono; con mensajes nuevos, píldora azul con el número */
+#btn-soporte.con-aviso { width: auto !important; min-width: 40px; padding: 0 13px 0 11px !important; gap: 6px; border: 0 !important; background: var(--p-degradado) !important; color: #fff !important; box-shadow: 0 4px 12px rgba(24, 70, 184, 0.30); animation: p-aviso-cab 2.6s ease-in-out infinite; }
+#btn-soporte.con-aviso svg { color: #fff; }
+#btn-soporte.con-aviso::after { display: none; }
+#btn-soporte .sop-n { font-size: .9rem; font-weight: 800; line-height: 1; letter-spacing: 0; }
+#btn-soporte .sop-n.oculto { display: none; }
 @keyframes p-aviso-cab { 0%, 100% { box-shadow: 0 4px 12px rgba(24, 70, 184, 0.30); } 50% { box-shadow: 0 4px 12px rgba(24, 70, 184, 0.30), 0 0 0 5px rgba(24, 70, 184, 0.14); } }
-@media (prefers-reduced-motion: reduce) { #aviso-cab.aviso-cab { animation: none; } }
+@media (prefers-reduced-motion: reduce) { #btn-soporte.con-aviso { animation: none; } }
 
 /* ---------- Aviso «RNM sin plan activo»: una fila tocable en vez de un párrafo ---------- */
 .aviso-plan { display: flex; align-items: center; gap: 10px; width: 100%; margin: 0 0 10px; padding: 9px 10px 9px 12px; text-align: left; cursor: pointer; border-radius: 14px; border: 1px solid #F3C1BC; border-left: 4px solid #D93025; background: #FDEEEC !important; background-image: none !important; box-shadow: none !important; color: #6B1410 !important; min-height: 56px; }
@@ -514,7 +510,5 @@ input.sw:focus-visible { outline: 3px solid rgba(21, 94, 239, 0.45); outline-off
 
 /* Cabecera en pantallas angostas: el chip de mensajes lleva solo el número para que quepa el nombre de la app */
 @media (max-width: 430px) {
-  .aviso-cab-pal { display: none; }
-  #aviso-cab.aviso-cab { padding: 0 12px 0 7px; gap: 5px; }
   #app-header-titulo { font-size: .92rem; }
 }
