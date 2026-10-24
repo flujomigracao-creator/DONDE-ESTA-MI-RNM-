@@ -2205,16 +2205,22 @@ async function cargarHistorialConsultas() {
 /* ---------- Rastreador del RNM (como el seguimiento de un paquete) ---------- */
 var SVG_PIN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s7-6 7-12a7 7 0 10-14 0c0 6 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>';
 var SVG_OK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+/* El recorrido del carné en la Policía Federal, en 5 pasos que cualquiera entiende. Lo usan la tarjeta principal y la barra de etapas. */
+var ETAPAS_RNM = ["En trámite", "En impresión", "En camino", "Listo para retirar", "Entregado"];
+var IDX_ETAPA = { "En confección": 0, "En trámite": 0, "En impresión": 1, "En traslado": 2, "Listo": 3, "Entregado": 4 };
 function titularRastreador(e) {
   var ciudad = (/unidad de ([^,]+)/.exec(e.ubicacion || "") || [])[1];
   switch (e.corto) {
     case "Listo": return { t: "Tu RNM está en " + (ciudad || "la unidad indicada"), s: "Listo para retirar" };
-    case "En traslado": return { t: "Tu RNM está en camino", s: (e.ubicacion || "").replace(/^En camino /, "") };
+    case "En traslado": return { t: "Tu RNM está en camino", s: e.sub || (e.ubicacion || "").replace(/^En camino /, "") };
     case "Entregado": return { t: "Tu RNM ya fue entregado", s: "Ya está contigo" };
-    case "En trámite": return { t: "Tu RNM sigue en trámite", s: ciudad ? "En la unidad de " + ciudad : "La Policía Federal lo está procesando" };
+    case "En impresión": return { t: "Tu carné fue enviado a impresión", s: e.sub || e.resumen };
+    case "En trámite":
+      if (e.sub) return { t: e.t, s: e.sub };
+      return { t: "Tu RNM sigue en trámite", s: ciudad ? "En la unidad de " + ciudad : "La Policía Federal lo está procesando" };
     case "Sin consultar": return { t: "Aún no consultamos tu RNM", s: "Activa un plan para consultarlo" };
     case "Consultando": return { t: "Consultando la Policía Federal", s: "El resultado aparecerá en unos minutos" };
-    default: return { t: e.t, s: e.resumen };
+    default: return { t: e.t, s: e.sub || e.resumen };
   }
 }
 /* ---------- Cambio de dirección animado (mini rastreador) ---------- */
@@ -2273,7 +2279,7 @@ function avisoValidez(x) {
 function rastreador(x, opciones) {
   opciones = opciones || {};
   var e = estadoPresentacion(x), tt = titularRastreador(e);
-  var idx = { "En confección": 0, "En trámite": 0, "En traslado": 1, "Listo": 2, "Entregado": 3 }[e.corto];
+  var idx = IDX_ETAPA[e.corto];
   var c = el("div", "rastreador " + e.tono + (e.corto === "Listo" ? " listo" : "") + (opciones.compacto ? " compacto" : ""));
   var top = el("div", "rt-top");
   var doc = el("div", "rt-doc");
@@ -2293,7 +2299,7 @@ function rastreador(x, opciones) {
     pista.style.setProperty("--idx", "0");
     pista.innerHTML = '<div class="rt-linea"><i class="rt-relleno"></i></div><span class="rt-marcador">' + SVG_PIN + '</span>';
     var ol = el("ol", "rt-estaciones");
-    ["En trámite", "En traslado", "Listo para retirar", "Entregado"].forEach(function (n, i) {
+    ETAPAS_RNM.forEach(function (n, i) {
       var li = el("li", i < idx ? "hecha" : (i === idx ? "actual" : ""));
       var pt = el("span", "rt-punto"); if (i < idx) pt.innerHTML = SVG_OK;
       li.appendChild(pt); li.appendChild(el("b", "", n));
@@ -3015,7 +3021,14 @@ function construirDetalle(id) {
   // 1. Lo importante: dónde está y en qué estado
   cont.appendChild(rastreador(x, {}));
 
-  // 2. Qué hacer (máximo 3 pasos)
+  // 2. Qué significa (con palabras simples) y qué hacer (máximo 3 pasos)
+  var ttDet = titularRastreador(e);
+  if (e.resumen && e.resumen !== ttDet.s) {
+    var cs = el("div", "tarjeta significa-card");
+    cs.appendChild(el("p", "hero-eyebrow", "Qué significa"));
+    cs.appendChild(el("p", "significa-texto", e.resumen));
+    cont.appendChild(cs);
+  }
   var pasos = (e.pasos || []).slice(0, 3);
   if (pasos.length) {
     var cp = el("div", "tarjeta pasos-card");
@@ -3143,11 +3156,11 @@ function el(tag, cls, texto) {
 }
 
 function etapasConsulta(e) {
-  var idx = { "En confección": 0, "En trámite": 0, "En traslado": 1, "Listo": 2, "Entregado": 3 }[e.corto];
+  var idx = IDX_ETAPA[e.corto];
   if (idx === undefined) return null; // problemas / no encontrado: sin barra de etapas
   var cont = el("ol", "etapas");
   cont.setAttribute("aria-label", "Etapa del documento");
-  ["En trámite", "En traslado", "Listo", "Entregado"].forEach(function (n, i) {
+  ETAPAS_RNM.forEach(function (n, i) {
     var li = el("li", i < idx ? "hecha" : (i === idx ? "actual" : "")); li.style.setProperty("--i", i);
     var pe = el("span", "punto-etapa", i < idx ? "" : String(i + 1)); if (i < idx) pe.innerHTML = '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>'; li.appendChild(pe);
     li.appendChild(el("span", "nombre-etapa", n));
@@ -3420,36 +3433,74 @@ function unidadesDeTexto(txt) {
   return (txt.match(/DELEMIG\/DREX\/SR\/(?:D?PF)\/[A-Z]{2}|DPF\/[A-Z]{3}\/[A-Z]{2}/g) || []);
 }
 function etiquetaUnidad(codigo) { return lugarDeUnidad(codigo) + " (" + codigo + ")"; }
+/* Textos que ve el cliente. Reglas: frases cortas, sin palabras de trámite en portugués, y siempre «qué significa» + «qué hago».
+   Cada regla devuelve: resumen (qué significa), sub (una línea bajo el título), pasos (qué hacer, máx. 3), detalles y ubic. */
+var PASO_PLAN = "Para que te avisemos por WhatsApp apenas cambie, sin tener que entrar a mirar, activa un plan desde R$ 4,99 al mes.";
+var PASO_PLAN_ACTIVO = "Estamos revisando tu RNM por ti: te avisaremos apenas cambie.";
+// "Documento foi entregue ao interessado na unidade X em 02/05/2023." -> { fecha: "02/05/2023", haceMasDeUnAnio: true }
+function entregaDeTexto(txt) {
+  var m = /em (\d{2})\/(\d{2})\/(\d{4})/.exec(txt || "");
+  if (!m) return { fecha: "", antigua: false };
+  var f = new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
+  return { fecha: m[1] + "/" + m[2] + "/" + m[3], antigua: (Date.now() - f.getTime()) > 365 * 864e5 };
+}
 var REGLAS_CONSULTA = [
-  { re: /entregue|retirado em/i, tono: "ok", badge: "ok", corto: "Entregado", t: "Tu documento ya fue entregado",
-    f: function () { return { resumen: "La Policía Federal indica que el carné ya fue entregado.", pasos: ["Si no lo tienes contigo, escríbenos " + VIA_CONTACTO + "."], detalles: [], ubic: "Ya está contigo (entregado)" }; } },
-  { re: /transfer[eê]ncia/i, tono: "aviso", badge: "vigila", corto: "En traslado", t: "Tu documento está en traslado",
+  { re: /entregue|retirado em/i, tono: "ok", badge: "ok", corto: "Entregado", t: "Tu carné ya fue entregado",
+    f: function (txt) {
+      var u = unidadesDeTexto(txt), ent = entregaDeTexto(txt);
+      return { resumen: "La Policía Federal registra que este carné fue entregado" + (ent.fecha ? " el " + ent.fecha : "") + (u.length ? " en " + lugarDeUnidad(u[0]) : "") + ".",
+        sub: "Ya está contigo",
+        pasos: ["Guárdalo bien: es tu documento de identidad en Brasil.",
+                ent.antigua ? "Esa entrega es de hace más de un año. Si esperabas un carné nuevo, revisa que el número de RNM esté bien escrito o escríbenos " + VIA_CONTACTO + "."
+                            : "Si no lo tienes contigo o no recuerdas haberlo retirado, escríbenos " + VIA_CONTACTO + "."],
+        detalles: ent.fecha ? [["Entregado el", ent.fecha]] : [], ubic: "Ya está contigo (entregado)" };
+    } },
+  { re: /transfer[eê]ncia/i, tono: "aviso", badge: "vigila", corto: "En traslado", t: "Tu documento está en camino",
     f: function (txt) {
       var u = unidadesDeTexto(txt), det = [];
       if (u.length >= 2) { det.push(["Sale de", etiquetaUnidad(u[0])]); det.push(["Llega a", etiquetaUnidad(u[1])]); }
-      var ruta = u.length >= 2 ? "Va de " + lugarDeUnidad(u[0]) + " hacia " + lugarDeUnidad(u[1]) + "." : "Se está moviendo entre unidades de la Policía Federal.";
-      return { resumen: ruta + " Cuando llegue, aparecerá como listo para retirar.", pasos: ["No tienes que hacer nada por ahora.", "Si necesitas retirarlo en otra ciudad, escríbenos " + VIA_CONTACTO + "."], detalles: det,
+      var ruta = u.length >= 2 ? " de " + lugarDeUnidad(u[0]) + " a " + lugarDeUnidad(u[1]) : " a otra unidad";
+      return { resumen: "Tu carné ya está hecho y la Policía Federal lo está enviando" + ruta + ". Cuando llegue, aquí aparecerá como «Listo para retirar».",
+        sub: u.length >= 2 ? "De " + lugarDeUnidad(u[0]) + " a " + lugarDeUnidad(u[1]) : "Entre unidades de la Policía Federal",
+        pasos: ["No vayas todavía a retirarlo: aún no está en la unidad.", "No tienes que hacer nada: cuando llegue, aquí cambiará solo a «Listo para retirar».", "Si necesitas retirarlo en otra ciudad, escríbenos " + VIA_CONTACTO + "."], detalles: det,
         ubic: u.length >= 2 ? "En camino de " + lugarDeUnidad(u[0]) + " a " + lugarDeUnidad(u[1]) : "En camino entre unidades de la PF" };
+    } },
+  { re: /em tr[aâ]nsito/i, tono: "aviso", badge: "vigila", corto: "En traslado", t: "Tu documento está en camino",
+    f: function (txt) {
+      var u = unidadesDeTexto(txt), dest = u.length ? lugarDeUnidad(u[u.length - 1]) : null;
+      return { resumen: "Tu carné ya fue fabricado y viaja hacia la unidad" + (dest ? " de " + dest : " donde lo vas a retirar") + ". Cuando la unidad lo reciba, aquí aparecerá como «Listo para retirar».",
+        sub: dest ? "Viaja a " + dest : "Viaja a la unidad de retiro",
+        pasos: ["No vayas todavía: la unidad aún no lo tiene.", "No tienes que hacer nada: aquí cambiará solo a «Listo para retirar».", PASO_PLAN],
+        detalles: u.length ? [["Viaja hacia", etiquetaUnidad(u[u.length - 1])]] : [],
+        ubic: dest ? "En camino a " + dest : "En camino a la unidad de retiro" };
     } },
   { re: /pronto para ser retirado|confeccionado/i, tono: "ok", badge: "ok", corto: "Listo", t: "¡Tu documento está listo para retirar!",
     f: function (txt) {
       var u = unidadesDeTexto(txt), det = [];
-      return { resumen: "Tu documento fue confeccionado y ya puedes retirarlo" + (u.length ? " en la unidad de " + lugarDeUnidad(u[0]) : " en la unidad indicada") + ".",
-        pasos: ["Llena el formulario de entrega de carteiras de la Policía Federal y agenda tu retirada en la unidad correcta.",
-                "Algunas unidades no requieren agenda: si el sistema dice «no hay agenda para el servicio elegido», puedes ir directamente.",
+      return { resumen: "Tu carné ya está hecho y te espera" + (u.length ? " en la unidad de " + lugarDeUnidad(u[0]) : " en la unidad indicada") + ". Ya puedes ir a retirarlo.",
+        pasos: ["Primero llena el formulario «Entrega de carteiras» de la Policía Federal y agenda tu cita en esa unidad.",
+                "Algunas unidades no piden cita: si el sistema dice «no hay agenda para el servicio elegido», ve directamente.",
                 "Lleva tu protocolo y un documento con foto."], detalles: det,
         ubic: u.length ? "En la unidad de " + lugarDeUnidad(u[0]) + ", listo para retirar" : "En la unidad indicada por la PF, listo para retirar" };
     } },
-  { re: /indeferid|negad|rejeitad|arquivad/i, tono: "mal", badge: "danger", corto: "Con problema", t: "Tu solicitud tiene un problema",
-    f: function () { return { resumen: "La solicitud no fue aprobada o fue archivada.", pasos: ["Escríbenos " + VIA_CONTACTO + " para revisar tu caso."], detalles: [] }; } },
-  { re: /pend[eê]ncia|exig[eê]ncia|complement|inconsist/i, tono: "aviso", badge: "", corto: "Falta algo", t: "Falta algo en tu trámite",
-    f: function () { return { resumen: "La Policía Federal pide información o documentos adicionales.", pasos: ["Escríbenos " + VIA_CONTACTO + " y te ayudamos a responder a tiempo."], detalles: [] }; } },
+  { re: /indeferid|negad|rejeitad|arquivad/i, tono: "mal", badge: "danger", corto: "Con problema", t: "Tu solicitud no fue aprobada",
+    f: function () { return { resumen: "La Policía Federal rechazó o archivó esta solicitud. Para saber el motivo y qué puedes hacer ahora, hay que revisar tu caso.", sub: "Escríbenos y revisamos tu caso",
+      pasos: ["Escríbenos cuanto antes " + VIA_CONTACTO + ": revisamos el motivo contigo y vemos qué opciones hay.", "Ten a la mano tu RNM y tu número de protocolo."], detalles: [] }; } },
+  { re: /pend[eê]ncia|exig[eê]ncia|complement|inconsist/i, tono: "aviso", badge: "", corto: "Falta algo", t: "La Policía Federal te pide algo más",
+    f: function () { return { resumen: "Falta un documento o un dato, y mientras no se entregue tu trámite no avanza.", sub: "Tu trámite está detenido hasta que respondas",
+      pasos: ["Escríbenos ahora " + VIA_CONTACTO + ": te ayudamos a saber qué piden y a responder.", "Suele haber un plazo para responder, por eso conviene hacerlo pronto.", "Si la Policía Federal te mandó un correo o mensaje, guárdalo."], detalles: [] }; } },
   { re: /encaminhad[oa] para impress/i, tono: "aviso", badge: "vigila", corto: "En impresión", t: "Tu carné fue enviado a impresión",
-    f: function () { return { resumen: "Es de las últimas etapas: cuando termine de imprimirse pasará a «listo para retirar». Suele tardar de unos días a un par de semanas.", pasos: ["No tienes que hacer nada por ahora.", "Para que te avisemos por WhatsApp apenas esté listo, sin tener que entrar a mirar, activa un plan desde R$ 4,99 al mes."], detalles: [] }; } },
+    f: function () { return { resumen: "Tu solicitud ya fue aprobada y el carné se está fabricando. Es de las últimas etapas: suele tardar de unos días a un par de semanas.", sub: "Ya aprobado: falta imprimirlo",
+      pasos: ["No tienes que hacer nada por ahora.", "Cuando esté impreso, la Policía Federal lo enviará a la unidad: aquí pasará a «En camino» y luego a «Listo para retirar».", PASO_PLAN], detalles: [] }; } },
+  { re: /ainda n[aã]o foi iniciado o atendimento/i, tono: "aviso", badge: "vigila", corto: "En trámite", t: "Tu solicitud aún no empezó a atenderse",
+    f: function () { return { resumen: "La Policía Federal ya tiene tu solicitud, pero todavía no empezó a revisarla. Estás en la fila de espera.", sub: "Está en la fila de la Policía Federal",
+      pasos: ["No tienes que hacer nada por ahora: solo falta esperar tu turno.", PASO_PLAN], detalles: [] }; } },
   { re: /an[aá]lise|em andamento|processamento|aguard|confec[cç][aã]o|produ[cç][aã]o/i, tono: "aviso", badge: "vigila", corto: "En trámite", t: "Tu trámite sigue en proceso",
-    f: function () { return { resumen: "Está en análisis o en fabricación.", pasos: ["No tienes que hacer nada por ahora.", "Con un plan activo lo revisamos por ti y te avisamos por WhatsApp (desde R$ 4,99 al mes)."], detalles: [] }; } },
+    f: function () { return { resumen: "La Policía Federal está trabajando en tu solicitud: puede estar en revisión o en fabricación. Todavía no hay nada que retirar.",
+      pasos: ["No tienes que hacer nada por ahora.", PASO_PLAN], detalles: [] }; } },
   { re: /n[aã]o (foi )?encontrad|nenhum|sin resultados/i, tono: "aviso", badge: "", corto: "No encontrado", t: "No encontramos tu trámite",
-    f: function () { return { resumen: "La Policía Federal no encontró tu trámite con los datos registrados.", pasos: ["Revisa que tu RNM y tu fecha de nacimiento estén bien escritos.", "Si todo está bien, escríbenos " + VIA_CONTACTO + "."], detalles: [] }; } }
+    f: function () { return { resumen: "La Policía Federal no encontró ningún trámite con el RNM y la fecha de nacimiento que escribiste. Casi siempre es un error al escribir un dato.", sub: "Revisa tu RNM y tu fecha de nacimiento",
+      pasos: ["Compara tu RNM (lleva letras y números, por ejemplo A123456B) y tu fecha de nacimiento con tu carné o protocolo.", "Si hay un error, corrígelo aquí abajo: volvemos a consultar sin costo.", "Si todo está bien, escríbenos " + VIA_CONTACTO + "."], detalles: [] }; } }
 ];
 function insigniaCambio(estado) {
   var cls = estado === "aprobada" ? " ok" : (estado === "desaprobada" ? " danger" : (estado === "en trámite" ? " vigila" : ""));
@@ -3477,9 +3528,10 @@ function bloqueCambios(texto) {
 function interpretarConsulta(txt) {
   txt = txt || "";
   var regla = REGLAS_CONSULTA.find(function (x) { return x.re.test(txt); });
-  if (!regla) return { tono: "aviso", badge: "", corto: "Novedad", t: "Hay una novedad en tu trámite", resumen: "La Policía Federal registró una novedad que no podemos explicar automáticamente. Mira el texto original más abajo.", pasos: ["Escríbenos " + VIA_CONTACTO + " y te la explicamos."], detalles: [], ubicacion: "", p: ["La Policía Federal registró una novedad que no podemos explicar automáticamente."], original: txt };
+  if (!regla) return { tono: "aviso", badge: "", corto: "Novedad", t: "Hay una novedad en tu trámite", sub: "Mira el detalle más abajo",
+    resumen: "La Policía Federal actualizó tu trámite con un mensaje que nuestro sistema todavía no sabe traducir. Abajo puedes leer el texto original.", pasos: ["Escríbenos " + VIA_CONTACTO + " y te explicamos qué significa."], detalles: [], ubicacion: "", p: ["La Policía Federal actualizó tu trámite con un mensaje que nuestro sistema todavía no sabe traducir."], original: txt };
   var d = regla.f(txt);
-  return { tono: regla.tono, badge: regla.badge, corto: regla.corto, t: regla.t, resumen: d.resumen, pasos: d.pasos, detalles: d.detalles || [], ubicacion: d.ubic || "", p: [d.resumen], original: txt };
+  return { tono: regla.tono, badge: regla.badge, corto: regla.corto, t: regla.t, sub: d.sub || null, resumen: d.resumen, pasos: d.pasos, detalles: d.detalles || [], ubicacion: d.ubic || "", p: [d.resumen], original: txt };
 }
 // Estado que se muestra para un registro: si todavía no hay resultado, se dice tal cual (nunca "novedad").
 /* Cambio de dirección aprobado hacia otra unidad: el documento sigue donde se hizo y la PF lo traslada.
@@ -3499,13 +3551,16 @@ function estadoPresentacion(x) {
   if (x.ultimo_resultado) {
     var e0 = explicar(x.ultimo_resultado);
     if (!e0.ubicacion && x.unidad_pf) e0.ubicacion = "En la unidad de " + lugarDeUnidad(x.unidad_pf);
+    // Con un plan activo ya no se le ofrece comprar un plan: se le dice que lo estamos vigilando.
+    if (x.cubierto && e0.pasos) e0.pasos = e0.pasos.map(function (p) { return p === PASO_PLAN ? PASO_PLAN_ACTIVO : p; });
     var tp = trasladoPendiente(x);
     if (tp && e0.corto === "Listo") {
       e0.tono = "aviso"; e0.badge = "vigila"; e0.corto = "En traslado"; e0.traslado = true;
       e0.t = "Tu cambio de dirección fue aprobado";
-      e0.resumen = "Tu RNM sigue en " + tp.actual + " y será trasladado a " + tp.destino + ". Todavía no vayas a retirarlo.";
+      e0.sub = "De " + tp.actual + " a " + tp.destino;
+      e0.resumen = "Tu carné está listo, pero en " + tp.actual + ". Como pediste cambiar la dirección, la Policía Federal lo está enviando a " + tp.destino + ". Todavía no vayas a retirarlo.";
       e0.p = [e0.resumen];
-      e0.pasos = ["No tienes que hacer nada por ahora.", "Cuando llegue a " + tp.destino + ", aquí aparecerá como listo para retirar.", "Si necesitas ayuda, escríbenos " + VIA_CONTACTO + "."];
+      e0.pasos = ["No vayas todavía a ninguna de las dos unidades.", "Cuando llegue a " + tp.destino + ", aquí aparecerá como «Listo para retirar».", "Si necesitas ayuda, escríbenos " + VIA_CONTACTO + "."];
       e0.detalles = [["Está ahora en", tp.actual], ["Va hacia", tp.destino]];
       e0.ubicacion = "En camino de " + tp.actual + " a " + tp.destino;
     }

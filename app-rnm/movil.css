@@ -270,6 +270,21 @@ button:disabled { filter: saturate(.6); }
 .history-rnm { font-family: ui-monospace, "SF Mono", "Roboto Mono", Menlo, monospace; letter-spacing: .05em; color: var(--p-navy-900); font-weight: 700; }
 .history-date { font-size: .78rem; color: var(--text-muted); font-weight: 600; }
 
+/* --- Recorrido del carné en 5 pasos (antes 4): el trazo y el marcador se calculan con el número de pasos --- */
+.rt-pista { --n: 5; }
+.rt-linea { left: calc(50% / var(--n)); right: calc(50% / var(--n)); }
+.rt-relleno { width: calc(var(--idx) * 100% / (var(--n) - 1)); }
+.rt-marcador { left: calc(50% / var(--n) + var(--idx) * 100% / var(--n)); }
+.rt-estaciones { grid-template-columns: repeat(5, 1fr); }
+.rt-estaciones b { font-size: .66rem; line-height: 1.2; letter-spacing: -.005em; }
+.rt-estaciones li { padding: 0 1px; }
+
+/* --- «Qué significa» --- */
+.significa-card { padding: 16px 18px; }
+.significa-card .hero-eyebrow { margin-bottom: 8px; }
+.significa-texto { margin: 0; font-size: 1rem; line-height: 1.55; color: var(--text-main); font-weight: 500; }
+.pasos-num li { line-height: 1.5; }
+
 @keyframes p-pulso { 0%, 100% { box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 22%, transparent); } 50% { box-shadow: 0 0 0 6px color-mix(in srgb, currentColor 6%, transparent); } }
 @media (prefers-reduced-motion: reduce) { .rt-estado::before { animation: none !important; } }
 
