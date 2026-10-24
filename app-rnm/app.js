@@ -2221,9 +2221,8 @@ function renderizarPlanes(regs, plan) {
     var filas = el("div", "review-summary-card");
     [["Precio mensual", reales(plan.precio_centavos)],
      ["Pagado hasta", fechaCorta(plan.vence_at)],
-     ["RNM incluidos", "hasta " + (plan.cupos || CUPOS[tipoActual] || 4)],
-     ["Revisión automática", tipoActual === "quincenal" ? "1 vez cada 15 días" : "1 vez por semana"],
-     ["Verificar ahora", tipoActual === "manual" ? "Incluido (1 por día y por RNM)" : "Solo en el plan manual"],
+     ["Revisión automática", tipoActual === "quincenal" ? "cada 15 días" : "cada semana"],
+     ["Verificar ahora", tipoActual === "manual" ? "Incluido · 1 por día" : "Solo plan manual"],
      ["RNM en seguimiento", String(abiertos) + " de " + (plan.cupos || CUPOS[tipoActual] || 4)]
     ].forEach(function (par) {
       var f = el("div", "review-row");
@@ -2362,7 +2361,7 @@ async function cargarHistorialConsultas() {
     izq.appendChild(el("span", "history-rnm", reg ? "RNM " + reg.rnm : "Documento"));
     izq.appendChild(el("div", "history-date", fechaHora(c.created_at)));
     if (c.resultado_texto) izq.appendChild(el("p", "history-resumen", ie.resumen));
-    if (c.unidad_pf) izq.appendChild(el("p", "sub history-unidad", "Unidad: " + etiquetaUnidad(c.unidad_pf)));
+    if (c.unidad_pf) izq.appendChild(el("p", "sub history-unidad", "Unidad: " + lugarDeUnidad(c.unidad_pf))); // solo la ciudad: el código de la PF no le sirve al cliente
     var cambH = bloqueCambios(c.cambio_direccion); if (cambH) izq.appendChild(cambH);
     card.appendChild(izq);
 

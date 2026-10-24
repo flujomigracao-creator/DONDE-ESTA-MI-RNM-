@@ -518,3 +518,48 @@ input.sw:focus-visible { outline: 3px solid rgba(21, 94, 239, 0.45); outline-off
 .btn-cancelar-plan, .btn-cancelar-fin { min-height: 44px; padding: 0 22px; border-radius: 14px; background: transparent !important; color: #B3261E !important; border: 1px solid rgba(179, 38, 30, 0.30) !important; box-shadow: none !important; font-weight: 700; font-size: .9rem; }
 .btn-cancelar-fin { width: 100%; margin-top: 14px; }
 .btn-cancelar-fin.oculto { display: none; }
+
+/* ==========================================================================
+   Todas las pantallas (celular): sin títulos repetidos, bloques más compactos
+   ========================================================================== */
+@media (max-width: 899px) {
+  /* El título ya está en la cabecera: no se repite en la página */
+  #seccion-planes .page-header, #seccion-ayuda .page-header { display: none; }
+  #seccion-historial .page-header { justify-content: flex-end; margin: 0 0 8px; }
+  #seccion-historial .page-header-text { display: none; }
+  #seccion-historial #btn-actualizar-historial { min-height: 36px; padding: 0 14px; font-size: .82rem; }
+  #seccion-validar .page-header { margin: 0 0 8px; }
+  #seccion-validar .page-header h1 { font-size: 1.25rem; margin: 0; }
+  /* «Volver»: la barra de navegación ya lleva a Inicio */
+  #seccion-nueva-consulta .barra-volver { display: none; }
+  #seccion-detalle-rnm .barra-volver { margin: 0 0 8px; }
+  #seccion-detalle-rnm .barra-volver .btn { min-height: 36px; padding: 0 12px; font-size: .84rem; }
+}
+
+/* Historial: tarjetas más bajas (el resumen largo se recorta a 2 líneas; el detalle completo está en el RNM) */
+.history-card { padding: 10px 12px; gap: 10px; border-radius: 16px; margin-bottom: 8px; }
+.history-card .history-rnm { font-size: .95rem; }
+.history-card .history-date { font-size: .74rem; margin: 1px 0 3px; }
+.history-card .history-resumen { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; margin: 0 0 3px; font-size: .84rem; line-height: 1.35; }
+.history-card .history-unidad { margin: 0; font-size: .74rem; }
+.history-card .insignia { white-space: nowrap; }
+
+/* Ayuda: tarjeta de «quiénes somos» más baja */
+.quienes-somos { padding: 12px 14px; gap: 12px; border-radius: 16px; }
+.quienes-somos img { width: 44px; height: auto; }
+.quienes-somos b { font-size: .95rem; }
+.quienes-somos span { font-size: .8rem; line-height: 1.35; }
+
+/* Entrada (login): el botón de Google debe verse sin bajar */
+#vista-login .fig-hero-marca { margin: 4px 0 12px; padding: 12px 14px 14px; border-radius: 20px; }
+#vista-login .fig-hero-marca img { width: min(120px, 38%); }
+#vista-login .eyebrow-fig { margin-bottom: 2px; }
+#vista-login h1 { font-size: 1.7rem; margin: 0 0 4px; }
+#vista-login .fig-login > .sub { font-size: .9rem; margin-bottom: 12px; }
+#vista-login .fig-bene { margin-bottom: 12px; padding: 10px 14px; gap: 8px; }
+#vista-login .fig-bene li { padding: 4px 0; }
+
+/* Planes: tabla de estado del plan más baja */
+.plan-estado .review-summary-card { padding: 4px 12px; border-radius: 14px; }
+.plan-estado .review-row { padding: 8px 0; font-size: .86rem; gap: 10px; }
+.plan-estado .review-row b { text-align: right; }
