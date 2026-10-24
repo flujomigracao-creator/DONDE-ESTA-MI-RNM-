@@ -125,6 +125,14 @@ button:disabled { filter: saturate(.6); }
 #modal-seguir .sg-enlace { font-size: .86rem; font-weight: 700; color: var(--text-muted); text-decoration: none; padding: 6px 4px; }
 #modal-seguir .sg-enlace:last-child { color: var(--p-azul-700); }
 
+/* ---------- Rastreador: el punto actual lleva el pin (sin marcador flotante encima) ---------- */
+.rt-marcador { display: none !important; }
+.rastreador .rt-pista { padding-top: 8px; }
+.rastreador .rt-estaciones { padding-top: 2px; }
+.rastreador .rt-linea { top: 18px; }
+.rastreador .rt-estaciones li.actual .rt-punto { width: 30px; height: 30px; margin: -3px -3px 0; border: 0; background: var(--tono); color: #fff; box-shadow: 0 0 0 5px color-mix(in srgb, var(--tono) 22%, transparent), 0 6px 14px color-mix(in srgb, var(--tono) 40%, transparent); }
+.rastreador .rt-estaciones li.actual .rt-punto svg { width: 16px; height: 16px; color: #fff; }
+
 /* ---------- Línea del plan ---------- */
 .plan-linea { border-radius: 14px; border: 1px solid rgba(24, 160, 88, 0.16); background: linear-gradient(180deg, #F1FBF5, #E8F7EE); box-shadow: var(--p-sombra-1); }
 .resumen-rnm { font-weight: 700; color: var(--p-azul-700); letter-spacing: .01em; }
@@ -142,7 +150,7 @@ button:disabled { filter: saturate(.6); }
   background: var(--p-degradado); position: relative; overflow: hidden;
 }
 .rastreador.ok:not(.compacto) .rt-top { background: linear-gradient(135deg, #0B3D2A 0%, #13804D 60%, #22B067 100%); }
-.rastreador.aviso:not(.compacto) .rt-top { background: linear-gradient(135deg, #4A2A00 0%, #A86400 60%, #E09A1A 100%); }
+.rastreador.aviso:not(.compacto) .rt-top { background: linear-gradient(135deg, #7A4300 0%, #C77700 58%, #E8A21F 100%); }
 .rastreador.mal:not(.compacto) .rt-top { background: linear-gradient(135deg, #4A0E0A 0%, #9E2A22 60%, #D2483E 100%); }
 .rastreador:not(.compacto) .rt-top::after { /* brillo que pasa por la tarjeta */
   content: ""; position: absolute; inset: 0; background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.22) 50%, transparent 65%);

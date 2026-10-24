@@ -2316,18 +2316,21 @@ function rastreador(x, opciones) {
   c.appendChild(top);
   c.appendChild(el("h2", "rt-titular", tt.t));
   var sub = el("p", "rt-sub"); sub.innerHTML = (e.tono === "ok" ? SVG_OK : (e.tono === "mal" || e.corto === "Falta algo" || e.corto === "No encontrado" ? "" : SVG_PIN)); sub.appendChild(document.createTextNode(tt.s)); c.appendChild(sub);
-  if (x.unidad_pf && !opciones.compacto) { var lugar = el("span", "rt-lugar", ""); lugar.innerHTML = SVG_PIN; lugar.appendChild(document.createTextNode("Unidad: " + lugarDeUnidad(x.unidad_pf))); c.appendChild(lugar); }
+  // La unidad solo se muestra aparte si el titular o el subtítulo aún no la dicen (evita repetir «Foz do Iguaçu/PR» dos veces).
+  var unidadTxt = x.unidad_pf ? lugarDeUnidad(x.unidad_pf) : "";
+  var yaDicha = unidadTxt && (tt.t + " " + tt.s).toLowerCase().indexOf(unidadTxt.toLowerCase()) >= 0;
+  if (unidadTxt && !yaDicha && !opciones.compacto) { var lugar = el("span", "rt-lugar", ""); lugar.innerHTML = SVG_PIN; lugar.appendChild(document.createTextNode("Unidad: " + unidadTxt)); c.appendChild(lugar); }
   var lc = x.cambio_direccion ? lineasCambio(x.cambio_direccion) : [];
   cambiosParaMostrar(lc).forEach(function (l) { c.appendChild(cambioAnimado(l)); });
   var av = avisoValidez(x); if (av) c.appendChild(av);
   if (idx !== undefined && !opciones.compacto) {
     var pista = el("div", "rt-pista");
     pista.style.setProperty("--idx", "0");
-    pista.innerHTML = '<div class="rt-linea"><i class="rt-relleno"></i></div><span class="rt-marcador">' + SVG_PIN + '</span>';
+    pista.innerHTML = '<div class="rt-linea"><i class="rt-relleno"></i></div>';
     var ol = el("ol", "rt-estaciones");
     ETAPAS_RNM.forEach(function (n, i) {
       var li = el("li", i < idx ? "hecha" : (i === idx ? "actual" : ""));
-      var pt = el("span", "rt-punto"); if (i < idx) pt.innerHTML = SVG_OK;
+      var pt = el("span", "rt-punto"); if (i < idx) pt.innerHTML = SVG_OK; else if (i === idx) pt.innerHTML = SVG_PIN; // «estás aquí»: el punto actual lleva el pin
       li.appendChild(pt); li.appendChild(el("b", "", n));
       if (i === idx) li.setAttribute("aria-current", "step");
       ol.appendChild(li);
@@ -2337,7 +2340,7 @@ function rastreador(x, opciones) {
     requestAnimationFrame(function () { requestAnimationFrame(function () { pista.style.setProperty("--idx", String(idx)); }); });
   }
   if (opciones.cta) {
-    var b = el("button", "rt-cta", e.corto === "Listo" ? "Cómo retirarlo" : "Ver detalle"); b.type = "button";
+    var b = el("button", "rt-cta", e.corto === "Listo" ? "Cómo retirarlo" : (e.otraCiudad ? "Ver qué hacer" : "Ver detalle")); b.type = "button";
     b.addEventListener("click", function (ev) { ev.stopPropagation(); abrirDetalleRnm(x.id); });
     c.appendChild(b);
     c.classList.add("clic"); c.tabIndex = 0; c.setAttribute("role", "button");
@@ -2416,6 +2419,8 @@ function actualizarDashboard(regs, plan) {
         var nE = regs.filter(function (x) { return x.estado_pf === "entregado"; }).length;
         var partes = [];
         if (nL) partes.push(nL + (nL === 1 ? " listo para retirar" : " listos para retirar"));
+        var nO = regs.filter(function (x) { return !!documentoEnOtraCiudad(x); }).length;
+        if (nO) partes.push(nO + " en otra ciudad");
         if (nC) partes.push(nC + " en proceso");
         if (nE) partes.push(nE + (nE === 1 ? " entregado" : " entregados"));
         if (partes.length) heroCont.appendChild(el("p", "resumen-rnm", partes.join(" · ")));
@@ -3299,7 +3304,7 @@ function cajaResultado(x) {
     ub.appendChild(ubt);
     caja.appendChild(ub);
     // Si hay un cambio de dirección hacia otra unidad, se dice claramente a cuál (aprobado, o el último pedido).
-    if (e.corto === "Listo" && x.unidad_pf && x.cambio_direccion) {
+    if ((e.corto === "Listo" || e.otraCiudad) && x.unidad_pf && x.cambio_direccion) {
       var lc = lineasCambio(x.cambio_direccion).filter(function (l) { return l.codigo && l.codigo !== x.unidad_pf; });
       var apr = lc.filter(function (l) { return l.estado === "aprobada"; }).pop();
       var ultC = cambioReciente(lc);
@@ -3500,6 +3505,7 @@ function fechaCorta(iso) { return new Date(iso).toLocaleDateString("es", { day: 
 // Etiqueta corta del estado de vigilancia de un RNM -> [texto, clase de la insignia]
 function etiquetaRnm(x) {
   if (trasladoPendiente(x)) return ["En traslado", " vigila"];
+  if (documentoEnOtraCiudad(x)) return ["En otra ciudad", " vigila"];
   if (x.estado_pf === "entregado") return ["Entregado", " ok"];
   if (x.cerrado) return ["Listo", " ok"];
   if (x.cubierto) return ["Vigilando", " vigila"];
@@ -3659,7 +3665,18 @@ function trasladoPendiente(x) {
   if (ufDeUnidad(ult.codigo) === ufDoc) return null;
   return { actual: lugarDeUnidad(x.unidad_pf), destino: lugarDeUnidad(ult.codigo) };
 }
-function esListoReal(x) { return x.estado_pf === "listo" && !trasladoPendiente(x); }
+/* Carné listo, pero en una unidad de OTRA ciudad (o estado) que la del cliente: no se le dice «listo para retirar».
+   Si no sabemos dónde vive el cliente, no se puede afirmar nada y sigue como «Listo». */
+function documentoEnOtraCiudad(x) {
+  if (!x || x.estado_pf !== "listo" || !x.unidad_pf || trasladoPendiente(x)) return null;
+  var ciudadU = ciudadDeUnidad(x.unidad_pf), uf = ufDeUnidad(x.unidad_pf);
+  var miCiudad = perfilActual && perfilActual.ciudad, miUF = perfilActual && perfilActual.estado, otra;
+  if (ciudadU && miCiudad) otra = normalizar(ciudadU) !== normalizar(miCiudad);
+  else if (uf && miUF) otra = uf !== miUF;
+  else return null;
+  return otra ? { unidad: lugarDeUnidad(x.unidad_pf), miCiudad: miCiudad || ESTADOS_BR[miUF] || "" } : null;
+}
+function esListoReal(x) { return x.estado_pf === "listo" && !trasladoPendiente(x) && !documentoEnOtraCiudad(x); }
 function estadoPresentacion(x) {
   if (x.ultimo_resultado) {
     var e0 = explicar(x.ultimo_resultado);
@@ -3676,6 +3693,17 @@ function estadoPresentacion(x) {
       e0.pasos = ["No vayas todavía a ninguna de las dos unidades.", "Cuando llegue a " + tp.destino + ", aquí aparecerá como «Listo para retirar».", "Si necesitas ayuda, escríbenos " + VIA_CONTACTO + "."];
       e0.detalles = [["Está ahora en", tp.actual], ["Va hacia", tp.destino]];
       e0.ubicacion = "En camino de " + tp.actual + " a " + tp.destino;
+    }
+    var oc = e0.corto === "Listo" && documentoEnOtraCiudad(x);
+    if (oc) {
+      e0.tono = "aviso"; e0.badge = "vigila"; e0.corto = "En otra ciudad"; e0.otraCiudad = true;
+      e0.t = "Tu documento no está en tu ciudad";
+      e0.sub = "En la unidad de " + oc.unidad;
+      e0.resumen = "La Policía Federal ya tiene tu carné, pero en " + oc.unidad + (oc.miCiudad ? " y tú vives en " + oc.miCiudad : "") + ". Puedes ir a retirarlo allí o pedir el cambio de dirección de entrega para recibirlo en tu ciudad.";
+      e0.p = [e0.resumen];
+      e0.pasos = ["Decide dónde quieres retirarlo: en esa unidad o en tu ciudad.", "Para recibirlo en tu ciudad, pide el cambio de dirección de entrega: te orientamos " + VIA_CONTACTO + "."];
+      e0.detalles = [["Está en", oc.unidad]].concat(oc.miCiudad ? [["Tu ciudad", oc.miCiudad]] : []);
+      e0.ubicacion = "En la unidad de " + oc.unidad;
     }
     if (!e0.ubicacion) e0.ubicacion = "La PF todavía no indica en qué unidad está";
     return e0;
