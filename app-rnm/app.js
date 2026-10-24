@@ -1673,16 +1673,16 @@ function mostrarCodigoPago(tipo, d) {
 function avisoPlan(regs) {
   var sinPlan = regs.filter(function (x) { return !x.cerrado && !x.cubierto && (!!x.ultimo_resultado || x.requiere_pago); });
   if (!sinPlan.length) return null;
-  var d = el("div", "aviso-plan");
-  d.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v5M12 16.5v.01"/><circle cx="12" cy="12" r="9"/></svg>';
-  var cuerpo = el("div", "");
-  var p = el("p", "", "");
-  p.innerHTML = "<b>Tu RNM no se actualizará.</b> Lo que ves es de la última consulta. Sin un plan activo el estado <b>no se vuelve a actualizar</b>: activa uno desde <b>R$ 4,99 al mes</b> y lo revisamos por ti.";
-  cuerpo.appendChild(p);
-  var b = el("button", "", "Ver planes desde R$ 4,99"); b.type = "button";
-  b.addEventListener("click", function () { navegarA("planes"); });
-  cuerpo.appendChild(b);
-  d.appendChild(cuerpo);
+  // Una sola fila tocable: qué pasa, qué hacer y cuánto cuesta. El detalle completo está en Planes.
+  var yaConsultado = sinPlan.some(function (x) { return !!x.ultimo_resultado; });
+  var d = el("button", "aviso-plan"); d.type = "button";
+  d.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8v5M12 16.5v.01"/><circle cx="12" cy="12" r="9"/></svg>';
+  var tx = el("span", "aviso-plan-txt", "");
+  tx.appendChild(el("b", "", yaConsultado ? "Tu RNM ya no se actualiza" : "Activa un plan para consultar tu RNM"));
+  tx.appendChild(el("small", "", "Actívalo desde " + reales(PRECIOS.quincenal) + "/mes"));
+  d.appendChild(tx);
+  d.appendChild(el("span", "aviso-plan-cta", "Ver planes"));
+  d.addEventListener("click", function () { navegarA("planes"); });
   return d;
 }
 
