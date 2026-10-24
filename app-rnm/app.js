@@ -319,10 +319,36 @@ function actualizarResumenPerfil() {
   if (ps) ps.textContent = activo ? (planCargado.cancelado_at ? "Cancelado · hasta " : "Activo hasta ") + fechaCorta(planCargado.vence_at) : "Ver planes";
   var bc = $("btn-cancelar-plan-perfil");
   if (bc) bc.classList.toggle("oculto", !(activo && !planCargado.cancelado_at));
+  // Color del plan según su estado: verde activo, ámbar si vence pronto o está cancelado, rojo suave sin plan
+  var tile = $("perfil-plan-tile");
+  if (tile) {
+    var dias = activo ? Math.ceil((new Date(planCargado.vence_at) - new Date()) / 86400000) : 0;
+    tile.classList.remove("ok", "aviso", "mal");
+    tile.classList.add(!activo ? "mal" : (planCargado.cancelado_at || dias <= 5 ? "aviso" : "ok"));
+  }
+  sincronizarAvisosPerfil();
   var del = $("perfil-eliminar");
   if (del) del.href = WHATSAPP ? "https://wa.me/" + WHATSAPP + "?text=" + encodeURIComponent("Hola, quiero solicitar la eliminación de mi cuenta y mis datos en ¿Dónde está mi RNM?") : "mailto:" + CONTACTO_EMAIL + "?subject=" + encodeURIComponent("Eliminar mi cuenta");
 }
 
+/* Interruptores de «Avisos» en Perfil: WhatsApp (se guarda en el perfil) y avisos en este celular (push) */
+function sincronizarAvisosPerfil() {
+  var wa = $("sw-wa");
+  if (wa) {
+    wa.checked = !!(perfilActual && perfilActual.avisos_whatsapp);
+    var sub = $("sw-wa-sub");
+    if (sub) sub.textContent = wa.checked ? "Activados · te escribimos cuando tu RNM cambie" : (perfilActual && perfilActual.telefono ? "Desactivados · no te escribiremos" : "Agrega tu WhatsApp para activarlos");
+  }
+  var fp = $("fila-sw-push");
+  if (fp && window.rnmPush) {
+    fp.classList.remove("oculto");
+    window.rnmPush.estado().then(function (e) {
+      var sw = $("sw-push"); if (!sw) return;
+      sw.checked = e.activo; sw.disabled = e.bloqueado;
+      $("sw-push-sub").textContent = e.bloqueado ? "Bloqueados: actívalos en los ajustes del celular" : (e.activo ? "Activados en este celular" : "Recibe un aviso al instante");
+    });
+  }
+}
 function actualizarInfoUsuario(user, perfil) {
   var email = (user && user.email) || "";
   var meta = (user && user.user_metadata) || {};
@@ -333,10 +359,13 @@ function actualizarInfoUsuario(user, perfil) {
   var q = $("quien"); if (q) q.textContent = email;
   var nd = $("perfil-nombre-display"); if (nd) nd.textContent = nombre;
   var ed = $("perfil-email-display"); if (ed) ed.textContent = email;
-  var pt = $("perfil-tel-display"); if (pt) pt.textContent = (perfil && perfil.telefono) ? "+" + perfil.telefono : "—";
+  // Lo que falta se muestra como acción («Agregar…») en vez de un guion
+  function dato(id, valor, falta) { var d = $(id); if (!d) return; d.textContent = valor || falta; var fila = d.closest(".fila-aj"); if (fila) fila.classList.toggle("falta", !valor); }
+  dato("perfil-tel-display", (perfil && perfil.telefono) ? "+" + perfil.telefono : "", "Agregar mi WhatsApp");
   actualizarResumenPerfil();
-  var pd = $("perfil-dir-display"); if (pd) pd.textContent = (perfil && perfil.direccion) ? perfil.direccion + (perfil.cep ? " · CEP " + perfil.cep.slice(0, 5) + "-" + perfil.cep.slice(5) : "") : "—";
-  var pc = $("perfil-ciudad-display"); if (pc) pc.textContent = perfil && perfil.ciudad ? perfil.ciudad + (perfil.estado ? " / " + perfil.estado : "") : "—";
+  dato("perfil-dir-display", (perfil && perfil.direccion) ? perfil.direccion + (perfil.cep ? " · CEP " + perfil.cep.slice(0, 5) + "-" + perfil.cep.slice(5) : "") : "", "Agregar mi dirección");
+  dato("perfil-ciudad-display", perfil && perfil.ciudad ? perfil.ciudad + (perfil.estado ? " / " + perfil.estado : "") : "", "Agregar mi ciudad");
+  sincronizarAvisosPerfil();
 }
 
 async function mostrar(session) {
@@ -3772,6 +3801,28 @@ if (btnActualizarHist) {
     });
   });
 }
+
+document.querySelectorAll("[data-editar-perfil]").forEach(function (b) { b.addEventListener("click", function () { abrirPerfil(true); }); });
+var swWa = $("sw-wa");
+if (swWa) swWa.addEventListener("change", async function () {
+  var quiere = swWa.checked;
+  if (quiere && !(perfilActual && perfilActual.telefono)) { swWa.checked = false; if (window.toast) toast("Primero agrega tu WhatsApp", "ok"); return abrirPerfil(true); }
+  if (!usuarioActual || !perfilActual) { swWa.checked = !quiere; return; }
+  swWa.disabled = true;
+  var cambios = { avisos_whatsapp: quiere }; if (quiere) cambios.avisos_whatsapp_at = new Date().toISOString();
+  var r = await sb.from("rnm_perfiles").update(cambios).eq("user_id", usuarioActual.id).select().maybeSingle();
+  swWa.disabled = false;
+  if (r.error || !r.data) { swWa.checked = !quiere; if (window.toast) toast("No se pudo guardar. Intenta de nuevo.", "error"); return; }
+  perfilActual = r.data; sincronizarAvisosPerfil();
+  if (window.toast) toast(quiere ? "Avisos por WhatsApp activados" : "Avisos por WhatsApp desactivados", "ok");
+});
+var swPush = $("sw-push");
+if (swPush) swPush.addEventListener("change", async function () {
+  var quiere = swPush.checked; swPush.disabled = true;
+  var ok = window.rnmPush ? (quiere ? await window.rnmPush.activar() : await window.rnmPush.desactivar()) : false;
+  swPush.disabled = false; sincronizarAvisosPerfil();
+  if (window.toast) toast(ok ? (quiere ? "Avisos en este celular activados" : "Avisos en este celular desactivados") : "No se pudo cambiar. Revisa los permisos del celular.", "error");
+});
 
 var btnEditarDirecto = $("btn-editar-perfil-directo");
 if (btnEditarDirecto) {

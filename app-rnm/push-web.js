@@ -32,8 +32,9 @@
       Notification.requestPermission().then(function (p) { if (p === "granted") suscribir(); });
     };
   }
+  function apagado() { try { return localStorage.getItem("rnm_push_off") === "1"; } catch (_) { return false; } }
   function revisar(session) {
-    if (!session || Notification.permission === "denied") return;
+    if (!session || Notification.permission === "denied" || apagado()) return; // si la persona los apagó desde Perfil, no se vuelven a pedir
     if (Notification.permission === "granted") return suscribir();
     var t = 0; try { t = +localStorage.getItem("rnm_push_no") || 0; } catch (_) {}
     if (Date.now() - t <= 3 * 24 * 3600 * 1000) return;
@@ -51,6 +52,24 @@
     return (window.matchMedia && (matchMedia("(display-mode: standalone)").matches || matchMedia("(display-mode: fullscreen)").matches)) ||
       (document.referrer || "").indexOf("android-app://") === 0;
   }
+  // Interruptor de Perfil: estado, activar y desactivar los avisos en este celular.
+  window.rnmPush = {
+    estado: function () {
+      if (Notification.permission === "denied") return Promise.resolve({ activo: false, bloqueado: true });
+      return navigator.serviceWorker.ready.then(function (reg) { return reg.pushManager.getSubscription(); })
+        .then(function (s) { return { activo: Notification.permission === "granted" && !!s && !apagado(), bloqueado: false }; })
+        .catch(function () { return { activo: false, bloqueado: false }; });
+    },
+    activar: function () {
+      try { localStorage.removeItem("rnm_push_off"); } catch (_) {}
+      return Notification.requestPermission().then(function (p) { return p === "granted" ? suscribir().then(function () { return true; }) : false; }).catch(function () { return false; });
+    },
+    desactivar: function () {
+      try { localStorage.setItem("rnm_push_off", "1"); } catch (_) {}
+      return navigator.serviceWorker.ready.then(function (reg) { return reg.pushManager.getSubscription(); })
+        .then(function (s) { return s ? s.unsubscribe() : true; }).then(function () { return true; }).catch(function () { return false; });
+    }
+  };
   sb.auth.onAuthStateChange(function (ev, s) { if (ev === "SIGNED_IN") revisar(s); });
   sb.auth.getSession().then(function (r) { revisar(r.data && r.data.session); });
 })();
