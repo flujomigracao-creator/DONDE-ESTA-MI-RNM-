@@ -95,14 +95,17 @@ button:disabled { filter: saturate(.6); }
 #modal-seguir .sg-caja { padding: 0 !important; overflow-y: auto; max-width: 440px; }
 #modal-seguir .sg-caja::before { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); margin: 0 !important; background: rgba(255, 255, 255, 0.45) !important; z-index: 2; }
 #modal-seguir .cerrar { top: 14px; right: 14px; background: rgba(255, 255, 255, 0.18) !important; color: #fff !important; border: 0 !important; box-shadow: none !important; }
-#modal-seguir .sg-hero { position: relative; padding: 28px 20px 18px; background: var(--p-degradado); color: #fff; border-radius: inherit; }
+#modal-seguir .sg-hero { position: relative; padding: 28px 20px 20px; background: var(--p-degradado); color: #fff; border-radius: inherit; }
 #modal-seguir .sg-eyebrow { margin: 0 0 6px; font-size: .72rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: rgba(255, 255, 255, 0.78); padding-right: 44px; }
 #modal-seguir .sg-hero h3 { margin: 0 0 14px; font-size: 1.65rem; line-height: 1.12; font-weight: 800; color: #fff; letter-spacing: -0.02em; }
 #modal-seguir .sg-estado { display: grid; gap: 1px; margin: 0; padding: 11px 14px; border-radius: 16px; background: rgba(255, 255, 255, 0.16); border: 1px solid rgba(255, 255, 255, 0.25); backdrop-filter: blur(6px); }
 #modal-seguir .sg-estado small { font-size: .7rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: rgba(255, 255, 255, 0.75); }
 #modal-seguir .sg-estado b { font-size: 1.02rem; font-weight: 800; color: #fff; line-height: 1.25; }
 #modal-seguir .sg-estado span { font-size: .84rem; color: rgba(255, 255, 255, 0.85); }
-#modal-seguir .sg-sub { margin: 10px 2px 0; font-size: .84rem; font-weight: 600; color: rgba(255, 255, 255, 0.9); }
+#modal-seguir .sg-alerta { display: flex; align-items: center; gap: 12px; margin: 0 0 14px; padding: 12px 14px; border-radius: 16px; background: #FDEEEC; border: 1px solid #F3C1BC; border-left: 5px solid #D93025; }
+#modal-seguir .sg-alerta > svg { width: 26px; height: 26px; flex: none; color: #D93025; }
+#modal-seguir .sg-alerta b { display: block; font-size: 1rem; font-weight: 800; color: #7A1410; line-height: 1.25; }
+#modal-seguir .sg-alerta small { display: block; margin-top: 2px; font-size: .8rem; font-weight: 600; color: #A33A33; line-height: 1.3; }
 #modal-seguir .sg-cuerpo { padding: 16px 18px calc(16px + env(safe-area-inset-bottom, 0px)); }
 #modal-seguir .sg-lista { margin: 0 0 14px; gap: 12px; }
 #modal-seguir .sg-lista li { align-items: center; gap: 12px; }
