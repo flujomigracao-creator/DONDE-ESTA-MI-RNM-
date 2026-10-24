@@ -2677,14 +2677,39 @@ function pintarAvisoMensajes() {
   var a = $("aviso-mensaje");
   if (a) {
     a.classList.toggle("oculto", !mensajesSinLeer);
-    a.textContent = mensajesSinLeer ? (mensajesSinLeer === 1 ? "Tienes 1 mensaje del equipo. Tócalo para leerlo." : "Tienes " + mensajesSinLeer + " mensajes del equipo. Tócalos para leerlos.") : "";
+    a.textContent = "";
+    if (mensajesSinLeer) {
+      // Título corto + adelanto del mensaje real: el cliente decide si lo abre sin tener que entrar.
+      var tx = el("span", "aviso-msj-txt", "");
+      var cuando = ultimoMensajeEquipo && ultimoMensajeEquipo.creado_at ? " · " + tiempoRelativo(ultimoMensajeEquipo.creado_at) : "";
+      tx.appendChild(el("b", "", (mensajesSinLeer === 1 ? "Mensaje del equipo" : mensajesSinLeer + " mensajes del equipo") + cuando));
+      tx.appendChild(el("small", "", ultimoMensajeEquipo && ultimoMensajeEquipo.cuerpo ? String(ultimoMensajeEquipo.cuerpo).replace(/\s+/g, " ").trim() : "Toca para leerlo"));
+      a.appendChild(tx);
+      a.setAttribute("aria-label", mensajesSinLeer === 1 ? "Leer el mensaje nuevo del equipo" : "Leer los " + mensajesSinLeer + " mensajes nuevos del equipo");
+    }
   }
 }
+/* «hace 5 min», «hace 2 h», «ayer» o la fecha: lo justo para saber si el mensaje es reciente */
+function tiempoRelativo(iso) {
+  var min = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+  if (!(min >= 0)) return "ahora";
+  if (min < 1) return "ahora";
+  if (min < 60) return "hace " + min + " min";
+  if (min < 60 * 24) return "hace " + Math.round(min / 60) + " h";
+  if (min < 60 * 48) return "ayer";
+  return new Date(iso).toLocaleDateString("es", { day: "numeric", month: "short" });
+}
+var ultimoMensajeEquipo = null;
 async function cargarMensajes() {
   if (!usuarioActual) return;
-  var r = await sb.from("rnm_mensajes").select("id", { count: "exact", head: true }).eq("de", "equipo").is("leido_at", null);
-  if (r.error) return;
-  mensajesSinLeer = r.count || 0; pintarAvisoMensajes();
+  var q = await Promise.all([
+    sb.from("rnm_mensajes").select("id", { count: "exact", head: true }).eq("de", "equipo").is("leido_at", null),
+    sb.from("rnm_mensajes").select("cuerpo, creado_at").eq("de", "equipo").is("leido_at", null).order("creado_at", { ascending: false }).limit(1)
+  ]);
+  if (q[0].error) return;
+  mensajesSinLeer = q[0].count || 0;
+  ultimoMensajeEquipo = !q[1].error && q[1].data && q[1].data[0] ? q[1].data[0] : null;
+  pintarAvisoMensajes();
 }
 function burbujaChat(lista, clase, etiqueta, texto, hora) {
   var b = el("div", "chat-burbuja " + clase);
