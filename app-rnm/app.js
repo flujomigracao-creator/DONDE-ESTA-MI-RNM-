@@ -2008,15 +2008,18 @@ function revisarOfertaSeguimiento(regs, plan, activo) {
 function abrirOfertaSeguimiento(x) {
   var m = $("modal-seguir"); if (!m) return;
   var e0 = estadoPresentacion(x);
-  $("sg-estado").textContent = "Tu RNM " + (x.rnm ? "terminado en " + String(x.rnm).slice(-4) : "") + ": " + e0.t + (e0.ubicacion ? " · " + e0.ubicacion : "") + ".";
+  var caja = $("sg-estado"); caja.textContent = "";
+  caja.appendChild(el("small", "", "RNM " + (x.rnm ? "terminado en " + String(x.rnm).slice(-4) : "")));
+  caja.appendChild(el("b", "", e0.t));
+  if (e0.ubicacion) caja.appendChild(el("span", "", e0.ubicacion));
   var quiereWa = $("sg-wa-fila"), tel = perfilActual && String(perfilActual.telefono || "").replace(/\D/g, "");
   var yaWa = !!(perfilActual && perfilActual.avisos_whatsapp);
   if (!yaWa && tel && tel.length >= 10) { quiereWa.classList.remove("oculto"); $("sg-wa").checked = true; $("sg-wa-texto").textContent = "Quiero recibir los avisos por WhatsApp al +" + (tel.length <= 11 ? "55" + tel : tel) + "."; }
   else quiereWa.classList.add("oculto");
   msg("msg-seguir", "");
   var pl = planPreferido(), cad = pl === "quincenal" ? "cada 15 días" : (pl === "manual" ? "cada semana + Verificar ahora" : "cada semana");
-  $("sg-suscribir").textContent = "Suscribirme por " + reales(PRECIOS[pl]) + " al mes";
-  document.querySelector("#modal-seguir .sg-nota").textContent = "Revisamos tu RNM " + cad + " · Pix, tarjeta o boleto · 🛡️ Si no te convence, cancelas en la primera hora y te devolvemos tu dinero";
+  $("sg-suscribir").textContent = "Activar seguimiento · " + reales(PRECIOS[pl]) + "/mes";
+  document.querySelector("#modal-seguir .sg-nota").textContent = "Revisión " + cad + " · Pix, tarjeta o boleto";
   pintarPruebaSocial($("sg-opiniones"));
   m.classList.remove("oculto"); document.body.style.overflow = "hidden";
   m.querySelector(".modal-caja").focus();

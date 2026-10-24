@@ -583,10 +583,10 @@
   <div id="modal-seguir" class="modal oculto" role="dialog" aria-modal="true" aria-labelledby="sg-titulo">
     <div class="modal-caja modal-confirmacion sg-caja" tabindex="-1">
       <button id="sg-cerrar" class="cerrar" type="button" aria-label="Cerrar">&times;</button>
-      <p class="sg-eyebrow">Tu primera consulta ya está lista</p>
-      <h3 id="sg-titulo">¿Quieres que sigamos tu RNM por ti?</h3>
-      <p class="sg-estado" id="sg-estado"></p>
-      <p class="sub">Tu RNM cambia de estado con el tiempo y nadie te avisa. Con un plan:</p>
+      <p class="sg-eyebrow">Ya consultamos tu RNM</p>
+      <h3 id="sg-titulo">¿Lo seguimos por ti?</h3>
+      <div class="sg-estado" id="sg-estado"></div>
+      <p class="sub sg-sub">Sin un plan, el estado de tu RNM no se actualiza solo.</p>
       <ul class="sg-lista">
         <li><span>✓</span><div><b>Lo revisamos por ti</b> en la Policía Federal, sin que tengas que entrar a mirar.</div></li>
         <li><span>✓</span><div><b>Te avisamos por WhatsApp</b> apenas cambie o esté listo para retirar.</div></li>
@@ -594,8 +594,9 @@
       <div id="sg-opiniones" class="opiniones-publicas oculto" aria-label="Opiniones de clientes"></div>
       <label class="sg-wa oculto" id="sg-wa-fila"><input type="checkbox" id="sg-wa" checked> <span id="sg-wa-texto">Quiero recibir los avisos por WhatsApp.</span></label>
       <p class="msg" id="msg-seguir" role="alert"></p>
-      <button type="button" class="btn sg-suscribir" id="sg-suscribir">Suscribirme por R$ 9,99 al mes</button>
-      <p class="sg-nota" id="sg-nota-pago">Plan semanal · Pagas con Pix, tarjeta o boleto · Cancelas cuando quieras</p>
+      <button type="button" class="btn sg-suscribir" id="sg-suscribir">Activar seguimiento · R$ 9,99/mes</button>
+      <p class="sg-nota" id="sg-nota-pago">Revisión cada semana · Pix, tarjeta o boleto</p>
+      <p class="sg-garantia">🛡️ Si no te convence, cancelas en la primera hora y te devolvemos tu dinero</p>
       <div class="sg-pie">
         <button type="button" class="sg-enlace" id="sg-otros">Ver otros planes (desde R$ 4,99)</button>
         <button type="button" class="sg-enlace" id="sg-ahora-no">Ahora no</button>

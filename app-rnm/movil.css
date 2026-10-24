@@ -91,6 +91,19 @@ button:disabled { filter: saturate(.6); }
 .aviso-plan-cta { flex: none; padding: 7px 12px; border-radius: 999px; background: var(--p-degradado); color: #fff; font-size: .78rem; font-weight: 800; white-space: nowrap; box-shadow: 0 4px 10px rgba(24, 70, 184, 0.25); }
 .aviso-plan:active { transform: scale(.985); }
 
+/* ---------- Popup «¿Lo seguimos por ti?» (oferta tras la primera consulta) ---------- */
+#modal-seguir .sg-caja h3 { font-size: 1.5rem; line-height: 1.15; margin: 0 0 12px; }
+#modal-seguir .sg-estado { display: grid; gap: 1px; margin: 0 0 12px; padding: 10px 14px; border-radius: 14px; background: var(--brand-soft); border-left: 4px solid var(--p-azul-700); font-weight: 500; }
+#modal-seguir .sg-estado small { font-size: .72rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--p-azul-700); }
+#modal-seguir .sg-estado b { font-size: 1rem; font-weight: 800; color: var(--p-navy-900); line-height: 1.25; }
+#modal-seguir .sg-estado span { font-size: .85rem; color: var(--text-muted); }
+#modal-seguir .sg-sub { margin: 0 0 4px; font-size: .92rem; color: var(--text-muted); }
+#modal-seguir .sg-lista { margin: 8px 0 16px; }
+#modal-seguir .sg-suscribir { min-height: 56px; font-size: 1.02rem; font-weight: 800; box-shadow: 0 10px 24px rgba(24, 70, 184, 0.32); }
+#modal-seguir .sg-nota { margin: 8px 0 2px; font-weight: 600; }
+#modal-seguir .sg-garantia { margin: 0; padding: 7px 10px; border-radius: 10px; background: var(--success-soft); color: var(--success); text-align: center; font-size: .78rem; font-weight: 700; line-height: 1.3; }
+#modal-seguir .sg-pie { margin-top: 10px; }
+
 /* ---------- Línea del plan ---------- */
 .plan-linea { border-radius: 14px; border: 1px solid rgba(24, 160, 88, 0.16); background: linear-gradient(180deg, #F1FBF5, #E8F7EE); box-shadow: var(--p-sombra-1); }
 .resumen-rnm { font-weight: 700; color: var(--p-azul-700); letter-spacing: .01em; }
