@@ -188,6 +188,8 @@
           <h1 id="app-header-titulo">Inicio</h1>
         </div>
         <div class="header-actions">
+          <!-- Mensajes nuevos del equipo: se ve en todas las pantallas; al tocarlo se abre el chat -->
+          <button type="button" id="aviso-cab" class="aviso-cab oculto" aria-live="polite"></button>
           <button type="button" class="sec btn-sm" id="btn-soporte" aria-label="Atención al cliente" title="Atención al cliente">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.8 13V12a7.2 7.2 0 0114.4 0v1"/><rect x="3.2" y="12" width="3" height="5" rx="1.4"/><rect x="17.8" y="12" width="3" height="5" rx="1.4"/><circle cx="12" cy="13" r="4.2"/><path d="M10.3 12.2h.01M13.7 12.2h.01"/><path d="M10.4 14.5c.4.5 1 .8 1.6.8s1.2-.3 1.6-.8"/><path d="M19.2 17v.7a2.3 2.3 0 01-2.3 2.3H14.5"/></svg>
             Ayuda
@@ -204,7 +206,6 @@
           <div id="dashboard-saludo" class="bloque-saludo"></div>
           <!-- Verificar ahora: con plan manual verifica; sin él, lleva a comprarlo -->
           <div id="dashboard-verificar"></div>
-          <button type="button" id="aviso-mensaje" class="aviso-mensaje oculto"></button>
           <div id="aviso-pago-pendiente" class="aviso-pago oculto" role="status"></div>
 
           <!-- Tarjeta Dominante de Estado del RNM -->

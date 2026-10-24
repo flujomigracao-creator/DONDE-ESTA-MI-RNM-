@@ -54,7 +54,7 @@ h1, h2, h3, .rt-titular { letter-spacing: -0.022em; }
 #btn-soporte:active { transform: scale(.94); }
 
 /* ---------- Botones: degradado, profundidad y respuesta al tocar ---------- */
-.btn, button:not(.sec):not(.danger):not(.google):not(.plan):not(.metodo):not(.filter-pill):not(.cerrar):not(.nav-item):not(.bottom-nav-item):not(.btn-quitar):not(.btn-texto):not(.fila-aj):not(.stat):not(.plan-card):not(.btn-editar-chico):not(.btn-claro):not(.btn-sm):not(.aviso-mensaje):not(.rt-cta):not(.btn-mas) {
+.btn, button:not(.sec):not(.danger):not(.google):not(.plan):not(.metodo):not(.filter-pill):not(.cerrar):not(.nav-item):not(.bottom-nav-item):not(.btn-quitar):not(.btn-texto):not(.fila-aj):not(.stat):not(.plan-card):not(.btn-editar-chico):not(.btn-claro):not(.btn-sm):not(.aviso-mensaje):not(.aviso-cab):not(.rt-cta):not(.btn-mas) {
   background-image: var(--p-degradado-boton);
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.25) inset, 0 6px 16px rgba(26, 72, 196, 0.28);
 }
@@ -67,21 +67,20 @@ button:disabled { filter: saturate(.6); }
 /* ---------- Saludo ---------- */
 .saludo-fig h2 { font-size: 1.7rem; font-weight: 800; background: linear-gradient(90deg, var(--p-navy-900), var(--p-azul-700)); -webkit-background-clip: text; background-clip: text; color: transparent; }
 
-/* ---------- Aviso de mensaje del equipo (antes se cortaba y casi no se leía) ---------- */
-#aviso-mensaje.aviso-mensaje {
-  display: flex; align-items: center; gap: 10px; width: 100%; min-height: 52px; margin: 0 0 10px; padding: 8px 12px;
-  border-radius: 14px; border: 0; white-space: normal; text-align: left; overflow: hidden; position: relative;
-  background: var(--p-degradado) !important; color: #fff !important; font-weight: 700; font-size: 0.95rem; line-height: 1.25;
-  box-shadow: 0 6px 16px rgba(24, 70, 184, 0.26);
+/* ---------- Aviso de mensaje del equipo: en la barra superior, junto a «Ayuda» ---------- */
+.header-actions { display: flex; align-items: center; gap: 8px; }
+#aviso-cab.aviso-cab {
+  display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 12px 0 8px; border-radius: 999px; border: 0; cursor: pointer;
+  background: var(--p-degradado) !important; color: #fff !important; font-weight: 800; font-size: .82rem; white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(24, 70, 184, 0.30); animation: p-aviso-cab 2.6s ease-in-out infinite;
 }
-.aviso-msj-txt { display: flex; flex-direction: column; min-width: 0; flex: 1; }
-.aviso-msj-txt b { font-size: .92rem; font-weight: 800; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.aviso-msj-txt small { font-size: .78rem; font-weight: 500; color: rgba(255, 255, 255, 0.88); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-#aviso-mensaje.aviso-mensaje.oculto { display: none; }
-#aviso-mensaje.aviso-mensaje::before {
-  content: ""; flex: none; width: 34px; height: 34px; border-radius: 12px; background: rgba(255, 255, 255, 0.16) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 12a8 8 0 01-11.6 7.1L4 20l1-4.6A8 8 0 1121 12z'/%3E%3C/svg%3E") center / 18px no-repeat;
-}
-#aviso-mensaje.aviso-mensaje::after { content: "›"; margin-left: auto; font-size: 1.6rem; line-height: 1; opacity: .8; }
+#aviso-cab.aviso-cab.oculto { display: none; }
+#btn-soporte.con-aviso::after { display: none; } /* el chip de al lado ya avisa */
+#aviso-cab:active { transform: scale(.95); }
+.aviso-cab-ico { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: rgba(255, 255, 255, 0.2); }
+.aviso-cab-ico svg { width: 15px; height: 15px; }
+@keyframes p-aviso-cab { 0%, 100% { box-shadow: 0 4px 12px rgba(24, 70, 184, 0.30); } 50% { box-shadow: 0 4px 12px rgba(24, 70, 184, 0.30), 0 0 0 5px rgba(24, 70, 184, 0.14); } }
+@media (prefers-reduced-motion: reduce) { #aviso-cab.aviso-cab { animation: none; } }
 
 /* ---------- Línea del plan ---------- */
 .plan-linea { border-radius: 14px; border: 1px solid rgba(24, 160, 88, 0.16); background: linear-gradient(180deg, #F1FBF5, #E8F7EE); box-shadow: var(--p-sombra-1); }
