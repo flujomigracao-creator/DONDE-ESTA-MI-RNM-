@@ -2314,6 +2314,7 @@ function rastreador(x, opciones) {
     var b = el("button", "rt-cta", e.corto === "Listo" ? "Cómo retirarlo" : "Ver detalle"); b.type = "button";
     b.addEventListener("click", function (ev) { ev.stopPropagation(); abrirDetalleRnm(x.id); });
     c.appendChild(b);
+    var vq = botonVerificarRapido(x); if (vq) c.appendChild(vq);
     c.classList.add("clic"); c.tabIndex = 0; c.setAttribute("role", "button");
     c.addEventListener("click", function () { abrirDetalleRnm(x.id); });
     c.addEventListener("keydown", function (ev) { if (ev.key === "Enter") abrirDetalleRnm(x.id); });
@@ -2443,6 +2444,32 @@ function renderizarMisRnm(regs, plan) {
 /* ---------- Verificar ahora (plan manual): 1 vez por día y por RNM ---------- */
 var verifPendiente = {}; // id del RNM -> ultima_consulta_at que tenía cuando se pidió la verificación
 function diaBrasil(fecha) { return new Date(fecha).toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }); }
+/* Estado de «Verificar ahora» de un RNM: solo existe con el plan manual vigente y el RNM aún abierto (null = no aplica). */
+function estadoVerificacion(x) {
+  var plan = planCargado;
+  if (x.cerrado || !plan || new Date(plan.vence_at) <= new Date() || plan.tipo !== "manual") return null;
+  var yaHoy = !!x.ultima_manual_at && diaBrasil(x.ultima_manual_at) === diaBrasil(new Date());
+  var enCurso = verifPendiente[x.id] !== undefined && (x.ultima_consulta_at || "") === verifPendiente[x.id];
+  if (!enCurso && verifPendiente[x.id] !== undefined) delete verifPendiente[x.id];
+  var hora = x.ultima_manual_at ? new Date(x.ultima_manual_at).toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" }) : "";
+  return enCurso ? { modo: "enCurso" } : (yaHoy ? { modo: "yaHoy", hora: hora } : { modo: "disponible" });
+}
+/* Botón de verificar en la tarjeta principal (Inicio): así no hay que abrir el detalle ni bajar hasta el final para encontrarlo. */
+function botonVerificarRapido(x) {
+  var ev = estadoVerificacion(x);
+  if (!ev) return null;
+  var caja = el("div", "verif-mini");
+  var b = el("button", "verif-mini-btn", ""); b.type = "button";
+  b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 11-2.3-5.7"/><path d="M20 4v5h-5"/></svg>';
+  var t = el("span", "", ""); b.appendChild(t);
+  var s = el("small", "", "");
+  if (ev.modo === "enCurso") { t.textContent = "Verificando…"; b.disabled = true; s.textContent = "Tarda unos minutos. Puedes cerrar la app."; }
+  else if (ev.modo === "yaHoy") { t.textContent = "Verificado hoy"; b.disabled = true; b.classList.add("hecho"); s.textContent = (ev.hora ? "A las " + ev.hora + " · " : "") + "mañana podrás verificar otra vez"; }
+  else { t.textContent = "Verificar ahora"; s.textContent = "Consulta la Policía Federal ya mismo (1 vez por día)"; }
+  b.addEventListener("click", function (e2) { e2.stopPropagation(); verificarAhora(x, b, s); });
+  caja.appendChild(b); caja.appendChild(s);
+  return caja;
+}
 function bloqueVerificarAhora(x) {
   if (x.cerrado) return null;
   var plan = planCargado, activo = !!plan && new Date(plan.vence_at) > new Date();
@@ -2453,12 +2480,10 @@ function bloqueVerificarAhora(x) {
   var tx = el("div", "verif-texto"); tx.appendChild(el("b", "", "Verificar ahora"));
   var sub = el("span", "", ""); tx.appendChild(sub); cab.appendChild(tx); caja.appendChild(cab);
   var boton = el("button", "verif-btn", ""); boton.type = "button";
-  if (activo && plan.tipo === "manual") {
-    var yaHoy = !!x.ultima_manual_at && diaBrasil(x.ultima_manual_at) === diaBrasil(new Date());
-    var enCurso = verifPendiente[x.id] !== undefined && (x.ultima_consulta_at || "") === verifPendiente[x.id];
-    if (!enCurso && verifPendiente[x.id] !== undefined) delete verifPendiente[x.id];
-    if (enCurso) { sub.textContent = "Verificando con la Policía Federal… tarda unos minutos. Puedes cerrar esta pantalla."; boton.textContent = "Verificando…"; boton.disabled = true; }
-    else if (yaHoy) { sub.textContent = "Ya verificaste este RNM hoy. Mañana podrás hacerlo otra vez."; boton.textContent = "Ya verificado hoy"; boton.disabled = true; }
+  var ev = estadoVerificacion(x);
+  if (ev) {
+    if (ev.modo === "enCurso") { sub.textContent = "Verificando con la Policía Federal… tarda unos minutos. Puedes cerrar esta pantalla."; boton.textContent = "Verificando…"; boton.disabled = true; }
+    else if (ev.modo === "yaHoy") { sub.textContent = "Verificaste este RNM hoy" + (ev.hora ? " a las " + ev.hora : "") + ". Mañana podrás hacerlo otra vez."; boton.textContent = "Verificado hoy ✓"; boton.disabled = true; }
     else { sub.textContent = "Pide una verificación ahora mismo. Puedes hacerla 1 vez por día y por RNM."; boton.textContent = "Verificar ahora"; }
     boton.addEventListener("click", function () { verificarAhora(x, boton, sub); });
   } else {
@@ -3020,6 +3045,9 @@ function construirDetalle(id) {
 
   // 1. Lo importante: dónde está y en qué estado
   cont.appendChild(rastreador(x, {}));
+  // Con el plan manual, «Verificar ahora» va justo debajo de la tarjeta (antes estaba al final y no se encontraba).
+  var verifArriba = !!estadoVerificacion(x);
+  if (verifArriba) { var bvArriba = bloqueVerificarAhora(x); if (bvArriba) cont.appendChild(bvArriba); }
 
   // 2. Qué significa (con palabras simples) y qué hacer (máximo 3 pasos)
   var ttDet = titularRastreador(e);
@@ -3050,7 +3078,7 @@ function construirDetalle(id) {
     }
     cont.appendChild(cc);
   }
-  var bvah = bloqueVerificarAhora(x); if (bvah) cont.appendChild(bvah);
+  if (!verifArriba) { var bvah = bloqueVerificarAhora(x); if (bvah) cont.appendChild(bvah); } // sin plan manual: la oferta va abajo
   // 3. Dónde retirar (una línea) y plan (un enlace)
   if (e.traslado) { /* mientras se traslada no se indica dónde retirar */ }
   else if (x.unidad_pf && (x.estado_pf === "listo" || e.corto === "Listo")) cont.appendChild(dondeRetirarCompacto(x));
