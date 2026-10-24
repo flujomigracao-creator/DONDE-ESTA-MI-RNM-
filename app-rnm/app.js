@@ -799,6 +799,7 @@ function irSubPaso(n, dir) {
   pts.forEach(function (p, i) { p.classList.toggle("on", i < n); });
   var barra = $("wiz-puntos"); if (barra) barra.setAttribute("aria-valuenow", String(n));
   var t = $("wiz-titulo"); if (t) t.textContent = SUB_TITULOS[n];
+  var esc = $("escaner-rnm"); if (esc) esc.classList.toggle("oculto", n !== 1);
   var at = $("btn-wiz-atras"); if (at) at.classList.toggle("oculto", n === 1);
   var go = $("btn-registrar"); if (go) go.textContent = n < 3 ? "Continuar" : "Revisar mis datos";
   limpiarErroresEn("#form-rnm"); msg("msg-form", "");
@@ -921,7 +922,9 @@ function dmyAISO(t) {
   if (f.getFullYear() !== a || f.getMonth() !== m - 1 || f.getDate() !== d) return null;
   return a + "-" + String(m).padStart(2, "0") + "-" + String(d).padStart(2, "0");
 }
-function estadoEscaner(t, tipo) { var p = $("escaner-estado"); if (p) { p.textContent = t || ""; p.className = "sub escaner-estado" + (tipo ? " " + tipo : ""); } }
+function estadoEscaner(t, tipo) {
+  ["escaner-estado", "escaner-estado-rnm"].forEach(function (id) { var p = $(id); if (p) { p.textContent = t || ""; p.className = "sub escaner-estado" + (tipo ? " " + tipo : ""); } });
+}
 function textoErrorEscaner(e) {
   var c = e && e.codigo;
   if (c === "lectura_no_configurada") return "El escáner no está disponible por ahora. Escribe tus datos a mano.";
@@ -1215,6 +1218,8 @@ var muroSalir = $("muro-salir"); if (muroSalir) muroSalir.addEventListener("clic
 var muroEnlace = $("muro-play-enlace"); if (muroEnlace) muroEnlace.addEventListener("click", function () { embudo("play_clic"); });
 var btnQuitarAnuncios = $("btn-quitar-anuncios");
 if (btnQuitarAnuncios) btnQuitarAnuncios.addEventListener("click", function () { ampliando = false; cartelPlanes(registrosCargados || [], planCargado); abrirModalPlanes(); });
+var btnEscanearRnm = $("btn-escanear-rnm");
+if (btnEscanearRnm) btnEscanearRnm.addEventListener("click", function () { embudo("rnm_escanear"); $("btn-escanear-qr").click(); });
 $("btn-escanear-qr").addEventListener("click", async function () {
   if (!(await abrirCamara("qr"))) { estadoEscaner("No pudimos abrir la cámara. Elige una foto del verso de tu carné.", "carga"); $("file-qr").click(); }
 });

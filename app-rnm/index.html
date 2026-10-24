@@ -284,6 +284,15 @@
               <form id="form-rnm" autocomplete="off" novalidate>
                 <div class="wiz-puntos" id="wiz-puntos" role="progressbar" aria-label="Pasos para registrar tu RNM" aria-valuemin="1" aria-valuemax="3" aria-valuenow="1"><i class="on"></i><i></i><i></i></div>
                 <h2 class="wiz-titulo" id="wiz-titulo">¿Cuál es tu número de RNM?</h2>
+                <!-- Escanear el QR del carné: rellena el RNM y la fecha de nacimiento (usa el mismo escáner de «Validar carné») -->
+                <div class="escaner-rnm" id="escaner-rnm">
+                  <button type="button" class="escaner-auto" id="btn-escanear-rnm">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8V6a2 2 0 012-2h2M16 4h2a2 2 0 012 2v2M20 16v2a2 2 0 01-2 2h-2M8 20H6a2 2 0 01-2-2v-2"/><path d="M8 11h3V8H8zM13 8h3v3h-3zM8 16h3v-3H8zM13 13h1.5M16 16v-1M13 16h.01"/></svg>
+                    <span><b>Escanear el QR de mi carné</b><small>Más rápido: llena tu RNM y tu nacimiento</small></span>
+                  </button>
+                  <p class="sub escaner-estado" id="escaner-estado-rnm" aria-live="polite"></p>
+                  <p class="escaner-o"><span>o escríbelo a mano</span></p>
+                </div>
                 <div class="form-field">
                   <label for="rnm">Número de RNM</label>
                   <input type="text" id="rnm" autocapitalize="characters" placeholder="Ej: A123456B" maxlength="12" required>

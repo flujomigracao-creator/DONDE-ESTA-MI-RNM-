@@ -563,3 +563,10 @@ input.sw:focus-visible { outline: 3px solid rgba(21, 94, 239, 0.45); outline-off
 .plan-estado .review-summary-card { padding: 4px 12px; border-radius: 14px; }
 .plan-estado .review-row { padding: 8px 0; font-size: .86rem; gap: 10px; }
 .plan-estado .review-row b { text-align: right; }
+
+/* Registrar RNM: opción de escanear el QR del carné, antes de escribir el número */
+.escaner-rnm { margin: 0 0 12px; }
+.escaner-rnm.oculto { display: none; }
+.escaner-rnm .escaner-auto { width: 100%; }
+.escaner-o { display: flex; align-items: center; gap: 10px; margin: 12px 0 0; font-size: .78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; }
+.escaner-o::before, .escaner-o::after { content: ""; flex: 1; height: 1px; background: var(--line-strong); }
