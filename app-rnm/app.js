@@ -2314,7 +2314,6 @@ function rastreador(x, opciones) {
     var b = el("button", "rt-cta", e.corto === "Listo" ? "Cómo retirarlo" : "Ver detalle"); b.type = "button";
     b.addEventListener("click", function (ev) { ev.stopPropagation(); abrirDetalleRnm(x.id); });
     c.appendChild(b);
-    var vq = botonVerificarRapido(x); if (vq) c.appendChild(vq);
     c.classList.add("clic"); c.tabIndex = 0; c.setAttribute("role", "button");
     c.addEventListener("click", function () { abrirDetalleRnm(x.id); });
     c.addEventListener("keydown", function (ev) { if (ev.key === "Enter") abrirDetalleRnm(x.id); });
@@ -2351,6 +2350,7 @@ function actualizarDashboard(regs, plan) {
     }
     saludoCont.appendChild(cab);
   }
+  renderVerificarInicio(regs, plan);
 
   // 2. Contenido principal
   var heroCont = $("dashboard-hero-container");
@@ -2454,21 +2454,65 @@ function estadoVerificacion(x) {
   var hora = x.ultima_manual_at ? new Date(x.ultima_manual_at).toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" }) : "";
   return enCurso ? { modo: "enCurso" } : (yaHoy ? { modo: "yaHoy", hora: hora } : { modo: "disponible" });
 }
-/* Botón de verificar en la tarjeta principal (Inicio): así no hay que abrir el detalle ni bajar hasta el final para encontrarlo. */
-function botonVerificarRapido(x) {
-  var ev = estadoVerificacion(x);
-  if (!ev) return null;
-  var caja = el("div", "verif-mini");
-  var b = el("button", "verif-mini-btn", ""); b.type = "button";
-  b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 11-2.3-5.7"/><path d="M20 4v5h-5"/></svg>';
-  var t = el("span", "", ""); b.appendChild(t);
-  var s = el("small", "", "");
-  if (ev.modo === "enCurso") { t.textContent = "Verificando…"; b.disabled = true; s.textContent = "Tarda unos minutos. Puedes cerrar la app."; }
-  else if (ev.modo === "yaHoy") { t.textContent = "Verificado hoy"; b.disabled = true; b.classList.add("hecho"); s.textContent = (ev.hora ? "A las " + ev.hora + " · " : "") + "mañana podrás verificar otra vez"; }
-  else { t.textContent = "Verificar ahora"; s.textContent = "Consulta la Policía Federal ya mismo (1 vez por día)"; }
-  b.addEventListener("click", function (e2) { e2.stopPropagation(); verificarAhora(x, b, s); });
-  caja.appendChild(b); caja.appendChild(s);
-  return caja;
+/* «Verificar ahora» arriba en Inicio.
+   Con plan manual: verifica todos los RNM abiertos que aún no se verificaron hoy (1 vez por día y por RNM).
+   Sin plan manual (sin plan, vencido, quincenal o semanal): lleva a comprar el plan manual. */
+function renderVerificarInicio(regs, plan) {
+  var cont = $("dashboard-verificar");
+  if (!cont) return;
+  cont.textContent = "";
+  var abiertos = (regs || []).filter(function (x) { return !x.cerrado; });
+  if (!abiertos.length) return; // nada que verificar (sin RNM o todos ya terminados)
+  var vigente = !!plan && new Date(plan.vence_at) > new Date();
+  var conPlan = vigente && plan.tipo === "manual";
+  var b = el("button", "verif-top" + (conPlan ? "" : " sin-plan"), ""); b.type = "button";
+  var ico = el("span", "verif-top-ico", "");
+  ico.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 11-2.3-5.7"/><path d="M20 4v5h-5"/></svg>';
+  var tx = el("span", "verif-top-txt", ""), t = el("b", "", "Verificar ahora"), s = el("small", "", "");
+  tx.appendChild(t); tx.appendChild(s); b.appendChild(ico); b.appendChild(tx);
+  if (!conPlan) {
+    s.textContent = "Pídele a la Policía Federal que revise tu RNM ya, sin esperar. Solo con el plan manual (" + reales(PRECIOS.manual) + "/mes).";
+    b.appendChild(el("span", "verif-top-pill", "Plan manual"));
+    b.addEventListener("click", function () { planElegido = "manual"; ampliando = vigente; cartelPlanes(registrosCargados, planCargado); abrirModalPlanes(); });
+  } else {
+    var estados = abiertos.map(function (x) { return { x: x, ev: estadoVerificacion(x) }; });
+    var libres = estados.filter(function (e) { return e.ev && e.ev.modo === "disponible"; }).map(function (e) { return e.x; });
+    var enCurso = estados.some(function (e) { return e.ev && e.ev.modo === "enCurso"; });
+    if (libres.length) {
+      s.textContent = (libres.length === 1 ? "Consulta tu RNM en la Policía Federal ahora mismo" : "Consulta tus " + libres.length + " RNM en la Policía Federal ahora mismo") + " · 1 vez por día y por RNM";
+      b.addEventListener("click", function () { verificarTodosAhora(libres, b, s); });
+    } else if (enCurso) {
+      t.textContent = "Verificando…"; s.textContent = "Tarda unos minutos. Puedes cerrar la app: el resultado aparece aquí."; b.disabled = true; b.classList.add("cargando");
+    } else {
+      var ult = abiertos.map(function (x) { return x.ultima_manual_at; }).filter(Boolean).sort().pop();
+      var hora = ult ? new Date(ult).toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" }) : "";
+      t.textContent = "Verificado hoy"; b.disabled = true; b.classList.add("hecho");
+      s.textContent = (hora ? "A las " + hora + " · " : "") + "mañana podrás verificar otra vez";
+    }
+  }
+  cont.appendChild(b);
+}
+async function verificarTodosAhora(lista, boton, sub) {
+  boton.disabled = true; sub.textContent = "Enviando tu pedido…";
+  var pedidos = [], fallo = false;
+  for (var i = 0; i < lista.length; i++) {
+    var r = await sb.rpc("rnm_verificar_ahora", { p_registro: lista[i].id });
+    if (!r.error) { verifPendiente[lista[i].id] = lista[i].ultima_consulta_at || ""; pedidos.push(lista[i]); }
+    else if ((r.error.message || "").indexOf("ya_verificado_hoy") < 0) fallo = true;
+  }
+  if (!pedidos.length) {
+    boton.disabled = !fallo; // si falló se puede reintentar; si ya estaba todo verificado, queda cerrado por hoy
+    sub.textContent = fallo ? "No pudimos pedir la verificación. Intenta de nuevo." : "Ya verificaste todo hoy. Mañana podrás hacerlo otra vez.";
+    await cargarRegistros();
+    return;
+  }
+  if (window.toast) toast("Verificación pedida. Te mostramos el resultado aquí.", "ok");
+  await cargarRegistros(); // el botón pasa a «Verificando…»
+  for (var k = 0; k < 24; k++) {
+    await new Promise(function (ok) { setTimeout(ok, 10000); });
+    await cargarRegistros(); // al renderizar, cada RNM ya consultado sale de verifPendiente
+    if (!pedidos.some(function (p) { return verifPendiente[p.id] !== undefined; })) { if (window.toast) toast("Verificación lista", "ok"); return; }
+  }
 }
 function bloqueVerificarAhora(x) {
   if (x.cerrado) return null;
