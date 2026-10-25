@@ -300,7 +300,7 @@ function mostrarSeccion(id) {
     var ofertaAbierta = $("modal-seguir"); if (ofertaAbierta && !ofertaAbierta.classList.contains("oculto")) cerrarOfertaSeguimiento(0);
     renderizarPlanes(registrosCargados, planCargado);
   }
-  if (id === "validar") { actualizarAnuncios(); embudo("validar_abierto"); }
+  if (id === "validar") { actualizarAnuncios(); embudo("validar_abierto"); precargarLectorQR(); }
   if (id === "nueva-consulta" && typeof irSubPaso === "function") irSubPaso(1);
   if (id === "historial") {
     cargarHistorialConsultas();
@@ -943,24 +943,52 @@ function recorteCentral(video, fraccion, maxLado) {
 // Variantes que se alternan en cada vuelta: así se prueba de todo sin saturar el celular.
 function variantesQR(video) {
   return [
-    function () { return capturarFotograma(video, 1920); },
-    function () { return realzarContraste(capturarFotograma(video, 1920)); },
-    function () { return realzarContraste(ampliarCanvas(capturarGuia(video, 900), 1.6)); },
-    function () { return realzarContraste(ampliarCanvas(recorteCentral(video, 0.55, 900), 1.7)); }
+    function () { return recorteCentral(video, 0.55, 1200); },                          // lo más rápido: el centro, a tamaño real
+    function () { return capturarFotograma(video, 1600); },                             // todo el cuadro de la cámara
+    function () { return ampliarCanvas(recorteCentral(video, 0.55, 1100), 1.7); },      // el centro ampliado (QR pequeños)
+    function () { return capturarGuia(video, 1100); },                                   // lo que hay dentro del cuadro de guía
+    function () { return capturarFotograma(video, 960); }                                // todo el cuadro, liviano
   ];
+}
+/* Lector principal: ZXing (WebAssembly, alojado en vendor/zxing). Lee más QR (borrosos, pequeños, con poco contraste) y 5–8 veces más rápido que jsQR.
+   jsQR queda solo como respaldo si ZXing no se pudiera cargar. */
+var zxingPromesa = null, zxingFallo = false;
+function cargarZXing() {
+  if (zxingPromesa) return zxingPromesa;
+  zxingPromesa = new Promise(function (ok, fallo) {
+    function iniciar() {
+      try {
+        ZXingWASM.prepareZXingModule({ overrides: { locateFile: function (p) { return /\.wasm$/.test(p) ? "vendor/zxing/zxing_reader.wasm" : p; } }, fireImmediately: true }).then(function () { ok(window.ZXingWASM); }, fallo);
+      } catch (e) { fallo(e); }
+    }
+    if (window.ZXingWASM) return iniciar();
+    var sc = document.createElement("script"); sc.src = "vendor/zxing/reader.js"; sc.onload = iniciar; sc.onerror = fallo; document.head.appendChild(sc);
+  });
+  zxingPromesa.catch(function () { zxingFallo = true; zxingPromesa = null; });
+  return zxingPromesa;
+}
+function precargarLectorQR() { cargarZXing().catch(function () { /* se usará el respaldo */ }); }
+async function leerConZXing(canvas) {
+  var Z = await cargarZXing();
+  var im = canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height);
+  var r = await Z.readBarcodes(im, { formats: ["QRCode"], tryHarder: true, tryRotate: false, tryInvert: false, maxNumberOfSymbols: 1 });
+  var x = r.find(function (c) { return c.isValid && c.text; });
+  return x ? x.text : null;
 }
 async function leerQR(fuente) {
   if ("BarcodeDetector" in window) {
-    try { detectorQR = detectorQR || new BarcodeDetector({ formats: ["qr_code"] }); var r = await detectorQR.detect(fuente); if (r.length) return r[0].rawValue; } catch (e) { /* se prueba con jsQR */ }
+    try { detectorQR = detectorQR || new BarcodeDetector({ formats: ["qr_code"] }); var r = await detectorQR.detect(fuente); if (r.length) return r[0].rawValue; } catch (e) { /* se prueba con ZXing */ }
   }
-  var canvas = fuente;
-  if (fuente.tagName === "VIDEO") { canvas = capturarFotograma(fuente, 1920); }
+  if (fuente.tagName === "VIDEO") return null;       // el video solo se lee con el detector del celular; el resto lo hacen las variantes
+  if (!zxingFallo) {
+    try { return await leerConZXing(fuente); } catch (e) { if (!zxingFallo) return null; }
+  }
   var jq = await cargarJsQR();
-  var q = null, c = canvas;
+  var q = null, cv = fuente;
   for (var i = 0; i < 2 && !q; i++) {
-    var d = c.getContext("2d").getImageData(0, 0, c.width, c.height);
-    q = jq(d.data, d.width, d.height, { inversionAttempts: "attemptBoth" });
-    if (!q && i === 0 && c.width > 700) { var p = document.createElement("canvas"); p.width = Math.round(c.width / 2); p.height = Math.round(c.height / 2); p.getContext("2d").drawImage(c, 0, 0, p.width, p.height); c = p; }
+    var dd = cv.getContext("2d").getImageData(0, 0, cv.width, cv.height);
+    q = jq(dd.data, dd.width, dd.height, { inversionAttempts: "attemptBoth" });
+    if (!q && i === 0 && cv.width > 700) { var p = document.createElement("canvas"); p.width = Math.round(cv.width / 2); p.height = Math.round(cv.height / 2); p.getContext("2d").drawImage(cv, 0, 0, p.width, p.height); cv = p; }
   }
   return q ? q.data : null;
 }
@@ -1135,6 +1163,7 @@ function capturarFotograma(video, maxLado) {
 }
 // Devuelve true si la cámara se abrió; false si no hay cámara o permiso (entonces se usa la galería).
 async function abrirCamara(modo) {
+  precargarLectorQR();
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return false;
   var stream;
   try { stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false }); }
@@ -1175,14 +1204,13 @@ async function abrirCamara(modo) {
       while (!cam.parar) {
         if (video.videoWidth) {
           try {
-            var cede = function () { return new Promise(function (ok) { setTimeout(ok, 40); }); }; // da respiro al navegador entre intentos pesados
             var texto = await leerQR(video);
-            if (!texto) { await cede(); texto = await leerQR(variantes[vuelta++ % variantes.length]()); }
-            if (texto && !cam.parar) { if (navigator.vibrate) navigator.vibrate(60); var gq = $("camara-guia"); if (gq) gq.classList.add("encontrado"); $("camara-texto").textContent = "¡QR encontrado!"; await new Promise(function (ok) { setTimeout(ok, 450); }); cerrarCamara(); validarQR(texto); return; }
+            if (!texto) texto = await leerQR(variantes[vuelta++ % variantes.length]());
+            if (texto && !cam.parar) { if (navigator.vibrate) navigator.vibrate(60); var gq = $("camara-guia"); if (gq) gq.classList.add("encontrado"); $("camara-texto").textContent = "¡QR encontrado!"; await new Promise(function (ok) { setTimeout(ok, 250); }); cerrarCamara(); validarQR(texto); return; }
           } catch (e) { /* se sigue intentando */ }
         }
         if (!aviso && Date.now() - inicio > 12000) { aviso = true; $("camara-texto").textContent = "Mantén el carné quieto a unos 15 cm. Si el QR se ve pequeño, toca Zoom; si se ve borroso, aléjalo un poco."; }
-        await new Promise(function (ok) { setTimeout(ok, 350); });
+        await new Promise(function (ok) { setTimeout(ok, 30); });   // casi sin pausa: ZXing tarda 20–60 ms por fotograma
       }
     })();
   } else {

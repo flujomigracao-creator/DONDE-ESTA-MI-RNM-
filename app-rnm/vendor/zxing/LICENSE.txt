@@ -1,0 +1,2 @@
+zxing-wasm 3.1.4 (MIT, Copyright (c) 2023 Ze-Zheng Wu), basado en zxing-cpp (Apache-2.0).
+Fuente: https://github.com/Sec-ant/zxing-wasm
