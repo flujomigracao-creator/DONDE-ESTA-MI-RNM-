@@ -3217,7 +3217,8 @@ function abrirOpinionesClientes(obligatoria) {
     ovNota(valor);
   } else { grande.classList.add("oculto"); mini.textContent = "★"; }
   var lista = $("ov-lista"); lista.textContent = "";
-  d.opiniones.forEach(function (o) { lista.appendChild(tarjetaOpinion(o)); });
+  // En el primer ingreso el recorrido es obligatorio: 6 opiniones bastan; «Ver todas las opiniones» las muestra todas.
+  (obligatoria ? d.opiniones.slice(0, 6) : d.opiniones).forEach(function (o) { lista.appendChild(tarjetaOpinion(o)); });
   var caja = $("ov-caja"), btn = $("ov-continuar"), hint = $("ov-hint"), barra = $("ov-barra"), fin = $("ov-fin");
   m.classList.toggle("ov-obligatoria", obligatoria); m.classList.remove("ov-bajando"); m.classList.remove("ov-al-final");
   $("ov-desliza-arriba").classList.remove("oculto");

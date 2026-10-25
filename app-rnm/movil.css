@@ -600,3 +600,32 @@ input.sw:focus-visible { outline: 3px solid rgba(21, 94, 239, 0.45); outline-off
   #modal-seguir .sg-alerta small { display: none; }
   #modal-seguir .sg-scroll { padding-top: 10px; }
 }
+
+/* ==========================================================================
+   Opiniones: pantalla de «Lo que dicen nuestros clientes» más ágil (tarjetas compactas, recorrido corto)
+   y formulario «¿Cómo te fue?» con la acción principal primero
+   ========================================================================== */
+#modal-opiniones h3 { font-size: 1.6rem; margin-bottom: 10px; }
+#modal-opiniones .ov-eyebrow { margin-bottom: 6px; }
+#modal-opiniones .ov-nota-grande { padding: 10px 14px; margin-bottom: 10px; border-radius: 16px; }
+#modal-opiniones .ov-nota-num { font-size: 2.4rem; }
+#modal-opiniones .ov-estrellas-hero i { font-size: 1.25rem; }
+#modal-opiniones .ov-sello { font-size: .82rem; margin-bottom: 8px; }
+#modal-opiniones .ov-desliza { margin: 2px 0 4px; padding: 7px 14px; font-size: .84rem; }
+#modal-opiniones .ov-lista .op-pub-caja { min-height: 0 !important; padding: 14px 14px 14px 20px; margin: 0 0 12px; justify-content: flex-start; border-radius: 18px; }
+#modal-opiniones .ov-lista .op-pub-caja::before { font-size: 5rem; top: -10px; }
+#modal-opiniones .ov-lista .op-pub-cab { margin-bottom: 6px; }
+#modal-opiniones .ov-lista .op-pub-avatar { width: 40px; height: 40px; font-size: 1.1rem; }
+#modal-opiniones .ov-lista .op-pub-nombre { font-size: 1rem; }
+#modal-opiniones .ov-lista .op-pub-estrellas { font-size: 1rem; }
+#modal-opiniones .ov-lista .op-pub-caja blockquote { font-size: 1rem; line-height: 1.4; margin-top: 4px; }
+#modal-opiniones .ov-fin { min-height: 0; padding: 16px 10px 130px; }
+#modal-opiniones .ov-check { width: 54px; height: 54px; }
+#modal-opiniones .ov-fin-texto { font-size: 1.1rem; }
+#modal-opiniones .ov-fin-sub { font-size: .9rem; }
+
+/* «¿Cómo te fue?»: Enviar primero y «Ahora no» como enlace discreto debajo */
+#modal-opinion #op-formulario .acciones-fin { display: flex; flex-direction: column-reverse; gap: 4px; }
+#modal-opinion #op-despues { background: transparent !important; border: 0 !important; box-shadow: none !important; color: var(--text-muted) !important; min-height: 40px; font-weight: 700; }
+#modal-opinion #op-enviar { min-height: 52px; font-weight: 800; }
+#modal-opinion .op-estrellas { margin: 10px 0 4px; }
