@@ -374,7 +374,7 @@ function actualizarInfoUsuario(user, perfil) {
   var ed = $("perfil-email-display"); if (ed) ed.textContent = email;
   // Lo que falta se muestra como acción («Agregar…») en vez de un guion
   function dato(id, valor, falta) { var d = $(id); if (!d) return; d.textContent = valor || falta; var fila = d.closest(".fila-aj"); if (fila) fila.classList.toggle("falta", !valor); }
-  dato("perfil-tel-display", (perfil && perfil.telefono) ? "+" + perfil.telefono : "", "Agregar mi WhatsApp");
+  dato("perfil-tel-display", (perfil && perfil.telefono) ? telefonoVisible(perfil.telefono) : "", "Agregar mi WhatsApp");
   actualizarResumenPerfil();
   dato("perfil-cpf-display", perfil && perfil.cpf ? cpfEnmascarado(perfil.cpf) : "", "Agregar mi CPF");
   dato("perfil-dir-display", (perfil && perfil.direccion) ? perfil.direccion + (perfil.cep ? " · CEP " + perfil.cep.slice(0, 5) + "-" + perfil.cep.slice(5) : "") : "", "Agregar mi dirección");
@@ -453,6 +453,17 @@ function telefonoBR(texto) {
   if (d.length > 11) return ""; // de más: no se recorta en silencio
   if (!/^[1-9][1-9](9\d{8}|[2-5]\d{7})$/.test(d)) return "";
   return "55" + d;
+}
+/* Teléfono para mostrar: «+55 41 99999-1234». Las cuentas antiguas guardaron el número sin el 55 y se veían como «+41999991234». */
+function telefonoVisible(tel) {
+  var d = String(tel || "").replace(/\D/g, "");
+  if (!d) return "";
+  if (d.length === 10 || d.length === 11) d = "55" + d; // sin código de país: se agrega
+  if ((d.length === 12 || d.length === 13) && d.indexOf("55") === 0) {
+    var nac = d.slice(2), ddd = nac.slice(0, 2), num = nac.slice(2);
+    return "+55 " + ddd + " " + num.slice(0, num.length - 4) + "-" + num.slice(-4);
+  }
+  return "+" + d;
 }
 function telefonoParaEditar(tel) {
   var d = String(tel || "").replace(/\D/g, "");
