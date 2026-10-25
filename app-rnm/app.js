@@ -131,6 +131,7 @@ window.rnmMetaServidor = async function (cuerpo) {
   } catch (e) { /* sin sesión */ }
 };
 var perfilActual = null;
+var escaneoInicial = false; // true mientras un usuario nuevo está en su primera pantalla (escanear el carné)
 var seccionActual = "inicio";
 var registrosCargados = [];
 var planCargado = null;
@@ -311,7 +312,7 @@ function mostrarSeccion(id) {
 
 function vista(nombre) { // "login" | "perfil" | "app"
   if (nombre === "login") embudo("login_vista"); else if (nombre === "perfil") embudo("perfil_vista");
-  ["login", "perfil", "app"].forEach(function (v) {
+  ["login", "escaneo", "perfil", "app"].forEach(function (v) {
     $("vista-" + v).classList.toggle("oculto", v !== nombre);
   });
 }
@@ -403,15 +404,35 @@ async function mostrar(session) {
   perfilActual = r.data || null;
   actualizarInfoUsuario(session.user, perfilActual);
   if (window.rnmIdentificar) rnmIdentificar(session.user, perfilActual);
-  if (!perfilActual) { abrirPerfil(false); }
+  if (!perfilActual) { abrirEscaneoInicial(); }
   else { vista("app"); navegarA(destinoGuardado(seccionInicial())); cargarRegistros(); iniciarTiempoReal(); setTimeout(revisarOpinionPendiente, 6000); abrirOpinionDeEnlace(); }
 }
 
 /* ---------- Onboarding / perfil ---------- */
+/* Un usuario nuevo empieza escaneando su carné: del frente sale el nombre y del QR del verso, el RNM y la fecha de nacimiento.
+   Con eso se llenan el perfil y el formulario del RNM; si no quiere o no puede escanear, escribe los datos a mano. */
+function abrirEscaneoInicial() {
+  escaneoInicial = true; estadoEscaner("");
+  vista("escaneo");
+}
+function continuarDesdeEscaneo() { escaneoInicial = false; abrirPerfil(false); }
+// Escribir los datos a mano: desde la primera pantalla va al perfil; desde cualquier otra, al formulario del RNM.
+function entrarDatosManual() {
+  if (escaneoInicial) return continuarDesdeEscaneo();
+  estadoEscaner("");
+  navegarA("nueva-consulta");
+  setTimeout(function () { var r = $("rnm"); if (r) r.focus(); }, 200);
+}
+// Primer RNM: si el carné ya se validó con la Policía Federal se va directo a la autorización; si no, al formulario.
+function irARegistrarRnm() {
+  if (carneEscaneado.verificada && $("rnm").value && $("nac").value) return agregarValidado();
+  navegarA("nueva-consulta");
+}
 function abrirPerfil(editando) {
   var p = perfilActual;
   var meta = (usuarioActual && usuarioActual.user_metadata) || {};
-  $("p-nombre").value = p ? p.nombre : (meta.full_name || meta.name || "");
+  $("p-nombre").value = p ? p.nombre : (carneEscaneado.nombre || meta.full_name || meta.name || "");
+  $("ob-sub").textContent = (!p && (carneEscaneado.nombre || carneEscaneado.verificada) ? "Leímos tu carné ✓ " : "") + "Confirma tu nombre como figura en tu documento. El WhatsApp es opcional.";
   $("p-tel").value = p ? telefonoParaEditar(p.telefono) : "";
   $("p-dir").value = p && p.direccion ? p.direccion : "";
   $("p-ciudad").value = p && p.ciudad ? p.ciudad : "";
@@ -476,7 +497,9 @@ function errorPaso(n) {
   function fallo(id, txt) { campoConError = id; return txt; }
   if (n === 1) {
     if ($("p-nombre").value.trim().length < 3) return fallo("p-nombre", "Escribe tu nombre completo (mínimo 3 letras).");
-    if (!telefonoBR($("p-tel").value)) return fallo("p-tel", problemaTelefono(digitosTelefono($("p-tel").value)) || "Revisa tu WhatsApp: código de ciudad (DDD) y número, por ejemplo 41 99999-1234.");
+    var tv = $("p-tel").value.trim();
+    if (tv && !telefonoBR(tv)) return fallo("p-tel", problemaTelefono(digitosTelefono(tv)) || "Revisa tu WhatsApp: código de ciudad (DDD) y número, por ejemplo 41 99999-1234, o déjalo vacío.");
+    if ($("p-avisos").checked && !tv) return fallo("p-tel", "Para recibir avisos por WhatsApp escribe tu número, o desmarca los avisos.");
     if (!$("p-consiento").checked) return fallo("p-consiento", "Debes aceptar la autorización para continuar.");
   } else {
     // La dirección es opcional: si no escribe nada se omite; si escribe algo, tiene que estar completa.
@@ -659,7 +682,7 @@ function cargarEditarDatos() {
 function errorEditar() {
   var v = valoresEditar();
   if (v.nombre.length < 3) return ["ed-nombre", "Escribe tu nombre completo (mínimo 3 letras)."];
-  if (!telefonoBR($("ed-tel").value)) return ["ed-tel", problemaTelefono(digitosTelefono($("ed-tel").value)) || "Revisa tu WhatsApp: código de ciudad (DDD) y número, por ejemplo 41 99999-1234."];
+  if (v.tel && !telefonoBR($("ed-tel").value)) return ["ed-tel", problemaTelefono(digitosTelefono($("ed-tel").value)) || "Revisa tu WhatsApp: código de ciudad (DDD) y número, por ejemplo 41 99999-1234, o déjalo vacío."];
   if (v.cpf && !cpfValido(v.cpf)) return ["ed-cpf", problemaCpf(v.cpf)];
   // La dirección es opcional: si escribe algo, tiene que estar completa.
   if (!(v.cep || v.uf || v.dir || v.ciudad)) return null;
@@ -689,7 +712,8 @@ $("form-editar").addEventListener("submit", async function (e) {
   var err = errorEditar();
   if (err) return marcarCampoEn("#seccion-editar-datos", err[0], err[1], "msg-editar");
   var v = valoresEditar();
-  var datos = { nombre: v.nombre, telefono: telefonoBR($("ed-tel").value), direccion: v.dir || null, ciudad: v.ciudad || null, estado: v.uf || null, cep: v.cep || null, cpf: v.cpf || null };
+  var datos = { nombre: v.nombre, telefono: telefonoBR($("ed-tel").value) || null, direccion: v.dir || null, ciudad: v.ciudad || null, estado: v.uf || null, cep: v.cep || null, cpf: v.cpf || null };
+  if (!datos.telefono) datos.avisos_whatsapp = false; // sin número no hay avisos por WhatsApp
   var btn = $("btn-editar-guardar"); btn.disabled = true; btn.textContent = "Guardando…";
   var r = await sb.from("rnm_perfiles").update(datos).eq("user_id", usuarioActual.id).select().single();
   btn.textContent = "Guardar cambios";
@@ -714,15 +738,15 @@ $("form-perfil").addEventListener("submit", async function (e) {
     if (e2) { irAPaso(n); return marcarCampo(campoConError, e2); }
   }
   var nombre = $("p-nombre").value.trim().replace(/\s+/g, " ");
-  var tel = telefonoBR($("p-tel").value);
+  var tel = telefonoBR($("p-tel").value) || null; // el WhatsApp es opcional
   var dir = $("p-dir").value.trim();
   var ciudad = $("p-ciudad").value.trim();
   var uf = $("p-uf").value.trim().toUpperCase();
   var cep = $("p-cep").value.replace(/\D/g, "");
   var datos = { nombre: nombre, telefono: tel, direccion: dir || null, ciudad: ciudad || null, estado: uf || null, cep: cep || null, cpf: digitosCpf($("p-cpf").value) || null };
   var quiereAvisos = $("p-avisos").checked;
-  datos.avisos_whatsapp = quiereAvisos;
-  if (quiereAvisos && !(perfilActual && perfilActual.avisos_whatsapp)) datos.avisos_whatsapp_at = new Date().toISOString();
+  datos.avisos_whatsapp = quiereAvisos && !!tel;
+  if (datos.avisos_whatsapp && !(perfilActual && perfilActual.avisos_whatsapp)) datos.avisos_whatsapp_at = new Date().toISOString();
   var btn = $("btn-perfil"); btn.disabled = true;
   var esPrimerIngreso = !perfilActual;
   var r = perfilActual
@@ -892,7 +916,7 @@ $("rnm").addEventListener("input", function (e) {
 });
 $("nac").addEventListener("input", function (e) { e.target.parentNode.classList.toggle("valido", !!fechaISO(e.target.value.trim())); });
 /* ---------- Escáner del carné RNM: frente (lee RNM y nacimiento) y verso (QR → validez oficial) ---------- */
-var carneEscaneado = { foto: null, fotoVerso: null, qr: null, cpf: null, validezISO: null };
+var carneEscaneado = { foto: null, fotoVerso: null, qr: null, cpf: null, validezISO: null, nombre: null };
 function reducirImagen(archivo, maxLado) {
   return new Promise(function (ok, fallo) {
     var url = URL.createObjectURL(archivo), img = new Image();
@@ -1010,7 +1034,7 @@ function dmyAISO(t) {
   return a + "-" + String(m).padStart(2, "0") + "-" + String(d).padStart(2, "0");
 }
 function estadoEscaner(t, tipo) {
-  ["escaner-estado", "escaner-estado-rnm"].forEach(function (id) { var p = $(id); if (p) { p.textContent = t || ""; p.className = "sub escaner-estado" + (tipo ? " " + tipo : ""); } });
+  ["escaner-estado", "escaner-estado-rnm", "escaner-estado-ini"].forEach(function (id) { var p = $(id); if (p) { p.textContent = t || ""; p.className = "sub escaner-estado" + (tipo ? " " + tipo : ""); } });
 }
 function textoErrorEscaner(e) {
   var c = e && e.codigo;
@@ -1035,8 +1059,10 @@ async function leerFrente(im) {
     var d = await llamarFuncion("rnm-leer-carne", { imagen: await blobABase64(im.blob), mime: "image/jpeg" });
     if (!d.es_carne) return estadoEscaner("No parece un carné RNM. Intenta de nuevo con buena luz, o escribe los datos a mano.", "mal");
     var leidos = [];
-    if (d.rnm) { ponerCampo("rnm", d.rnm); leidos.push("RNM"); }
-    if (d.fecha_nacimiento) { ponerCampo("nac", d.fecha_nacimiento); leidos.push("fecha de nacimiento"); }
+    if (d.nombre) { carneEscaneado.nombre = d.nombre; leidos.push("nombre"); }
+    // Si el QR ya se confirmó con la Policía Federal, esos datos mandan sobre la lectura del frente.
+    if (d.rnm) { if (!carneEscaneado.verificada) ponerCampo("rnm", d.rnm); leidos.push("RNM"); }
+    if (d.fecha_nacimiento) { if (!carneEscaneado.verificada) ponerCampo("nac", d.fecha_nacimiento); leidos.push("fecha de nacimiento"); }
     if (d.validez && !carneEscaneado.validezISO) fijarValidez(d.validez, "frente");
     if (!leidos.length) return estadoEscaner("No pudimos leer los datos. Intenta con más luz, o escríbelos a mano.", "mal");
     carneEscaneado.foto = im.blob;
@@ -1084,7 +1110,7 @@ function avisoValidando(estado, titulo, sub, extra) {
   var b = $("validando-boton"); b.classList.toggle("oculto", cargando);
   if (!cargando) { b.textContent = extra.boton || "Continuar"; b.onclick = function () { caja.classList.add("oculto"); document.body.style.overflow = ""; if (extra.alCerrar) extra.alCerrar(); }; }
   // La X (y Escape, o tocar fuera) cierra el aviso sin hacer nada más; mientras se consulta a la Policía Federal no se puede cerrar.
-  var xv = $("validando-cerrar"); if (xv) xv.classList.toggle("oculto", cargando);
+  var xv = $("validando-cerrar"); if (xv) xv.classList.toggle("oculto", cargando || !!extra.sinX);
   caja.classList.remove("oculto"); document.body.style.overflow = "hidden";
   if (!cargando) b.focus();
 }
@@ -1111,7 +1137,9 @@ async function validarQR(url) {
     ponerCampo("rnm", d.rnm);
     if (d.nacimiento) ponerCampo("nac", d.nacimiento);
     mostrarResultadoValidacion(d); embudo("validar_ok");
-    avisoValidando("ok", "¡Carné validado!", "Confirmado en la Policía Federal", { nota: "RNM " + d.rnm + (d.validez ? " · válido hasta " + d.validez : ""), boton: "Agregar este RNM", alCerrar: agregarValidado });
+    var notaOk = "RNM " + d.rnm + (d.validez ? " · válido hasta " + d.validez : "");
+    if (escaneoInicial) avisoValidando("ok", "¡Carné validado!", "Confirmado en la Policía Federal. Ya tenemos tus datos.", { nota: notaOk, boton: "Continuar", sinX: true, alCerrar: continuarDesdeEscaneo });
+    else avisoValidando("ok", "¡Carné validado!", "Confirmado en la Policía Federal", { nota: notaOk, boton: "Agregar este RNM", alCerrar: agregarValidado });
     if (d.validez && fijarValidez(d.validez, "qr")) { carneEscaneado.verificada = true; if (window.toast) toast("Datos confirmados en la página oficial", "ok"); }
     else estadoEscaner("RNM confirmado en la página oficial ✓", "ok");
   } catch (e) { estadoEscaner(textoErrorEscaner(e), e && e.codigo === "pagina_no_disponible" ? "ok" : "mal"); avisoValidando("mal", "No pudimos validar el QR", textoErrorEscaner(e), { boton: "Entendido" }); }
@@ -1142,7 +1170,8 @@ async function leerVerso(im, seguro) {
 var camaraAbierta = null;
 function cerrarCamara() {
   var cam = camaraAbierta; camaraAbierta = null;
-  if (cam) { cam.parar = true; if (cam.stream) cam.stream.getTracks().forEach(function (t) { t.stop(); }); }
+  var bman = $("camara-manual"); if (bman) bman.classList.add("oculto");
+  if (cam) { clearTimeout(cam.manualTimer); cam.parar = true; if (cam.stream) cam.stream.getTracks().forEach(function (t) { t.stop(); }); }
   var v = $("camara-video"); if (v) v.srcObject = null;
   var gq = $("camara-guia"); if (gq) gq.classList.remove("encontrado");
   $("camara").classList.add("oculto"); document.body.style.overflow = "";
@@ -1195,6 +1224,9 @@ async function abrirCamara(modo) {
   $("camara-pasos").classList.toggle("oculto", modo !== "auto");
   $("camara-listo").classList.toggle("oculto", modo !== "auto");
   $("camara-texto").textContent = modo === "qr" ? "Pon el código QR del verso dentro del cuadro, sin reflejos. No hace falta acercarlo mucho: si lo ves pequeño, usa Zoom." : (modo === "auto" ? "Paso 1: muestra el FRENTE de tu carné dentro del marco, con buena luz y sin reflejos." : "Pon el frente del carné dentro del marco, con buena luz y sin reflejos.");
+  // Si pasa un buen rato sin leer el carné, se ofrece escribir los datos a mano para no dejar a nadie atrapado.
+  var bm = $("camara-manual");
+  if (bm) { bm.classList.add("oculto"); bm.onclick = function () { cerrarCamara(); entrarDatosManual(); }; cam.manualTimer = setTimeout(function () { if (!cam.parar) bm.classList.remove("oculto"); }, 20000); }
   try { await video.play(); } catch (e) { /* algunos navegadores ya lo reproducen */ }
   $("camara-cancelar").focus();
   if (modo === "frente") {
@@ -1240,6 +1272,7 @@ async function abrirCamara(modo) {
     $("camara-listo").onclick = cerrarCamara;
     var actualizarTexto = function () {
       var enVerso = hechoFrente && !hechoQR, tarda = enVerso && Date.now() - frenteListoEn > 10000;
+      if (hechoQR && !hechoFrente) { $("cp-qrc").className = "ok"; $("camara-texto").textContent = "¡QR leído ✓!"; return; }
       $("cp-frente").className = hechoFrente ? "ok" : "actual";
       $("cp-qr").className = hechoVerso ? "ok" : (hechoFrente ? "actual" : "");
       $("cp-qrc").className = hechoQR ? "ok" : (hechoFrente ? "actual" : "");
@@ -1290,9 +1323,16 @@ async function abrirCamara(modo) {
             }
             if (hechoFrente && !hechoQR && Math.floor(ahora / 1000) % 2 === 0) actualizarTexto();
           }
+          // Si lo primero que muestra es el verso, el QR se lee igual (el frente solo aporta el nombre).
+          if (!hechoFrente && !hechoQR && !cam.parar) {
+            try {
+              var tx0 = await leerQR(capturarGuia(video, 1200)) || await leerQR(capturarFotograma(video, 1280));
+              if (tx0 && !cam.parar) { hechoQR = true; qrEn = Date.now(); if (navigator.vibrate) navigator.vibrate(60); validarQR(tx0); actualizarTexto(); }
+            } catch (e) { /* se sigue intentando */ }
+          }
         }
         // Cierre: con el QR y el verso leído; o con el QR y 6 s de espera a la IA; o, sin QR, tras 25 s en el verso (para no atrapar al cliente)
-        if (hechoFrente && hechoQR && !cam.parar && (hechoVerso || Date.now() - qrEn > 6000)) { actualizarTexto(); await new Promise(function (ok) { setTimeout(ok, 900); }); if (!cam.parar) cerrarCamara(); return; }
+        if (hechoQR && !cam.parar && (hechoFrente ? (hechoVerso || Date.now() - qrEn > 6000) : Date.now() - qrEn > 1200)) { actualizarTexto(); await new Promise(function (ok) { setTimeout(ok, 900); }); if (!cam.parar) cerrarCamara(); return; }
         if (hechoFrente && !hechoQR && !cam.parar && Date.now() - frenteListoEn > 25000) {
           estadoEscaner(hechoVerso ? "Leímos el verso, pero no pudimos leer el QR. Sin el QR no podemos confirmar la validez con la Policía Federal. Puedes volver a intentarlo con el botón «2 · Verso completo»." : "No pudimos leer el verso ni el QR. Puedes volver a intentarlo con el botón «2 · Verso completo» o escribir tus datos a mano.", "mal");
           cerrarCamara(); return;
@@ -1326,7 +1366,13 @@ $("file-qr").addEventListener("change", async function () {
     validarQR(url);
   } catch (e) { estadoEscaner(textoErrorEscaner(e), "mal"); }
 });
-function reiniciarEscaner() { carneEscaneado = { foto: null, fotoVerso: null, qr: null, cpf: null, validezISO: null }; estadoEscaner(""); }
+var btnEscaneoIni = $("btn-escaneo-ini");
+if (btnEscaneoIni) btnEscaneoIni.addEventListener("click", async function () {
+  if (!(await abrirCamara("auto"))) { estadoEscaner("No pudimos abrir la cámara. Elige una foto del verso de tu carné (la parte del QR).", "carga"); $("file-qr").click(); }
+});
+var btnEscaneoManual = $("btn-escaneo-manual");
+if (btnEscaneoManual) btnEscaneoManual.addEventListener("click", entrarDatosManual);
+function reiniciarEscaner() { carneEscaneado = { foto: null, fotoVerso: null, qr: null, cpf: null, validezISO: null, nombre: null }; estadoEscaner(""); }
 
 var btnWizAtras = $("btn-wiz-atras");
 if (btnWizAtras) btnWizAtras.addEventListener("click", function () { if (subPaso > 1) irSubPaso(subPaso - 1, -1); });
@@ -3275,7 +3321,7 @@ $("ov-cerrar").addEventListener("click", cerrarOpinionesClientes);
 $("ov-continuar").addEventListener("click", function () {
   var eraObligatoria = $("modal-opiniones").classList.contains("ov-obligatoria");
   cerrarOpinionesClientes();
-  if (eraObligatoria) navegarA(destinoGuardado("nueva-consulta")); // primer ingreso: ahora su RNM y fecha de nacimiento (o el validador, si venía de ahí)
+  if (eraObligatoria) { var destino = destinoGuardado("nueva-consulta"); if (destino === "nueva-consulta") irARegistrarRnm(); else navegarA(destino); } // primer ingreso: ahora su RNM y fecha de nacimiento (o el validador, si venía de ahí)
 });
 $("modal-opiniones").addEventListener("keydown", function (ev) { if (ev.key === "Escape" && !$("modal-opiniones").classList.contains("ov-obligatoria")) cerrarOpinionesClientes(); });
 /* Pantalla completa solo en el PRIMER registro (cuando aún no tiene ningún RNM) y una sola vez, si hay al menos 2 opiniones aprobadas; después solo queda el enlace «Ver todas las opiniones». */
@@ -3294,7 +3340,7 @@ async function mostrarOpinionesAlEntrar() {
    directo a registrar el RNM y la fecha de nacimiento para la primera consulta. Sin opiniones aprobadas, va directo al formulario. */
 async function primerIngresoFlujo() {
   var mostro = await mostrarOpinionesAlEntrar();
-  if (!mostro) navegarA("nueva-consulta");
+  if (!mostro) irARegistrarRnm();
 }
 async function cargarOpinionesPublicas() {
   var box = $("opiniones-publicas"); if (!box) return;

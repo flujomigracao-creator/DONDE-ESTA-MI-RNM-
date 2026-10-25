@@ -67,6 +67,30 @@
     </div>
   </div>
 
+  <!-- ==================== PRIMERA PANTALLA DE UN USUARIO NUEVO: ESCANEAR EL CARNÉ ==================== -->
+  <section id="vista-escaneo" class="oculto">
+    <div class="ob-barra">
+      <div class="ob-marca"><img src="logo-rnm.png" alt="" width="44" height="29"><span>¿Dónde está <b>mi RNM?</b></span></div>
+    </div>
+    <div class="tarjeta onboarding-card esc-ini">
+      <div class="ob-intro">
+        <p class="ob-eyebrow">Bienvenido/a</p>
+        <h2 class="paso-titulo">Escanea tu carné RNM</h2>
+        <p class="sub">De tu carné sacamos tu nombre, tu RNM y tu fecha de nacimiento. Sin escribir nada.</p>
+      </div>
+      <ol class="esc-ini-pasos">
+        <li><b>El frente</b><span>De ahí leemos tu nombre.</span></li>
+        <li><b>El QR del verso</b><span>Lo confirmamos con la Policía Federal.</span></li>
+      </ol>
+      <button type="button" class="escaner-auto" id="btn-escaneo-ini">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8V6a2 2 0 012-2h2M16 4h2a2 2 0 012 2v2M20 16v2a2 2 0 01-2 2h-2M8 20H6a2 2 0 01-2-2v-2"/><path d="M8 11h3V8H8zM13 8h3v3h-3zM8 16h3v-3H8zM13 13h1.5M16 16v-1M13 16h.01"/></svg>
+        <span><b>Escanear mi carné</b><small>Con la cámara, en unos segundos</small></span>
+      </button>
+      <p class="sub escaner-estado" id="escaner-estado-ini" aria-live="polite"></p>
+      <button type="button" class="sec esc-ini-manual" id="btn-escaneo-manual">Prefiero escribir mis datos</button>
+    </div>
+  </section>
+
   <!-- ==================== ONBOARDING / PERFIL ==================== -->
   <section id="vista-perfil" class="oculto">
     <div class="ob-barra">
@@ -76,7 +100,7 @@
       <div class="ob-intro">
         <p class="ob-eyebrow" id="ob-eyebrow">Bienvenido/a</p>
         <h2 id="perfil-titulo" class="paso-titulo">Crea tu perfil</h2>
-        <p class="sub" id="ob-sub">Dos datos y listo: tu nombre como figura en tu documento y tu WhatsApp.</p>
+        <p class="sub" id="ob-sub">Confirma tu nombre como figura en tu documento. El WhatsApp es opcional.</p>
       </div>
       <div class="progreso" role="progressbar" aria-label="Progreso del perfil" aria-valuemin="1" aria-valuemax="2" aria-valuenow="1">
         <i class="on"></i>
@@ -93,9 +117,9 @@
             <p class="sub ayuda-campo">Como figura en tu documento, con todos tus nombres y apellidos.</p>
           </div>
           <div class="form-field">
-            <label for="p-tel">WhatsApp</label>
+            <label for="p-tel">WhatsApp <span class="opcional-mini">Opcional</span></label>
             <div class="campo-prefijo"><span aria-hidden="true">🇧🇷 +55</span><input type="text" id="p-tel" inputmode="numeric" autocomplete="tel-national" maxlength="20" placeholder="41 99999-1234"></div>
-            <p class="sub ayuda-campo">Código de ciudad (DDD) y número. Ejemplo: 41 99999-1234.</p>
+            <p class="sub ayuda-campo">Puedes agregarlo después. Código de ciudad (DDD) y número: 41 99999-1234.</p>
           </div>
           <label class="check check-ob">
             <input type="checkbox" id="p-avisos">
@@ -540,9 +564,9 @@
                 <p class="sub ayuda-campo">Como figura en tu documento.</p>
               </div>
               <div class="form-field">
-                <label for="ed-tel">WhatsApp</label>
+                <label for="ed-tel">WhatsApp <span class="opcional-mini">Opcional</span></label>
                 <div class="campo-prefijo"><span aria-hidden="true">🇧🇷 +55</span><input type="text" id="ed-tel" inputmode="numeric" autocomplete="tel-national" maxlength="20" placeholder="41 99999-1234"></div>
-                <p class="sub ayuda-campo">Código de ciudad (DDD) y número.</p>
+                <p class="sub ayuda-campo">Código de ciudad (DDD) y número. Lo necesitas solo para los avisos por WhatsApp.</p>
               </div>
               <div class="form-field">
                 <label for="ed-cpf">CPF <span class="opcional-mini">Opcional</span></label>
@@ -765,6 +789,7 @@
     <video id="camara-video" playsinline muted autoplay></video>
     <div class="camara-guia" id="camara-guia" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
     <p class="camara-texto" id="camara-texto" role="status" aria-live="polite"></p>
+    <button type="button" class="camara-manual oculto" id="camara-manual">¿No te lee? Escribir mis datos a mano</button>
     <ul class="camara-pasos oculto" id="camara-pasos" aria-label="Qué falta leer"><li id="cp-frente">1 · Frente</li><li id="cp-qr">2 · Verso</li><li id="cp-qrc">3 · QR</li></ul>
     <div class="camara-barra">
       <button type="button" class="camara-cancelar" id="camara-cancelar">Cancelar</button>
