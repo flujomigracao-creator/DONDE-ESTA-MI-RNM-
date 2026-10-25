@@ -310,8 +310,41 @@ function mostrarSeccion(id) {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
+/* Entrada con un toque (Google One Tap / FedCM): si el celular ya tiene una cuenta de Google guardada, se ofrece entrar directo, sin el selector de cuentas.
+   Si algo falla (origen no autorizado en Google, bloqueo del navegador, sin red) no pasa nada: queda el botón «Comenzar con Google» de siempre.
+   El identificador de cliente es el mismo que ya usa Supabase para Google. Hay que tener https://mirnm.com.br en «Orígenes de JavaScript autorizados» de ese cliente en Google Cloud. */
+var GOOGLE_CLIENT_ID = "273822554229-0guhf0s40vop2b9h81jf472okf3gm2t1.apps.googleusercontent.com";
+var unToqueIniciado = false;
+async function sha256Hex(t) {
+  var b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(t));
+  return Array.prototype.map.call(new Uint8Array(b), function (x) { return x.toString(16).padStart(2, "0"); }).join("");
+}
+function iniciarUnToque() {
+  if (unToqueIniciado || salidaManual || !window.crypto || !crypto.subtle) return;
+  unToqueIniciado = true;
+  var sc = document.createElement("script");
+  sc.src = "https://accounts.google.com/gsi/client"; sc.async = true; sc.defer = true;
+  sc.onload = async function () {
+    try {
+      var crudo = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random()) + "";
+      var hash = await sha256Hex(crudo);
+      google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID, nonce: hash, auto_select: true, cancel_on_tap_outside: false, use_fedcm_for_prompt: true, itp_support: true,
+        callback: async function (resp) {
+          try {
+            var r = await sb.auth.signInWithIdToken({ provider: "google", token: resp.credential, nonce: crudo });
+            if (r.error) msg("msg-login", "No pudimos iniciar sesión. Toca «Comenzar con Google».");
+          } catch (e) { /* queda el botón de siempre */ }
+        }
+      });
+      google.accounts.id.prompt();
+    } catch (e) { /* queda el botón de siempre */ }
+  };
+  document.head.appendChild(sc);
+}
+
 function vista(nombre) { // "login" | "perfil" | "app"
-  if (nombre === "login") embudo("login_vista"); else if (nombre === "perfil") embudo("perfil_vista");
+  if (nombre === "login") { embudo("login_vista"); iniciarUnToque(); } else if (nombre === "perfil") embudo("perfil_vista");
   ["login", "escaneo", "perfil", "app"].forEach(function (v) {
     $("vista-" + v).classList.toggle("oculto", v !== nombre);
   });
@@ -785,6 +818,7 @@ async function confirmarSalir() {
   });
   if (!ok) return;
   salidaManual = true;
+  try { google.accounts.id.disableAutoSelect(); } catch (e) { /* One Tap no cargado */ }
   sb.auth.signOut();
 }
 $("btn-salir").addEventListener("click", confirmarSalir);
