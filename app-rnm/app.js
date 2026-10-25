@@ -1083,9 +1083,15 @@ function avisoValidando(estado, titulo, sub, extra) {
   $("validando-nota").classList.toggle("oculto", !cargando && !extra.nota);
   var b = $("validando-boton"); b.classList.toggle("oculto", cargando);
   if (!cargando) { b.textContent = extra.boton || "Continuar"; b.onclick = function () { caja.classList.add("oculto"); document.body.style.overflow = ""; if (extra.alCerrar) extra.alCerrar(); }; }
+  // La X (y Escape, o tocar fuera) cierra el aviso sin hacer nada más; mientras se consulta a la Policía Federal no se puede cerrar.
+  var xv = $("validando-cerrar"); if (xv) xv.classList.toggle("oculto", cargando);
   caja.classList.remove("oculto"); document.body.style.overflow = "hidden";
   if (!cargando) b.focus();
 }
+function cerrarValidando() { var c = $("validando"); if (!c || c.classList.contains("oculto")) return; var xv = $("validando-cerrar"); if (xv && xv.classList.contains("oculto")) return; c.classList.add("oculto"); document.body.style.overflow = ""; }
+if ($("validando-cerrar")) $("validando-cerrar").addEventListener("click", cerrarValidando);
+if ($("validando")) $("validando").addEventListener("click", function (ev) { if (ev.target === this) cerrarValidando(); });
+document.addEventListener("keydown", function (ev) { if (ev.key === "Escape") cerrarValidando(); });
 // El QR lleva a la página oficial de la PF. Un bot nuestro (VPS) la abre, pulsa «Validar» y devuelve RNM, nacimiento y validez.
 async function validarQR(url) {
   carneEscaneado.qr = url; embudo("validar_qr_leido");

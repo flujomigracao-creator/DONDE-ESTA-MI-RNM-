@@ -629,3 +629,9 @@ input.sw:focus-visible { outline: 3px solid rgba(21, 94, 239, 0.45); outline-off
 #modal-opinion #op-despues { background: transparent !important; border: 0 !important; box-shadow: none !important; color: var(--text-muted) !important; min-height: 40px; font-weight: 700; }
 #modal-opinion #op-enviar { min-height: 52px; font-weight: 800; }
 #modal-opinion .op-estrellas { margin: 10px 0 4px; }
+
+/* Aviso «Carné validado» tras escanear el QR: X para cerrarlo sin agregar el RNM */
+.validando-caja { position: relative; }
+.validando-cerrar { position: absolute; top: 10px; right: 10px; width: 38px; height: 38px; padding: 0; border: 0 !important; border-radius: 50%; display: grid; place-items: center; background: #EEF2FA !important; color: #43557A !important; font-size: 1.5rem; line-height: 1; box-shadow: none !important; cursor: pointer; }
+.validando-cerrar.oculto { display: none; }
+.validando-cerrar:focus-visible { outline: 3px solid rgba(21, 94, 239, 0.45); outline-offset: 2px; }
